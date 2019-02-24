@@ -1,0 +1,21 @@
+---
+# yamllint disable rule:line-length
+
+sudo: true
+
+addons:
+  apt:
+    packages:
+      - docker-ce
+      - make
+
+jobs:
+  include:
+    - name: Build
+      language: go
+      go: "1.10.x"
+      go_import_path: "github.com/backube/SnapScheduler"
+      install:
+        - travis_retry make travis-install
+      script:
+        - make travis-script
