@@ -11,6 +11,11 @@ required = [
   "sigs.k8s.io/controller-tools/pkg/crd/generator",
 ]
 
+# Required so linters pass on golang < 1.11
+[[override]]
+  name = "golang.org/x/net"
+  branch = "release-branch.go1.10"
+
 [[override]]
   name = "k8s.io/code-generator"
   # revision for tag "kubernetes-1.13.1"

@@ -26,6 +26,8 @@ type SnapshotScheduleStatus struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // SnapshotSchedule is the Schema for the snapshotschedules API
+// Remove nolint once Spec and Status are defined
+// nolint: maligned
 // +k8s:openapi-gen=true
 type SnapshotSchedule struct {
 	metav1.TypeMeta   `json:",inline"`

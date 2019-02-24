@@ -23,7 +23,7 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotSchedule(ref common.Referenc
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "SnapshotSchedule is the Schema for the snapshotschedules API",
+				Description: "SnapshotSchedule is the Schema for the snapshotschedules API Remove nolint once Spec and Status are defined nolint: maligned",
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
