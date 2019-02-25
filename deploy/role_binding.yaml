@@ -6,9 +6,8 @@ metadata:
   name: SnapScheduler
 subjects:
   - kind: ServiceAccount
-    name: SnapScheduler
-    # Replace this with the namespace the operator is deployed in.
-    namespace: REPLACE_NAMESPACE
+    name: snapscheduler
+    namespace: default
 roleRef:
   kind: ClusterRole
   name: SnapScheduler
