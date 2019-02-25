@@ -13,9 +13,55 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
+		"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.JobRef":                 schema_pkg_apis_snapscheduler_v1alpha1_JobRef(ref),
+		"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotRetentionSpec":  schema_pkg_apis_snapscheduler_v1alpha1_SnapshotRetentionSpec(ref),
 		"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotSchedule":       schema_pkg_apis_snapscheduler_v1alpha1_SnapshotSchedule(ref),
 		"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotScheduleSpec":   schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleSpec(ref),
 		"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotScheduleStatus": schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleStatus(ref),
+	}
+}
+
+func schema_pkg_apis_snapscheduler_v1alpha1_JobRef(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "JobRef is the namespace/name of the Job that implements this schedule",
+				Properties: map[string]spec.Schema{
+					"namespace": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{},
+	}
+}
+
+func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotRetentionSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "SnapshotRetentionSpec defines the retention policy for snapshots",
+				Properties: map[string]spec.Schema{
+					"maxCount": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{},
 	}
 }
 
@@ -23,7 +69,7 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotSchedule(ref common.Referenc
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "SnapshotSchedule is the Schema for the snapshotschedules API Remove nolint once Spec and Status are defined nolint: maligned",
+				Description: "SnapshotSchedule is the Schema for the snapshotschedules API",
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -67,10 +113,24 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleSpec(ref common.Refe
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SnapshotScheduleSpec defines the desired state of SnapshotSchedule",
-				Properties:  map[string]spec.Schema{},
+				Properties: map[string]spec.Schema{
+					"schedule": {
+						SchemaProps: spec.SchemaProps{
+							Description: "INSERT ADDITIONAL SPEC FIELDS - desired state of cluster Important: Run \"operator-sdk generate k8s\" to regenerate code after modifying this file Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"retention": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotRetentionSpec"),
+						},
+					},
+				},
 			},
 		},
-		Dependencies: []string{},
+		Dependencies: []string{
+			"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotRetentionSpec"},
 	}
 }
 
@@ -79,9 +139,17 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleStatus(ref common.Re
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SnapshotScheduleStatus defines the observed state of SnapshotSchedule",
-				Properties:  map[string]spec.Schema{},
+				Properties: map[string]spec.Schema{
+					"scheduledJob": {
+						SchemaProps: spec.SchemaProps{
+							Description: "INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run \"operator-sdk generate k8s\" to regenerate code after modifying this file Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html",
+							Ref:         ref("github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.JobRef"),
+						},
+					},
+				},
 			},
 		},
-		Dependencies: []string{},
+		Dependencies: []string{
+			"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.JobRef"},
 	}
 }

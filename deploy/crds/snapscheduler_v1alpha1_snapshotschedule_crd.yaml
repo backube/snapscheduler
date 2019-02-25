@@ -10,7 +10,7 @@ spec:
     listKind: SnapshotScheduleList
     plural: snapshotschedules
     singular: snapshotschedule
-  scope: Namespaced
+  scope: Cluster
   subresources:
     status: {}
   validation:
@@ -23,8 +23,27 @@ spec:
         metadata:
           type: object
         spec:
+          properties:
+            retention:
+              properties:
+                maxCount:
+                  format: int32
+                  minimum: 1
+                  type: integer
+              type: object
+            schedule:
+              pattern: ^(\d+|\*)(/\d+)?(\s+(\d+|\*)(/\d+)?){4}$
+              type: string
           type: object
         status:
+          properties:
+            scheduledJob:
+              properties:
+                name:
+                  type: string
+                namespace:
+                  type: string
+              type: object
           type: object
   version: v1alpha1
   versions:
