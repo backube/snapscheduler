@@ -9,6 +9,10 @@ addons:
       - docker-ce
       - make
 
+env:
+  global:
+    - IMAGE="backube/snapscheduler"
+
 jobs:
   include:
     - name: Build
@@ -23,3 +27,16 @@ jobs:
         - travis_retry make dep-vendor
         - travis_wait make lint
         - make image
+      deploy:
+        # Master branch will push the container to :latest
+        - provider: script
+          on:  # yamllint disable-line rule:truthy
+            branch: master
+          script: .travis/push_container.sh ${IMAGE} verbatim latest
+        # Tags of the form v + SEMVER (e.g., v1.2.3) will push to the
+        # corresponding container version number (e.g., :1.2.3).
+        - provider: script
+          on:  # yamllint disable-line rule:truthy
+            tags: true
+            condition: $TRAVIS_TAG =~ ^v[0-9]+
+          script: .travis/push_container.sh ${IMAGE} version "$TRAVIS_TAG"

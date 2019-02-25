@@ -1,5 +1,5 @@
 # Container image to build
-IMAGE := quay.io/backube/snapscheduler
+IMAGE := backube/snapscheduler
 # Version of gometalinter to install (if asked)
 GOMETALINTER_VERSION := v3.0.0
 # Version of operator-sdk to install (if asked)
