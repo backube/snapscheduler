@@ -16,6 +16,10 @@ jobs:
       go: "1.10.x"
       go_import_path: "github.com/backube/SnapScheduler"
       install:
-        - travis_retry make travis-install
+        - travis_retry make install-dep
+        - travis_retry make install-gometalinter
+        - travis_retry make install-operator-sdk
       script:
-        - make travis-script
+        - travis_retry make dep-vendor
+        - travis_wait make lint
+        - make image

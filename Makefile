@@ -1,5 +1,5 @@
 # Container image to build
-IMAGE := quay.io/johnstrunk/ksnapscheduler
+IMAGE := quay.io/backube/snapscheduler
 # Version of gometalinter to install (if asked)
 GOMETALINTER_VERSION := v3.0.0
 # Version of operator-sdk to install (if asked)
@@ -54,6 +54,3 @@ lint: dep-check
           --sort path --sort line --sort column \
           --deadline=24h --enable="gofmt" --vendor \
           --exclude="zz_generated.deepcopy.go" ./...
-
-travis-install: install-dep install-gometalinter install-operator-sdk
-travis-script: dep-vendor lint image
