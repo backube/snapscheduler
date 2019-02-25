@@ -1,12 +1,14 @@
+---
+
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: SnapScheduler
 subjects:
-- kind: ServiceAccount
-  name: SnapScheduler
-  # Replace this with the namespace the operator is deployed in.
-  namespace: REPLACE_NAMESPACE
+  - kind: ServiceAccount
+    name: SnapScheduler
+    # Replace this with the namespace the operator is deployed in.
+    namespace: REPLACE_NAMESPACE
 roleRef:
   kind: ClusterRole
   name: SnapScheduler
