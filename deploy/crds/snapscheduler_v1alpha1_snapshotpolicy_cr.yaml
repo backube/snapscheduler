@@ -1,7 +1,7 @@
 apiVersion: snapscheduler.backube/v1alpha1
-kind: SnapshotSchedule
+kind: SnapshotPolicy
 metadata:
-  name: example-snapshotschedule
+  name: example-snapshotpolicy
 spec:
   # Add fields here
   size: 3
