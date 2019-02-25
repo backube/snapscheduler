@@ -20,6 +20,8 @@ jobs:
       go: "1.10.x"
       go_import_path: "github.com/backube/SnapScheduler"
       install:
+        - travis_retry gem install asciidoctor mdl
+        - travis_retry pip install --user yamllint
         - travis_retry make install-dep
         - travis_retry make install-gometalinter
         - travis_retry make install-operator-sdk

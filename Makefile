@@ -50,6 +50,7 @@ install-operator-sdk:
 
 .PHONY: lint
 lint: dep-check
+	./.travis/pre-commit.sh
 	gometalinter -j4 \
           --sort path --sort line --sort column \
           --deadline=24h --enable="gofmt" --vendor \
