@@ -7,7 +7,10 @@ addons:
   apt:
     packages:
       - docker-ce
+      - python
       - make
+      - realpath
+      - ruby
 
 env:
   global:
