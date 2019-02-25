@@ -13,11 +13,11 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.JobRef":                 schema_pkg_apis_snapscheduler_v1alpha1_JobRef(ref),
-		"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotRetentionSpec":  schema_pkg_apis_snapscheduler_v1alpha1_SnapshotRetentionSpec(ref),
-		"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotSchedule":       schema_pkg_apis_snapscheduler_v1alpha1_SnapshotSchedule(ref),
-		"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotScheduleSpec":   schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleSpec(ref),
-		"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotScheduleStatus": schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleStatus(ref),
+		"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.JobRef":                schema_pkg_apis_snapscheduler_v1alpha1_JobRef(ref),
+		"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotPolicy":        schema_pkg_apis_snapscheduler_v1alpha1_SnapshotPolicy(ref),
+		"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotPolicySpec":    schema_pkg_apis_snapscheduler_v1alpha1_SnapshotPolicySpec(ref),
+		"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotPolicyStatus":  schema_pkg_apis_snapscheduler_v1alpha1_SnapshotPolicyStatus(ref),
+		"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotRetentionSpec": schema_pkg_apis_snapscheduler_v1alpha1_SnapshotRetentionSpec(ref),
 	}
 }
 
@@ -46,30 +46,11 @@ func schema_pkg_apis_snapscheduler_v1alpha1_JobRef(ref common.ReferenceCallback)
 	}
 }
 
-func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotRetentionSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotPolicy(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "SnapshotRetentionSpec defines the retention policy for snapshots",
-				Properties: map[string]spec.Schema{
-					"maxCount": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"integer"},
-							Format: "int32",
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{},
-	}
-}
-
-func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotSchedule(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "SnapshotSchedule is the Schema for the snapshotschedules API",
+				Description: "SnapshotPolicy is the Schema for the snapshotpolicies API",
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -92,27 +73,27 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotSchedule(ref common.Referenc
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotScheduleSpec"),
+							Ref: ref("github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotPolicySpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotScheduleStatus"),
+							Ref: ref("github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotPolicyStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotScheduleSpec", "github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotScheduleStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotPolicySpec", "github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.SnapshotPolicyStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
-func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotPolicySpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "SnapshotScheduleSpec defines the desired state of SnapshotSchedule",
+				Description: "SnapshotPolicySpec defines the desired state of SnapshotPolicy",
 				Properties: map[string]spec.Schema{
 					"schedule": {
 						SchemaProps: spec.SchemaProps{
@@ -134,11 +115,11 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleSpec(ref common.Refe
 	}
 }
 
-func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotPolicyStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "SnapshotScheduleStatus defines the observed state of SnapshotSchedule",
+				Description: "SnapshotPolicyStatus defines the observed state of SnapshotPolicy",
 				Properties: map[string]spec.Schema{
 					"scheduledJob": {
 						SchemaProps: spec.SchemaProps{
@@ -151,5 +132,24 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleStatus(ref common.Re
 		},
 		Dependencies: []string{
 			"github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.JobRef"},
+	}
+}
+
+func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotRetentionSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "SnapshotRetentionSpec defines the retention policy for snapshots",
+				Properties: map[string]spec.Schema{
+					"maxCount": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{},
 	}
 }

@@ -384,7 +384,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:209d3c3933ffae5d28e62e3978c5feafa6a3dc23d601014922432ad3f7416acb"
+  digest = "1:1c282f5c094061ce301d1ea3098799fc907ac1399e9f064c463787323a7b7340"
   name = "github.com/prometheus/procfs"
   packages = [
     ".",
@@ -394,7 +394,7 @@
     "xfs",
   ]
   pruneopts = "NT"
-  revision = "e4d4a2206da023361ed100d85c5f2cf9c8364e9f"
+  revision = "6ed1f7e1041181781dd2826d3001075d011a80cc"
 
 [[projects]]
   digest = "1:fcef1ce61da6f8f6f115154fb0e0e5b159fe11656839ba1e6061372711c013ee"
@@ -460,11 +460,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d91f59977fd53afb6e8332547af735bab37f8e431c84beefeb1e16fcd725e0c6"
+  digest = "1:b19fb19351db5de242e3f1203e63c207c69bf4f4df4822b4ef15220e0204e0e4"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
   pruneopts = "NT"
-  revision = "ffb98f73852f696ea2bb21a617a5c4b3e067a439"
+  revision = "7f87c0fbb88b590338857bcb720678c2583d4dea"
 
 [[projects]]
   branch = "release-branch.go1.10"
@@ -504,7 +504,7 @@
     "windows",
   ]
   pruneopts = "NT"
-  revision = "cd391775e71e684db52b63df9affd58269495083"
+  revision = "cc5685c2db1239775905f3911f0067c0fa74762f"
 
 [[projects]]
   digest = "1:8c74f97396ed63cc2ef04ebb5fc37bb032871b8fd890a25991ed40974b00cd2a"
@@ -540,7 +540,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:5e5ffea31fdbfc2aebc204909b1fb87f9819f9b2a1eab5dfbcaf4e75bfd05208"
+  digest = "1:50a96d5855b9bb62ce054ca29a2a2ce1b9a69e3f9d425bb43f6f28ddb9d64322"
   name = "golang.org/x/tools"
   packages = [
     "go/ast/astutil",
@@ -557,7 +557,7 @@
     "internal/semver",
   ]
   pruneopts = "NT"
-  revision = "83362c3779f5f48611068d488a03ea7bbaddc81e"
+  revision = "69f75a3b0640e0fb1a767eaf0ce11eded956a88c"
 
 [[projects]]
   digest = "1:902ffa11f1d8c19c12b05cabffe69e1a16608ad03a8899ebcb9c6bde295660ae"
