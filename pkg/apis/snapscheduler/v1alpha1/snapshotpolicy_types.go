@@ -31,7 +31,7 @@ type SnapshotPolicyStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	ScheduledJob JobRef `json:"scheduledJob,omitempty"`
+	CronJob JobRef `json:"cronJob,omitempty"`
 }
 
 // JobRef is the namespace/name of the Job that implements this schedule

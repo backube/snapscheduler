@@ -39,7 +39,7 @@ spec:
           type: object
         status:
           properties:
-            scheduledJob:
+            cronJob:
               properties:
                 name:
                   type: string

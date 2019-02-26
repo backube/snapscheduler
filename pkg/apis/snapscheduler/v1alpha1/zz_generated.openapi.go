@@ -121,7 +121,7 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotPolicyStatus(ref common.Refe
 			SchemaProps: spec.SchemaProps{
 				Description: "SnapshotPolicyStatus defines the observed state of SnapshotPolicy",
 				Properties: map[string]spec.Schema{
-					"scheduledJob": {
+					"cronJob": {
 						SchemaProps: spec.SchemaProps{
 							Description: "INSERT ADDITIONAL STATUS FIELD - define observed state of cluster Important: Run \"operator-sdk generate k8s\" to regenerate code after modifying this file Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html",
 							Ref:         ref("github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1.JobRef"),
