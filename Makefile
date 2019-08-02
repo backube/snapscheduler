@@ -38,7 +38,7 @@ install-operator-sdk:
 
 .PHONY: lint
 lint:
-	#./.travis/pre-commit.sh
+	./.travis/pre-commit.sh
 	golangci-lint run --no-config --disable-all -v \
 	  --enable=deadcode \
 	  --enable=errcheck \

@@ -1,10 +1,12 @@
+---
+
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: SnapScheduler
 subjects:
-- kind: ServiceAccount
-  name: SnapScheduler
+  - kind: ServiceAccount
+    name: SnapScheduler
 roleRef:
   kind: Role
   name: SnapScheduler

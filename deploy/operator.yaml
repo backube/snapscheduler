@@ -1,3 +1,5 @@
+---
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,7 +20,7 @@ spec:
           # Replace this with the built image name
           image: quay.io/backube/snapscheduler
           command:
-          - SnapScheduler
+            - SnapScheduler
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
