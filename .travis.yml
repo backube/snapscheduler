@@ -1,0 +1,53 @@
+---
+# yamllint disable rule:line-length
+
+sudo: true
+dist: xenial
+
+addons:
+  apt:
+    packages:
+      - docker-ce
+      - python
+      - make
+      - realpath
+      - ruby
+
+env:
+  global:
+    - GO111MODULE=on
+    - IMAGE="quay.io/backube/snapscheduler"
+
+jobs:
+  include:
+    - name: Build
+      language: go
+      go: "1.12.x"
+      go_import_path: github.com/backube/SnapScheduler
+      cache:
+        directories:
+          # Save downloaded modules across builds to make them quicker
+          - $HOME/.cache/go-build
+          - $HOME/gopath/pkg/mod
+      install:
+        - travis_retry gem install asciidoctor mdl
+        - travis_retry pip install --user yamllint
+        - travis_retry make install-golangci
+        - travis_retry make install-operator-sdk
+      script:
+        - travis_wait travis_retry go mod download
+        - make lint
+        - make image
+      deploy:
+        # Master branch will push the container to :latest
+        - provider: script
+          on:  # yamllint disable-line rule:truthy
+            branch: master
+          script: .travis/push_container.sh ${IMAGE} verbatim latest
+        # Tags of the form v + SEMVER (e.g., v1.2.3) will push to the
+        # corresponding container version number (e.g., :1.2.3).
+        - provider: script
+          on:  # yamllint disable-line rule:truthy
+            tags: true
+            condition: $TRAVIS_TAG =~ ^v[0-9]+
+          script: .travis/push_container.sh ${IMAGE} version "$TRAVIS_TAG"
