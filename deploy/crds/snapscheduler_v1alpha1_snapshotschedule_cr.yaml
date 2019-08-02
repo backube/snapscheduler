@@ -1,0 +1,7 @@
+apiVersion: snapscheduler.backube/v1alpha1
+kind: SnapshotSchedule
+metadata:
+  name: example-snapshotschedule
+spec:
+  # Add fields here
+  size: 3
