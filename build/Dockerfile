@@ -8,7 +8,8 @@ ENV OPERATOR=/usr/local/bin/SnapScheduler \
 COPY build/_output/bin/SnapScheduler ${OPERATOR}
 
 COPY build/bin /usr/local/bin
-RUN  /usr/local/bin/user_setup
+RUN  chmod a+r /usr/local/bin/entrypoint && \
+     /usr/local/bin/user_setup
 
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 
