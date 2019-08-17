@@ -5,14 +5,12 @@ cloud.google.com/go v0.31.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.37.2 h1:4y4L7BdHenTfZL0HervofNTHh9Ad6mNX72cQvl+5eH0=
 cloud.google.com/go v0.37.2/go.mod h1:H8IAquKe2L30IxoupDgqTaQvKSwF/c8prYHynGIWQbA=
-contrib.go.opencensus.io/exporter/ocagent v0.4.9/go.mod h1:ueLzZcP7LPhPulEBukGn4aLh7Mx9YJwpVJ9nL2FYltw=
 contrib.go.opencensus.io/exporter/ocagent v0.4.11 h1:Zwy9skaqR2igcEfSVYDuAsbpa33N0RPtnYTHEe2whPI=
 contrib.go.opencensus.io/exporter/ocagent v0.4.11/go.mod h1:7ihiYRbdcVfW4m4wlXi9WRPdv79C0fStcjNlyE6ek9s=
 git.apache.org/thrift.git v0.0.0-20180902110319-2566ecd5d999/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=
 git.apache.org/thrift.git v0.12.0/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=
 github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78/go.mod h1:LmzpDX56iTiv29bbRTIsUNlaFfuhWRQBWjQdVyAevI8=
 github.com/Azure/go-autorest v11.1.0+incompatible/go.mod h1:r+4oMnoxhatjLLJ6zxSWATqVooLgysK6ZNox3g/xq24=
-github.com/Azure/go-autorest v11.5.2+incompatible/go.mod h1:r+4oMnoxhatjLLJ6zxSWATqVooLgysK6ZNox3g/xq24=
 github.com/Azure/go-autorest v11.7.0+incompatible h1:gzma19dc9ejB75D90E5S+/wXouzpZyA+CV+/MJPSD/k=
 github.com/Azure/go-autorest v11.7.0+incompatible/go.mod h1:r+4oMnoxhatjLLJ6zxSWATqVooLgysK6ZNox3g/xq24=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
@@ -98,7 +96,6 @@ github.com/go-kit/kit v0.8.0/go.mod h1:xBxKIO96dXMWWy0MnWVtmwkA9/13aqxPnvrjFYMA2
 github.com/go-logfmt/logfmt v0.3.0/go.mod h1:Qt1PoO58o5twSAckw1HlFXLmHsOX5/0LbT9GBnD5lWE=
 github.com/go-logr/logr v0.1.0 h1:M1Tv3VzNlEHg6uyACnRdtrploV2P7wZqH8BoQMtz0cg=
 github.com/go-logr/logr v0.1.0/go.mod h1:ixOQHD9gLJUVQQ2ZOR7zLEifBX6tGkNJF4QyIY7sIas=
-github.com/go-logr/zapr v0.1.0/go.mod h1:tabnROwaDl0UNxkVeFRbY8bwB37GwRv0P8lg6aAiEnk=
 github.com/go-logr/zapr v0.1.1 h1:qXBXPDdNncunGs7XeEpsJt8wCjYBygluzfdLO0G5baE=
 github.com/go-logr/zapr v0.1.1/go.mod h1:tabnROwaDl0UNxkVeFRbY8bwB37GwRv0P8lg6aAiEnk=
 github.com/go-openapi/analysis v0.0.0-20180825180245-b006789cd277/go.mod h1:k70tL6pCuVxPJOHXQ+wIac1FUrvNkHolPie/cLEU6hI=
@@ -117,7 +114,6 @@ github.com/go-openapi/runtime v0.0.0-20180920151709-4f900dc2ade9/go.mod h1:6v9a6
 github.com/go-openapi/spec v0.0.0-20160808142527-6aced65f8501/go.mod h1:J8+jY1nAiCcj+friV/PDoE1/3eeccG9LYBs0tYvLOWc=
 github.com/go-openapi/spec v0.17.0/go.mod h1:XkF/MOi14NmjsfZ8VtAKf8pIlbZzyoTvZsdfssdxcBI=
 github.com/go-openapi/spec v0.17.2/go.mod h1:XkF/MOi14NmjsfZ8VtAKf8pIlbZzyoTvZsdfssdxcBI=
-github.com/go-openapi/spec v0.18.0/go.mod h1:XkF/MOi14NmjsfZ8VtAKf8pIlbZzyoTvZsdfssdxcBI=
 github.com/go-openapi/spec v0.19.0 h1:A4SZ6IWh3lnjH0rG0Z5lkxazMGBECtrZcbyYQi+64k4=
 github.com/go-openapi/spec v0.19.0/go.mod h1:XkF/MOi14NmjsfZ8VtAKf8pIlbZzyoTvZsdfssdxcBI=
 github.com/go-openapi/strfmt v0.17.0/go.mod h1:P82hnJI0CXkErkXi8IKjPbNBM6lV6+5pLP5l494TcyU=
@@ -174,7 +170,6 @@ github.com/googleapis/gnostic v0.0.0-20170729233727-0c5108395e2d/go.mod h1:sJBsC
 github.com/googleapis/gnostic v0.2.0 h1:l6N3VoaVzTncYYW+9yOz2LJJammFZGBO13sqgEhpy9g=
 github.com/googleapis/gnostic v0.2.0/go.mod h1:sJBsCZ4ayReDTBIg8b9dl28c5xFWyhBTVRp3pOg5EKY=
 github.com/gophercloud/gophercloud v0.0.0-20180330165814-781450b3c4fc/go.mod h1:3WdhXV3rUYy9p6AUW8d94kr+HS62Y4VL9mBnFxsD8q4=
-github.com/gophercloud/gophercloud v0.0.0-20190318015731-ff9851476e98/go.mod h1:vxM41WHh5uqHVBMZHzuwNOHh8XEoIEcSTewFxm1c5g8=
 github.com/gophercloud/gophercloud v0.0.0-20190408160324-6c7ac67f8855 h1:3dfUujjROkkXcwIpsh9z6bjOhPFooLpxejc7qgX13/g=
 github.com/gophercloud/gophercloud v0.0.0-20190408160324-6c7ac67f8855/go.mod h1:vxM41WHh5uqHVBMZHzuwNOHh8XEoIEcSTewFxm1c5g8=
 github.com/gorilla/context v1.1.1/go.mod h1:kBGZzfjB9CEq2AlWe17Uuf7NDRt0dE0s8S51q0aT7Yg=
@@ -267,9 +262,8 @@ github.com/operator-framework/operator-lifecycle-manager v0.0.0-20190105193533-8
 github.com/operator-framework/operator-lifecycle-manager v0.0.0-20190128024246-5eb7ae5bdb7a/go.mod h1:vq6TTFvg6ti1Bn6ACsZneZTmjTsURgDD6tQtVDbEgsU=
 github.com/operator-framework/operator-registry v1.0.1/go.mod h1:1xEdZjjUg2hPEd52LG3YQ0jtwiwEGdm98S1TH5P4RAA=
 github.com/operator-framework/operator-registry v1.0.4/go.mod h1:hve6YwcjM2nGVlscLtNsp9sIIBkNZo6jlJgzWw7vP9s=
-github.com/operator-framework/operator-sdk v0.9.0 h1:moY3n5vsg4OpD3FzHvqI68Fv+gJFQ1GaDKMHm2NRpF8=
-github.com/operator-framework/operator-sdk v0.9.0/go.mod h1:7eW7ldXmvenehIMVdO2zCdERf/828Mrftq4u7GS0I68=
-github.com/pborman/uuid v0.0.0-20180906182336-adf5a7427709/go.mod h1:VyrYX9gd7irzKovcSS6BIIEwPRkP2Wm2m9ufcdFSJ34=
+github.com/operator-framework/operator-sdk v0.10.0 h1:k2yovBNxaya06yIkJ1e6lNsqiWjhS32G+d2LUdjuu/E=
+github.com/operator-framework/operator-sdk v0.10.0/go.mod h1:7eW7ldXmvenehIMVdO2zCdERf/828Mrftq4u7GS0I68=
 github.com/pborman/uuid v1.2.0 h1:J7Q5mO4ysT1dv8hyrUGHb9+ooztCXu1D8MY8DZYsu3g=
 github.com/pborman/uuid v1.2.0/go.mod h1:X/NO0urCmaxf9VXbdlT7C2Yzkj2IKimNn4k+gtPdI/k=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
@@ -528,7 +522,6 @@ sigs.k8s.io/controller-runtime v0.1.12 h1:ovDq28E64PeY1yR+6H7DthakIC09soiDCrKvfP
 sigs.k8s.io/controller-runtime v0.1.12/go.mod h1:HFAYoOh6XMV+jKF1UjFwrknPbowfyHEHHRdJMf2jMX8=
 sigs.k8s.io/controller-tools v0.1.11-0.20190411181648-9d55346c2bde/go.mod h1:ATWLRP3WGxuAN9HcT2LaKHReXIH+EZGzRuMHuxjXfhQ=
 sigs.k8s.io/structured-merge-diff v0.0.0-20190525122527-15d366b2352e/go.mod h1:wWxsB5ozmmv/SG7nM11ayaAW51xMvak/t1r0CSlcokI=
-sigs.k8s.io/testing_frameworks v0.1.0/go.mod h1:VVBKrHmJ6Ekkfz284YKhQePcdycOzNH9qL6ht1zEr/U=
 sigs.k8s.io/testing_frameworks v0.1.1/go.mod h1:VVBKrHmJ6Ekkfz284YKhQePcdycOzNH9qL6ht1zEr/U=
 sigs.k8s.io/yaml v1.1.0 h1:4A07+ZFc2wgJwo8YNlQpr1rVlgUDlxXHhPJciaPY5gs=
 sigs.k8s.io/yaml v1.1.0/go.mod h1:UJmg0vDUVViEyp3mgSv9WPwZCDxu4rQW1olrI1uml+o=
