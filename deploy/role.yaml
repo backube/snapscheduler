@@ -9,6 +9,7 @@ rules:
   resources:
   - pods
   - services
+  - services/finalizers
   - endpoints
   - persistentvolumeclaims
   - events
@@ -52,12 +53,6 @@ rules:
   - replicasets
   verbs:
   - get
-- apiGroups:
-  - snapscheduler.backube.io
-  resources:
-  - '*'
-  verbs:
-  - '*'
 - apiGroups:
   - snapscheduler.backube
   resources:
