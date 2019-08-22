@@ -38,7 +38,7 @@ install-operator-sdk:
 	chmod a+x "${GOBINDIR}/operator-sdk"
 
 .PHONY: lint
-lint:
+lint: generate
 	./.travis/pre-commit.sh
 	golangci-lint run --no-config --deadline 30m --disable-all -v \
 	  --enable=deadcode \
