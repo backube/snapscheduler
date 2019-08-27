@@ -2,21 +2,28 @@ package snapshotschedule
 
 import (
 	"context"
+	"time"
 
 	snapschedulerv1alpha1 "github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
+	"github.com/robfig/cron"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	// corev1 "k8s.io/api/core/v1"
+	// metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	// "k8s.io/apimachinery/pkg/types"
+	// "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+)
+
+const (
+	// Format for all time strings
+	timeFormat = time.RFC3339
 )
 
 var log = logf.Log.WithName("controller_snapshotschedule")
@@ -53,13 +60,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	// TODO(user): Modify this to be the types you create that are owned by the primary resource
 	// Watch for changes to secondary resource Pods and requeue the owner SnapshotSchedule
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &snapschedulerv1alpha1.SnapshotSchedule{},
-	})
-	if err != nil {
-		return err
-	}
+	// err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
+	// 	IsController: true,
+	// 	OwnerType:    &snapschedulerv1alpha1.SnapshotSchedule{},
+	// })
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
@@ -100,6 +107,49 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 		return reconcile.Result{}, err
 	}
 
+	// If necessary, initialize time of next snap based on schedule
+	if instance.Status.NextSnapshotTime == "" {
+		t, err := getNextSnapTime(instance.Spec.Schedule, time.Now())
+		if err != nil {
+			// Probably couldn't parse cronspec
+			return reconcile.Result{}, err
+		}
+		instance.Status.NextSnapshotTime = t.Format(timeFormat)
+	}
+
+	timeNext, err := time.Parse(timeFormat, instance.Status.NextSnapshotTime)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	timeNow := time.Now()
+	if timeNow.After(timeNext) {
+		reqLogger.Info("take snaps", "now", timeNow, "scheduled", timeNext)
+
+		// Create snaps
+		// Update lastSnapshotTime
+
+		// Taking snapshots requires some amount of time. Ensure timeNow
+		// gets updated based on the end of the snapshot pass, not the
+		// start of it.
+		timeNow = time.Now()
+	}
+
+	// Update nextSnapshot time based on current time and cronspec
+	next, err := getNextSnapTime(instance.Spec.Schedule, timeNow)
+	if err != nil {
+		// Couldn't parse cronspec
+		instance.Status.NextSnapshotTime = ""
+	} else {
+		instance.Status.NextSnapshotTime = next.Format(timeFormat)
+	}
+
+	// Update instance.Status
+	err = r.client.Status().Update(context.TODO(), instance)
+	return reconcile.Result{RequeueAfter: time.Second * 30}, err
+}
+
+/*
 	// Define a new Pod object
 	pod := newPodForCR(instance)
 
@@ -150,4 +200,15 @@ func newPodForCR(cr *snapschedulerv1alpha1.SnapshotSchedule) *corev1.Pod {
 			},
 		},
 	}
+}
+*/
+
+func getNextSnapTime(cronspec string, when time.Time) (time.Time, error) {
+	schedule, err := cron.Parse(cronspec)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	next := schedule.Next(when)
+	return next, nil
 }

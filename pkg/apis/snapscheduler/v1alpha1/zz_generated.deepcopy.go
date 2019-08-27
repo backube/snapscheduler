@@ -100,11 +100,6 @@ func (in *SnapshotScheduleSpec) DeepCopyInto(out *SnapshotScheduleSpec) {
 		*out = new(int32)
 		**out = **in
 	}
-	if in.Active != nil {
-		in, out := &in.Active, &out.Active
-		*out = new(bool)
-		**out = **in
-	}
 	in.Template.DeepCopyInto(&out.Template)
 	return
 }

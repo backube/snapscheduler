@@ -5,9 +5,228 @@
 package v1alpha1
 
 import (
+	spec "github.com/go-openapi/spec"
 	common "k8s.io/kube-openapi/pkg/common"
 )
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
-	return map[string]common.OpenAPIDefinition{}
+	return map[string]common.OpenAPIDefinition{
+		"./pkg/apis/snapscheduler/v1alpha1.SnapshotRetentionSpec":    schema_pkg_apis_snapscheduler_v1alpha1_SnapshotRetentionSpec(ref),
+		"./pkg/apis/snapscheduler/v1alpha1.SnapshotSchedule":         schema_pkg_apis_snapscheduler_v1alpha1_SnapshotSchedule(ref),
+		"./pkg/apis/snapscheduler/v1alpha1.SnapshotScheduleSpec":     schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleSpec(ref),
+		"./pkg/apis/snapscheduler/v1alpha1.SnapshotScheduleStatus":   schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleStatus(ref),
+		"./pkg/apis/snapscheduler/v1alpha1.SnapshotTemplateHookSpec": schema_pkg_apis_snapscheduler_v1alpha1_SnapshotTemplateHookSpec(ref),
+		"./pkg/apis/snapscheduler/v1alpha1.SnapshotTemplateSpec":     schema_pkg_apis_snapscheduler_v1alpha1_SnapshotTemplateSpec(ref),
+	}
+}
+
+func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotRetentionSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "SnapshotRetentionSpec defines how long snapshots should be kept.",
+				Properties: map[string]spec.Schema{
+					"expires": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Expires is the length of time (time.Duration) after which a given Snapshot will be deleted.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"maxCount": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int32",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{},
+	}
+}
+
+func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotSchedule(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "SnapshotSchedule is the Schema for the snapshotschedules API",
+				Properties: map[string]spec.Schema{
+					"kind": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"apiVersion": {
+						SchemaProps: spec.SchemaProps{
+							Description: "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"metadata": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"),
+						},
+					},
+					"spec": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/snapscheduler/v1alpha1.SnapshotScheduleSpec"),
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/snapscheduler/v1alpha1.SnapshotScheduleStatus"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"./pkg/apis/snapscheduler/v1alpha1.SnapshotScheduleSpec", "./pkg/apis/snapscheduler/v1alpha1.SnapshotScheduleStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+	}
+}
+
+func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "SnapshotScheduleSpec defines the desired state of SnapshotSchedule",
+				Properties: map[string]spec.Schema{
+					"claimSelector": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ClaimSelector selects which PVCs will be snapshotted according to this schedule.",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"),
+						},
+					},
+					"retention": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/snapscheduler/v1alpha1.SnapshotRetentionSpec"),
+						},
+					},
+					"schedule": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Schedule is a Cronspec specifying when snapshots should be taken.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"startDeadlineSeconds": {
+						SchemaProps: spec.SchemaProps{
+							Description: "StartDeadlineSeconds is the maximum number of seconds after the scheduled time when a snapshot is allowed to start.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"disabled": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Disabled determines whether this schedule is currently disabled.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"template": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/snapscheduler/v1alpha1.SnapshotTemplateSpec"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"./pkg/apis/snapscheduler/v1alpha1.SnapshotRetentionSpec", "./pkg/apis/snapscheduler/v1alpha1.SnapshotTemplateSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"},
+	}
+}
+
+func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "SnapshotScheduleStatus defines the observed state of SnapshotSchedule",
+				Properties: map[string]spec.Schema{
+					"lastSnapshotTime": {
+						SchemaProps: spec.SchemaProps{
+							Description: "LastSnapshotTime is the time of the most recent set of snapshots generated by this schedule.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"lastSnapshotResult": {
+						SchemaProps: spec.SchemaProps{
+							Description: "LastSnapshotResult is the result of the last attempted set of snapshots.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"nextSnapshotTime": {
+						SchemaProps: spec.SchemaProps{
+							Description: "NextSnapshotTime is the time when this schedule should create the next set of snapshots.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{},
+	}
+}
+
+func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotTemplateHookSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "SnapshotTemplateHookSpec defines the execution hooks that should be invoked before and after taking a snapshot.",
+				Properties: map[string]spec.Schema{
+					"preSnapshot": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"postSnapshot": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{},
+	}
+}
+
+func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotTemplateSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "SnapshotTemplateSpec defines the template for Snapshot objects",
+				Properties: map[string]spec.Schema{
+					"labels": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+					"hooks": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/snapscheduler/v1alpha1.SnapshotTemplateHookSpec"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"./pkg/apis/snapscheduler/v1alpha1.SnapshotTemplateHookSpec"},
+	}
 }

@@ -3,7 +3,7 @@
 apiVersion: snapscheduler.backube/v1alpha1
 kind: SnapshotSchedule
 metadata:
-  name: example-snapshotschedule
+  name: example-hourly
 spec:
-  # Add fields here
-  size: 3
+  # schedule fields: sec min hr dom mo dow
+  schedule: "0 0 * * * *"
