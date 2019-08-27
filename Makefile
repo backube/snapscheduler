@@ -58,3 +58,13 @@ lint: generate
 	  --enable=unused \
 	  --enable=varcheck \
 	  ./...
+
+.PHONY: test
+test: coverage.txt
+
+.PHONY: codecov
+codecov: coverage.txt
+	curl -fL https://codecov.io/bash | bash -s
+
+coverage.txt: generate
+	go test -covermode=atomic -coverprofile=coverage.txt  ./...

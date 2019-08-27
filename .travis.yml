@@ -38,6 +38,7 @@ jobs:
         - travis_wait travis_retry go mod download
         - make lint
         - make image
+        - make codecov
       deploy:
         # Master branch will push the container to :latest
         - provider: script
