@@ -5,8 +5,11 @@ import (
 	"time"
 
 	snapschedulerv1alpha1 "github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1"
+	snapv1alpha1 "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
 	"github.com/robfig/cron"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -15,8 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	// corev1 "k8s.io/api/core/v1"
-	// metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	// "k8s.io/apimachinery/pkg/types"
 	// "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -147,6 +148,25 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 	// Update instance.Status
 	err = r.client.Status().Update(context.TODO(), instance)
 	return reconcile.Result{RequeueAfter: time.Second * 30}, err
+}
+
+// newSnapForClaim returns a VolumeSnapshot object based on a PVC
+func newSnapForClaim(namespace string, pvcName string, snapName string, snapClass *string) *snapv1alpha1.VolumeSnapshot {
+	return &snapv1alpha1.VolumeSnapshot{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      snapName,
+			Namespace: namespace,
+			// labels???
+		},
+		Spec: snapv1alpha1.VolumeSnapshotSpec{
+			Source: &corev1.TypedLocalObjectReference{
+				APIGroup: nil,
+				Kind:     "PersistentVolumeClaim",
+				Name:     pvcName,
+			},
+			VolumeSnapshotClassName: snapClass,
+		},
+	}
 }
 
 /*

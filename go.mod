@@ -3,6 +3,7 @@ module github.com/backube/SnapScheduler
 require (
 	github.com/NYTimes/gziphandler v1.0.1 // indirect
 	github.com/go-openapi/spec v0.19.0
+	github.com/kubernetes-csi/external-snapshotter v1.2.1
 	github.com/operator-framework/operator-sdk v0.10.1-0.20190815222052-4ca881a92eb7
 	github.com/robfig/cron v0.0.0-20170526150127-736158dc09e1
 	github.com/spf13/pflag v1.0.3
