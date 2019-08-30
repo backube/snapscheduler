@@ -23,6 +23,10 @@ import (
 )
 
 const (
+	maxRequeueTime = 60 * time.Second
+	// SchedulerKey is a label applied to every snapshot created by
+	// SnapScheduler
+	SchedulerKey = "snapscheduler.backube/schedule"
 	// Format for all time strings
 	timeFormat = time.RFC3339
 )
@@ -147,16 +151,25 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 
 	// Update instance.Status
 	err = r.client.Status().Update(context.TODO(), instance)
-	return reconcile.Result{RequeueAfter: time.Second * 30}, err
+	return reconcile.Result{RequeueAfter: maxRequeueTime}, err
 }
 
 // newSnapForClaim returns a VolumeSnapshot object based on a PVC
-func newSnapForClaim(namespace string, pvcName string, snapName string, snapClass *string) *snapv1alpha1.VolumeSnapshot {
+func newSnapForClaim(namespace string, pvcName string, snapName string, scheduleName string, labels map[string]string, snapClass *string) *snapv1alpha1.VolumeSnapshot {
+	numLabels := 1
+	if labels != nil {
+		numLabels += len(labels)
+	}
+	snapLabels := make(map[string]string, numLabels)
+	for k, v := range labels {
+		snapLabels[k] = v
+	}
+	snapLabels[SchedulerKey] = scheduleName
 	return &snapv1alpha1.VolumeSnapshot{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      snapName,
 			Namespace: namespace,
-			// labels???
+			Labels:    snapLabels,
 		},
 		Spec: snapv1alpha1.VolumeSnapshotSpec{
 			Source: &corev1.TypedLocalObjectReference{

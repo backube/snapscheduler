@@ -42,7 +42,8 @@ func TestNewSnapForClaim(t *testing.T) {
 	pvc := "mypvc"
 	snapname := "mysnap"
 	snapClass := "snapclass"
-	snap := newSnapForClaim(namespace, pvc, snapname, &snapClass)
+	scheduleName := "mysched"
+	snap := newSnapForClaim(namespace, pvc, snapname, scheduleName, nil, &snapClass)
 	if snapname != snap.ObjectMeta.Name {
 		t.Errorf("invalid snapshot name. expected: %v -- got: %v", snapname, snap.ObjectMeta.Name)
 	}
@@ -55,9 +56,29 @@ func TestNewSnapForClaim(t *testing.T) {
 	if nil == snap.Spec.VolumeSnapshotClassName || snapClass != *snap.Spec.VolumeSnapshotClassName {
 		t.Errorf("invalid snap class. expected: %v -- got: %v", snapClass, snap.Spec.VolumeSnapshotClassName)
 	}
+	if snap.ObjectMeta.Labels == nil || scheduleName != snap.ObjectMeta.Labels[SchedulerKey] {
+		t.Errorf("SchedulerKey not found in snapshot labels")
+	}
 
-	snap = newSnapForClaim(namespace, pvc, snapname, nil)
+	labels := make(map[string]string, 2)
+	labels["one"] = "two"
+	labels["three"] = "four"
+	snap = newSnapForClaim(namespace, pvc, snapname, scheduleName, labels, nil)
 	if nil != snap.Spec.VolumeSnapshotClassName {
 		t.Errorf("expected nil snap class -- got: %v", snap.Spec.VolumeSnapshotClassName)
+	}
+	if snap.ObjectMeta.Labels == nil {
+		t.Errorf("unexpected nil set of labels")
+	} else {
+		if scheduleName != snap.ObjectMeta.Labels[SchedulerKey] {
+			t.Errorf("SchedulerKey not found in snapshot labels")
+		}
+		if "four" != snap.ObjectMeta.Labels["three"] {
+			t.Errorf("labels are not properly passed through")
+		}
+		numLabels := len(snap.ObjectMeta.Labels)
+		if numLabels != 3 {
+			t.Errorf("unexpected number of labels. expected: 3 -- got: %v", numLabels)
+		}
 	}
 }

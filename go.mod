@@ -4,8 +4,15 @@ require (
 	github.com/NYTimes/gziphandler v1.0.1 // indirect
 	github.com/go-openapi/spec v0.19.0
 	github.com/kubernetes-csi/external-snapshotter v1.2.1
+	github.com/neelance/parallel v0.0.0-20160708114440-4de9ce63d14c // indirect
+	github.com/opentracing/basictracer-go v1.0.0 // indirect
+	github.com/opentracing/opentracing-go v1.1.0 // indirect
 	github.com/operator-framework/operator-sdk v0.10.1-0.20190815222052-4ca881a92eb7
 	github.com/robfig/cron v0.0.0-20170526150127-736158dc09e1
+	github.com/slimsag/godocmd v0.0.0-20161025000126-a1005ad29fe3 // indirect
+	github.com/sourcegraph/ctxvfs v0.0.0-20180418081416-2b65f1b1ea81 // indirect
+	github.com/sourcegraph/go-langserver v2.0.0+incompatible // indirect
+	github.com/sourcegraph/jsonrpc2 v0.0.0-20190106185902-35a74f039c6a // indirect
 	github.com/spf13/pflag v1.0.3
 	k8s.io/api v0.0.0-20190612125737-db0771252981
 	k8s.io/apimachinery v0.0.0-20190612125636-6a5db36e93ad
