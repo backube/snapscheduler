@@ -3,6 +3,8 @@ package snapshotschedule
 import (
 	"testing"
 	"time"
+
+	snapschedulerv1alpha1 "github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1"
 )
 
 func TestGetNextSnapTime(t *testing.T) {
@@ -80,5 +82,29 @@ func TestNewSnapForClaim(t *testing.T) {
 		if numLabels != 3 {
 			t.Errorf("unexpected number of labels. expected: 3 -- got: %v", numLabels)
 		}
+	}
+}
+
+func TestUpdateNextSnapTime(t *testing.T) {
+	err := updateNextSnapTime(nil, time.Now())
+	if err == nil {
+		t.Error("nil schedule should generate an error")
+	}
+
+	s := &snapschedulerv1alpha1.SnapshotSchedule{}
+	err = updateNextSnapTime(s, time.Now())
+	if err == nil {
+		t.Error("empty cronspec should generate an error")
+	}
+
+	s.Spec.Schedule = "5 2 1 23 7 *"
+	cTime, _ := time.Parse(timeFormat, "2010-01-01T00:00:00Z")
+	err = updateNextSnapTime(s, cTime)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	expected := "2010-07-23T01:02:05Z"
+	if s.Status.NextSnapshotTime != expected {
+		t.Errorf("incorrect next snap time. expected %v -- got: %v", expected, s.Status.NextSnapshotTime)
 	}
 }

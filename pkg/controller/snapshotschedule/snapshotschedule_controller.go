@@ -2,6 +2,7 @@ package snapshotschedule
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	snapschedulerv1alpha1 "github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1"
@@ -114,16 +115,18 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 
 	// If necessary, initialize time of next snap based on schedule
 	if instance.Status.NextSnapshotTime == "" {
-		t, err := getNextSnapTime(instance.Spec.Schedule, time.Now())
-		if err != nil {
-			// Probably couldn't parse cronspec
+		// Update nextSnapshot time based on current time and cronspec
+		if err = updateNextSnapTime(instance, time.Now()); err != nil {
+			reqLogger.Error(err, "couldn't update next snap time",
+				"cronspec", instance.Spec.Schedule)
 			return reconcile.Result{}, err
 		}
-		instance.Status.NextSnapshotTime = t.Format(timeFormat)
 	}
 
 	timeNext, err := time.Parse(timeFormat, instance.Status.NextSnapshotTime)
 	if err != nil {
+		reqLogger.Error(err, "unable to parse next snap time",
+			"nextSnapshotTime", instance.Status.NextSnapshotTime)
 		return reconcile.Result{}, err
 	}
 
@@ -141,17 +144,29 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 	}
 
 	// Update nextSnapshot time based on current time and cronspec
-	next, err := getNextSnapTime(instance.Spec.Schedule, timeNow)
-	if err != nil {
-		// Couldn't parse cronspec
-		instance.Status.NextSnapshotTime = ""
-	} else {
-		instance.Status.NextSnapshotTime = next.Format(timeFormat)
+	if err = updateNextSnapTime(instance, timeNow); err != nil {
+		reqLogger.Error(err, "couldn't update next snap time",
+			"cronspec", instance.Spec.Schedule)
+		return reconcile.Result{}, err
 	}
 
 	// Update instance.Status
 	err = r.client.Status().Update(context.TODO(), instance)
 	return reconcile.Result{RequeueAfter: maxRequeueTime}, err
+}
+
+func updateNextSnapTime(snapshotSchedule *snapschedulerv1alpha1.SnapshotSchedule, referenceTime time.Time) error {
+	if snapshotSchedule == nil {
+		return fmt.Errorf("nil snapshotschedule instance")
+	}
+	next, err := getNextSnapTime(snapshotSchedule.Spec.Schedule, referenceTime)
+	if err != nil {
+		// Couldn't parse cronspec; clear the next snap time
+		snapshotSchedule.Status.NextSnapshotTime = ""
+	} else {
+		snapshotSchedule.Status.NextSnapshotTime = next.Format(timeFormat)
+	}
+	return err
 }
 
 // newSnapForClaim returns a VolumeSnapshot object based on a PVC
@@ -165,6 +180,7 @@ func newSnapForClaim(namespace string, pvcName string, snapName string, schedule
 		snapLabels[k] = v
 	}
 	snapLabels[SchedulerKey] = scheduleName
+	// https://github.com/kubernetes-csi/external-snapshotter/blob/master/pkg/apis/volumesnapshot/v1alpha1/types.go
 	return &snapv1alpha1.VolumeSnapshot{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      snapName,
