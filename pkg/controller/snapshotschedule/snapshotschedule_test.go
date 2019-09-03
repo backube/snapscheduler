@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	snapschedulerv1alpha1 "github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1"
+	snapschedulerv1alpha1 "github.com/backube/snap-scheduler/pkg/apis/snapscheduler/v1alpha1"
 )
 
 func TestGetNextSnapTime(t *testing.T) {

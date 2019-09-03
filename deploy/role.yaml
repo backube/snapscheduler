@@ -4,7 +4,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   creationTimestamp: null
-  name: snapscheduler
+  name: snap-scheduler
 rules:
 - apiGroups:
   - ""
@@ -38,7 +38,7 @@ rules:
 - apiGroups:
   - apps
   resourceNames:
-  - SnapScheduler
+  - snap-scheduler
   resources:
   - deployments/finalizers
   verbs:
@@ -56,7 +56,7 @@ rules:
   verbs:
   - get
 - apiGroups:
-  - snapscheduler.backube
+  - snap-scheduler.backube
   resources:
   - '*'
   verbs:

@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"github.com/backube/SnapScheduler/pkg/controller/snapshotschedule"
+	"github.com/backube/snap-scheduler/pkg/controller/snapshotschedule"
 )
 
 func init() {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	snapschedulerv1alpha1 "github.com/backube/SnapScheduler/pkg/apis/snapscheduler/v1alpha1"
+	snapschedulerv1alpha1 "github.com/backube/snap-scheduler/pkg/apis/snapscheduler/v1alpha1"
 	snapv1alpha1 "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
 	"github.com/robfig/cron"
 	corev1 "k8s.io/api/core/v1"
