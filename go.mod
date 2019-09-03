@@ -1,8 +1,8 @@
-module github.com/backube/SnapScheduler
+module github.com/backube/snap-scheduler
 
 require (
 	github.com/NYTimes/gziphandler v1.0.1 // indirect
-	github.com/operator-framework/operator-sdk v0.10.1-0.20190815222052-4ca881a92eb7
+	github.com/operator-framework/operator-sdk v0.10.1-0.20190903132947-5b344235b884
 	github.com/spf13/pflag v1.0.3
 	k8s.io/api v0.0.0-20190612125737-db0771252981
 	k8s.io/apimachinery v0.0.0-20190612125636-6a5db36e93ad

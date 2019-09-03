@@ -1,11 +1,11 @@
 FROM registry.access.redhat.com/ubi7/ubi-minimal:latest
 
-ENV OPERATOR=/usr/local/bin/SnapScheduler \
+ENV OPERATOR=/usr/local/bin/snap-scheduler \
     USER_UID=1001 \
-    USER_NAME=SnapScheduler
+    USER_NAME=snap-scheduler
 
 # install operator binary
-COPY build/_output/bin/SnapScheduler ${OPERATOR}
+COPY build/_output/bin/snap-scheduler ${OPERATOR}
 
 COPY build/bin /usr/local/bin
 RUN  /usr/local/bin/user_setup

@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: SnapScheduler
+  name: snap-scheduler
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: SnapScheduler
+      name: snap-scheduler
   template:
     metadata:
       labels:
-        name: SnapScheduler
+        name: snap-scheduler
     spec:
-      serviceAccountName: SnapScheduler
+      serviceAccountName: snap-scheduler
       containers:
-        - name: SnapScheduler
+        - name: snap-scheduler
           # Replace this with the built image name
           image: REPLACE_IMAGE
           command:
-          - SnapScheduler
+          - snap-scheduler
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
@@ -30,4 +30,4 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
-              value: "SnapScheduler"
+              value: "snap-scheduler"
