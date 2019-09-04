@@ -6,6 +6,7 @@ import (
 	"time"
 
 	snapschedulerv1alpha1 "github.com/backube/snap-scheduler/pkg/apis/snapscheduler/v1alpha1"
+	"github.com/go-logr/logr"
 	snapv1alpha1 "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
 	"github.com/robfig/cron"
 	corev1 "k8s.io/api/core/v1"
@@ -114,13 +115,8 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 	}
 
 	// If necessary, initialize time of next snap based on schedule
-	if instance.Status.NextSnapshotTime == "" {
-		// Update nextSnapshot time based on current time and cronspec
-		if err = updateNextSnapTime(instance, time.Now()); err != nil {
-			reqLogger.Error(err, "couldn't update next snap time",
-				"cronspec", instance.Spec.Schedule)
-			return reconcile.Result{}, err
-		}
+	if err = ensureNextSnapTime(reqLogger, instance); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	timeNext, err := time.Parse(timeFormat, instance.Status.NextSnapshotTime)
@@ -135,7 +131,9 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 		reqLogger.Info("take snaps", "now", timeNow, "scheduled", timeNext)
 
 		// Create snaps
+
 		// Update lastSnapshotTime
+		instance.Status.LastSnapshotTime = timeNow.Format(timeFormat)
 
 		// Taking snapshots requires some amount of time. Ensure timeNow
 		// gets updated based on the end of the snapshot pass, not the
@@ -153,6 +151,19 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 	// Update instance.Status
 	err = r.client.Status().Update(context.TODO(), instance)
 	return reconcile.Result{RequeueAfter: maxRequeueTime}, err
+}
+
+// ensureNextSnapTime sets Status.NextSnapshotTime only if it's empty
+func ensureNextSnapTime(logger logr.Logger, snapshotSchedule *snapschedulerv1alpha1.SnapshotSchedule) error {
+	var err error
+	if snapshotSchedule.Status.NextSnapshotTime == "" {
+		// Update nextSnapshot time based on current time and cronspec
+		if err = updateNextSnapTime(snapshotSchedule, time.Now()); err != nil {
+			logger.Error(err, "couldn't update next snap time",
+				"cronspec", snapshotSchedule.Spec.Schedule)
+		}
+	}
+	return err
 }
 
 func updateNextSnapTime(snapshotSchedule *snapschedulerv1alpha1.SnapshotSchedule, referenceTime time.Time) error {

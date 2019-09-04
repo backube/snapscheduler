@@ -2,6 +2,7 @@ module github.com/backube/snap-scheduler
 
 require (
 	github.com/backube/SnapScheduler v0.0.0-20190830173929-e4a80eccc7d5
+	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.19.0
 	github.com/kubernetes-csi/external-snapshotter v1.2.1
 	github.com/operator-framework/operator-sdk v0.10.1-0.20190903132947-5b344235b884

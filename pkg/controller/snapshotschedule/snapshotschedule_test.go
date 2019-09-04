@@ -5,6 +5,7 @@ import (
 	"time"
 
 	snapschedulerv1alpha1 "github.com/backube/snap-scheduler/pkg/apis/snapscheduler/v1alpha1"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
 func TestGetNextSnapTime(t *testing.T) {
@@ -106,5 +107,34 @@ func TestUpdateNextSnapTime(t *testing.T) {
 	expected := "2010-07-23T01:02:05Z"
 	if s.Status.NextSnapshotTime != expected {
 		t.Errorf("incorrect next snap time. expected %v -- got: %v", expected, s.Status.NextSnapshotTime)
+	}
+}
+
+func TestEnsureNextSnapTime(t *testing.T) {
+	s := &snapschedulerv1alpha1.SnapshotSchedule{}
+	s.Spec.Schedule = "0 0 * * * *"
+	err := ensureNextSnapTime(&logf.NullLogger{}, s)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if s.Status.NextSnapshotTime == "" {
+		t.Errorf("NextSnapshotTime was not updated")
+	}
+
+	s = &snapschedulerv1alpha1.SnapshotSchedule{}
+	s.Spec.Schedule = "unparsable cronspec"
+	err = ensureNextSnapTime(&logf.NullLogger{}, s)
+	if err == nil {
+		t.Errorf("unparsable cronspec should have generated an error")
+	}
+	if s.Status.NextSnapshotTime != "" {
+		t.Errorf("unparsable cronspec didn't clear NextSnapshotTime: %v", s.Status.NextSnapshotTime)
+	}
+
+	s = &snapschedulerv1alpha1.SnapshotSchedule{}
+	s.Status.NextSnapshotTime = "marker"
+	_ = ensureNextSnapTime(&logf.NullLogger{}, s)
+	if s.Status.NextSnapshotTime != "marker" {
+		t.Errorf("NextSnapshotTime should not have been updated")
 	}
 }
