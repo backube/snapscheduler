@@ -5,6 +5,9 @@ import (
 	"time"
 
 	snapschedulerv1alpha1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1alpha1"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -44,20 +47,25 @@ func TestGetNextSnapTime(t *testing.T) {
 }
 
 func TestNewSnapForClaim(t *testing.T) {
-	namespace := "mynamespace"
-	pvc := "mypvc"
+	pvc := corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "mypvc",
+			Namespace: "mynamespace",
+		},
+	}
 	snapname := "mysnap"
 	snapClass := "snapclass"
 	scheduleName := "mysched"
-	snap := newSnapForClaim(namespace, pvc, snapname, scheduleName, nil, &snapClass)
-	if snapname != snap.ObjectMeta.Name {
-		t.Errorf("invalid snapshot name. expected: %v -- got: %v", snapname, snap.ObjectMeta.Name)
+	schedTime, _ := time.Parse(timeFormat, "2010-07-23T01:02:00Z")
+	snap := newSnapForClaim(snapname, pvc, scheduleName, schedTime, nil, &snapClass)
+	if snapname != snap.Name {
+		t.Errorf("invalid snapshot name. expected: %v -- got: %v", snapname, snap.Name)
 	}
-	if namespace != snap.ObjectMeta.Namespace {
-		t.Errorf("invalid snapshot namespace. expected: %v -- got: %v", namespace, snap.ObjectMeta.Namespace)
+	if pvc.Namespace != snap.Namespace {
+		t.Errorf("invalid snapshot namespace. expected: %v -- got: %v", pvc.Namespace, snap.Namespace)
 	}
-	if pvc != snap.Spec.Source.Name {
-		t.Errorf("invalid pvc name. expected: %v -- got: %v", pvc, snap.Spec.Source.Name)
+	if pvc.Name != snap.Spec.Source.Name {
+		t.Errorf("invalid pvc name. expected: %v -- got: %v", pvc.Name, snap.Spec.Source.Name)
 	}
 	if nil == snap.Spec.VolumeSnapshotClassName || snapClass != *snap.Spec.VolumeSnapshotClassName {
 		t.Errorf("invalid snap class. expected: %v -- got: %v", snapClass, snap.Spec.VolumeSnapshotClassName)
@@ -69,20 +77,20 @@ func TestNewSnapForClaim(t *testing.T) {
 	labels := make(map[string]string, 2)
 	labels["one"] = "two"
 	labels["three"] = "four"
-	snap = newSnapForClaim(namespace, pvc, snapname, scheduleName, labels, nil)
+	snap = newSnapForClaim(snapname, pvc, scheduleName, schedTime, labels, nil)
 	if nil != snap.Spec.VolumeSnapshotClassName {
 		t.Errorf("expected nil snap class -- got: %v", snap.Spec.VolumeSnapshotClassName)
 	}
-	if snap.ObjectMeta.Labels == nil {
+	if snap.Labels == nil {
 		t.Errorf("unexpected nil set of labels")
 	} else {
-		if scheduleName != snap.ObjectMeta.Labels[ScheduleKey] {
-			t.Errorf("SchedulerKey not found in snapshot labels")
+		if scheduleName != snap.Labels[ScheduleKey] {
+			t.Errorf("Wrong SchedulerKey in snapshot labels. expected: %v -- got: %v", scheduleName, snap.Labels[ScheduleKey])
 		}
-		if _, ok := snap.ObjectMeta.Labels[WhenKey]; !ok {
-			t.Errorf("WhenKey not found in snapshot labels")
+		if schedTime.Format(timeYYYYMMDDHHMMSS) != snap.Labels[WhenKey] {
+			t.Errorf("Wrong WhenKey in snapshot labels. expected: %v -- got: %v", schedTime.Format(timeYYYYMMDDHHMMSS), snap.Labels[WhenKey])
 		}
-		if "four" != snap.ObjectMeta.Labels["three"] {
+		if "four" != snap.Labels["three"] {
 			t.Errorf("labels are not properly passed through")
 		}
 		numLabels := len(snap.ObjectMeta.Labels)

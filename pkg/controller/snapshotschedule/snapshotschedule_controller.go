@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -30,6 +31,8 @@ const (
 	// ScheduleKey is a label applied to every snapshot created by
 	// snap-scheduler, denoting the schedule that created it
 	ScheduleKey = "snapscheduler.backube/schedule"
+	// Time format for snapshot names and labels
+	timeYYYYMMDDHHMMSS = "200601021504"
 	// WhenKey is a label applied to every snapshot created by
 	// snap-scheduler, denoting the scheduled (not actual) time of the snapshot
 	WhenKey = "snapscheduler.backube/when"
@@ -142,43 +145,6 @@ func (r *ReconcileSnapshotSchedule) doReconcile(schedule *snapschedulerv1alpha1.
 	return result, err
 }
 
-/*
-	// Create snapshots
-	if timeNow.After(timeNext) && !instance.Spec.Disabled {
-		completed, err := createSnapshots(reqLogger, r.client, instance)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-		if completed {
-			// Update lastSnapshotTime
-			instance.Status.LastSnapshotTime.Time = time.Now()
-
-			// Taking snapshots requires some amount of time. Ensure timeNow
-			// gets updated based on the end of the snapshot pass, not the
-			// start of it.
-			timeNow = time.Now()
-		}
-	}
-
-	// Update nextSnapshot time based on current time and cronspec
-	if err = updateNextSnapTime(instance, timeNow); err != nil {
-		reqLogger.Error(err, "couldn't update next snap time",
-			"cronspec", instance.Spec.Schedule)
-		return reconcile.Result{}, err
-	}
-
-	// Purge old snapshots
-	if !instance.Spec.Disabled {
-		// Delete any that are older than timeNow - Expires
-		// Delete the oldest until total count <= MaxCount
-	}
-
-	// Update instance.Status
-	err = r.client.Status().Update(context.TODO(), instance)
-	return reconcile.Result{RequeueAfter: maxRequeueTime}, err
-}
-*/
-
 func (r *ReconcileSnapshotSchedule) handleIdle(schedule *snapschedulerv1alpha1.SnapshotSchedule, logger logr.Logger) (reconcile.Result, error) {
 	timeNow := time.Now()
 	timeNext := schedule.Status.NextSnapshotTime.Time
@@ -206,12 +172,42 @@ func (r *ReconcileSnapshotSchedule) handleIdle(schedule *snapschedulerv1alpha1.S
 }
 
 func (r *ReconcileSnapshotSchedule) handleSnapshotting(schedule *snapschedulerv1alpha1.SnapshotSchedule, logger logr.Logger) (reconcile.Result, error) {
+	pvcList, err := listPVCsMatchingSelector(logger, r.client, schedule.Namespace, &schedule.Spec.ClaimSelector)
+	if err != nil {
+		logger.Error(err, "unable to get matching PVCs")
+		return reconcile.Result{}, err
+	}
+
+	// Iterate through the PVCs and make sure snapshots exist for each. We
+	// stop and re-queue at the first error.
+	snapTime := schedule.Status.NextSnapshotTime.Time.UTC()
+	for _, pvc := range pvcList.Items {
+		snapName := snapshotName(pvc.Name, schedule.Name, snapTime)
+		found := &snapv1alpha1.VolumeSnapshot{}
+		logger.Info("looking for snapshot", "name", snapName)
+		err = r.client.Get(context.TODO(), types.NamespacedName{Name: snapName, Namespace: pvc.Namespace}, found)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				logger.Info("creating a snapshot", "PVC", pvc.Name, "Snapshot", snapName)
+				snap := newSnapForClaim(snapName, pvc, schedule.Name, snapTime, schedule.Spec.SnapshotTemplate.Labels, schedule.Spec.SnapshotTemplate.SnapshotClassName)
+				err = r.client.Create(context.TODO(), &snap)
+			} else {
+				logger.Error(err, "looking for snapshot", "name", snapName)
+				return reconcile.Result{}, err
+			}
+		}
+		if err != nil {
+			logger.Error(err, "while creating snapshots", "name", snapName)
+			return reconcile.Result{}, err
+		}
+	}
+
 	// We're done taking snapshots. Transition back to idle
 	schedule.Status.State = snapschedulerv1alpha1.StateIdle
 	// Update lastSnapshot & nextSnapshot times
 	timeNow := metav1.Now()
 	schedule.Status.LastSnapshotTime = &timeNow
-	if err := updateNextSnapTime(schedule, timeNow.Time); err != nil {
+	if err = updateNextSnapTime(schedule, timeNow.Time); err != nil {
 		logger.Error(err, "couldn't update next snap time",
 			"cronspec", schedule.Spec.Schedule)
 		return reconcile.Result{}, err
@@ -219,29 +215,8 @@ func (r *ReconcileSnapshotSchedule) handleSnapshotting(schedule *snapschedulerv1
 	return reconcile.Result{Requeue: true}, nil
 }
 
-func createSnapshots(logger logr.Logger, c client.Client, schedule *snapschedulerv1alpha1.SnapshotSchedule) (bool, error) {
-	logger.Info("taking scheduled snapshots", "scheduled", schedule.Status.NextSnapshotTime.Time)
-
-	pvcl, err := listPVCsMatchingSelector(logger, c, schedule.Namespace, &schedule.Spec.ClaimSelector)
-	if err != nil {
-		logger.Error(err, "unable to get matching PVCs")
-		return false, err
-	}
-	snapl, err := pvcListToSnapList(pvcl, nil)
-	if err != nil {
-		logger.Error(err, "unable to generate Snapshots from PVCs")
-		// FIXME: This may result in infinite, rapid reconciling. We should back off.
-		return false, err
-	}
-	logger.Info("creating Snapshot objects", "count", len(snapl.Items))
-	for _, snapshot := range snapl.Items {
-		err = c.Create(context.TODO(), &snapshot)
-		if err != nil {
-			logger.Error(err, "unable to create snapshot", "object", snapshot)
-			return false, err
-		}
-	}
-	return true, nil
+func snapshotName(pvcName string, scheduleName string, time time.Time) string {
+	return pvcName + "-" + scheduleName + "-" + time.Format(timeYYYYMMDDHHMMSS)
 }
 
 func updateNextSnapTime(snapshotSchedule *snapschedulerv1alpha1.SnapshotSchedule, referenceTime time.Time) error {
@@ -260,7 +235,7 @@ func updateNextSnapTime(snapshotSchedule *snapschedulerv1alpha1.SnapshotSchedule
 }
 
 // newSnapForClaim returns a VolumeSnapshot object based on a PVC
-func newSnapForClaim(namespace string, pvcName string, snapName string, scheduleName string, labels map[string]string, snapClass *string) snapv1alpha1.VolumeSnapshot {
+func newSnapForClaim(snapName string, pvc corev1.PersistentVolumeClaim, scheduleName string, scheduleTime time.Time, labels map[string]string, snapClass *string) snapv1alpha1.VolumeSnapshot {
 	numLabels := 2
 	if labels != nil {
 		numLabels += len(labels)
@@ -270,31 +245,22 @@ func newSnapForClaim(namespace string, pvcName string, snapName string, schedule
 		snapLabels[k] = v
 	}
 	snapLabels[ScheduleKey] = scheduleName
-	snapLabels[WhenKey] = "FIXME"
+	snapLabels[WhenKey] = scheduleTime.Format(timeYYYYMMDDHHMMSS)
 	return snapv1alpha1.VolumeSnapshot{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      snapName,
-			Namespace: namespace,
+			Namespace: pvc.Namespace,
 			Labels:    snapLabels,
 		},
 		Spec: snapv1alpha1.VolumeSnapshotSpec{
 			Source: &corev1.TypedLocalObjectReference{
 				APIGroup: nil,
 				Kind:     "PersistentVolumeClaim",
-				Name:     pvcName,
+				Name:     pvc.Name,
 			},
 			VolumeSnapshotClassName: snapClass,
 		},
 	}
-}
-
-func pvcListToSnapList(pvcList *corev1.PersistentVolumeClaimList, defaultSnapClass *string) (*snapv1alpha1.VolumeSnapshotList, error) {
-	snapList := &snapv1alpha1.VolumeSnapshotList{}
-	snapList.Items = make([]snapv1alpha1.VolumeSnapshot, len(pvcList.Items))
-	for i, pvc := range pvcList.Items {
-		snapList.Items[i] = newSnapForClaim(pvc.Namespace, pvc.Name, pvc.Name, "blah", pvc.Labels, defaultSnapClass)
-	}
-	return snapList, nil
 }
 
 // listPVCsMatchingSelector retrieves a list of PVCs that match the given selector
