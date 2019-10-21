@@ -3,24 +3,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: snap-scheduler
+  name: snapscheduler
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: snap-scheduler
+      name: snapscheduler
   template:
     metadata:
       labels:
-        name: snap-scheduler
+        name: snapscheduler
     spec:
-      serviceAccountName: snap-scheduler
+      serviceAccountName: snapscheduler
       containers:
-        - name: snap-scheduler
+        - name: snapscheduler
           # Replace this with the built image name
           image: quay.io/backube/snapscheduler
           command:
-            - snap-scheduler
+          - snapscheduler
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
@@ -32,4 +32,4 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
-              value: "snap-scheduler"
+              value: "snapscheduler"

@@ -1,19 +1,17 @@
-module github.com/backube/snap-scheduler
+module github.com/backube/snapscheduler
 
 require (
-	github.com/backube/SnapScheduler v0.0.0-20190830173929-e4a80eccc7d5
+	github.com/backube/snap-scheduler v0.0.0-20190904172411-6c4bf9a3bd3b
 	github.com/go-logr/logr v0.1.0
-	github.com/go-openapi/spec v0.19.2
-	github.com/kubernetes-csi/external-snapshotter v1.2.1
-	github.com/openshift/custom-resource-status v0.0.0-20190822192428-e62f2f3b79f3
-	github.com/operator-framework/operator-sdk v0.10.1-0.20190903132947-5b344235b884
-	github.com/robfig/cron v0.0.0-20170526150127-736158dc09e1
+	github.com/go-openapi/spec v0.19.0
+	github.com/kubernetes-csi/external-snapshotter v1.2.2
+	github.com/operator-framework/operator-sdk v0.11.1-0.20191018205954-2b8846c7d7ae
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/spf13/pflag v1.0.3
 	k8s.io/api v0.0.0-20190725062911-6607c48751ae
 	k8s.io/apimachinery v0.0.0-20190719140911-bfcf53abc9f8
 	k8s.io/client-go v11.0.0+incompatible
-	k8s.io/kube-openapi v0.0.0-20190709113604-33be087ad058
+	k8s.io/kube-openapi v0.0.0-20190603182131-db7b694dc208
 	sigs.k8s.io/controller-runtime v0.1.12
 	sigs.k8s.io/controller-tools v0.1.10
 )

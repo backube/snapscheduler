@@ -1,7 +1,7 @@
 package apis
 
 import (
-	"github.com/backube/snap-scheduler/pkg/apis/snapscheduler/v1alpha1"
+	"github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1alpha1"
 )
 
 func init() {
