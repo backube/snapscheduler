@@ -5,7 +5,10 @@ import (
 	"time"
 
 	snapschedulerv1alpha1 "github.com/backube/snap-scheduler/pkg/apis/snapscheduler/v1alpha1"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+)
+
+const (
+	timeFormat = time.RFC3339
 )
 
 func TestGetNextSnapTime(t *testing.T) {
@@ -16,7 +19,7 @@ func TestGetNextSnapTime(t *testing.T) {
 		wantErr    bool
 	}{
 		{"@hourly", "2013-02-01T11:04:05Z", "2013-02-01T12:00:00Z", false},
-		{"5 2 1 23 7 *", "2010-01-01T00:00:00Z", "2010-07-23T01:02:05Z", false},
+		{"2 1 23 7 *", "2010-01-01T00:00:00Z", "2010-07-23T01:02:00Z", false},
 		{"invalid_spec", "2013-02-01T11:04:05Z", "unused", true},
 	}
 
@@ -59,7 +62,7 @@ func TestNewSnapForClaim(t *testing.T) {
 	if nil == snap.Spec.VolumeSnapshotClassName || snapClass != *snap.Spec.VolumeSnapshotClassName {
 		t.Errorf("invalid snap class. expected: %v -- got: %v", snapClass, snap.Spec.VolumeSnapshotClassName)
 	}
-	if snap.ObjectMeta.Labels == nil || scheduleName != snap.ObjectMeta.Labels[SchedulerKey] {
+	if snap.ObjectMeta.Labels == nil || scheduleName != snap.ObjectMeta.Labels[ScheduleKey] {
 		t.Errorf("SchedulerKey not found in snapshot labels")
 	}
 
@@ -73,15 +76,18 @@ func TestNewSnapForClaim(t *testing.T) {
 	if snap.ObjectMeta.Labels == nil {
 		t.Errorf("unexpected nil set of labels")
 	} else {
-		if scheduleName != snap.ObjectMeta.Labels[SchedulerKey] {
+		if scheduleName != snap.ObjectMeta.Labels[ScheduleKey] {
 			t.Errorf("SchedulerKey not found in snapshot labels")
+		}
+		if _, ok := snap.ObjectMeta.Labels[WhenKey]; !ok {
+			t.Errorf("WhenKey not found in snapshot labels")
 		}
 		if "four" != snap.ObjectMeta.Labels["three"] {
 			t.Errorf("labels are not properly passed through")
 		}
 		numLabels := len(snap.ObjectMeta.Labels)
-		if numLabels != 3 {
-			t.Errorf("unexpected number of labels. expected: 3 -- got: %v", numLabels)
+		if numLabels != 4 {
+			t.Errorf("unexpected number of labels. expected: 4 -- got: %v", numLabels)
 		}
 	}
 }
@@ -98,43 +104,14 @@ func TestUpdateNextSnapTime(t *testing.T) {
 		t.Error("empty cronspec should generate an error")
 	}
 
-	s.Spec.Schedule = "5 2 1 23 7 *"
+	s.Spec.Schedule = "2 1 23 7 *"
 	cTime, _ := time.Parse(timeFormat, "2010-01-01T00:00:00Z")
 	err = updateNextSnapTime(s, cTime)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
-	expected := "2010-07-23T01:02:05Z"
-	if s.Status.NextSnapshotTime != expected {
+	expected, _ := time.Parse(timeFormat, "2010-07-23T01:02:00Z")
+	if s.Status.NextSnapshotTime.Time != expected {
 		t.Errorf("incorrect next snap time. expected %v -- got: %v", expected, s.Status.NextSnapshotTime)
-	}
-}
-
-func TestEnsureNextSnapTime(t *testing.T) {
-	s := &snapschedulerv1alpha1.SnapshotSchedule{}
-	s.Spec.Schedule = "0 0 * * * *"
-	err := ensureNextSnapTime(&logf.NullLogger{}, s)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	if s.Status.NextSnapshotTime == "" {
-		t.Errorf("NextSnapshotTime was not updated")
-	}
-
-	s = &snapschedulerv1alpha1.SnapshotSchedule{}
-	s.Spec.Schedule = "unparsable cronspec"
-	err = ensureNextSnapTime(&logf.NullLogger{}, s)
-	if err == nil {
-		t.Errorf("unparsable cronspec should have generated an error")
-	}
-	if s.Status.NextSnapshotTime != "" {
-		t.Errorf("unparsable cronspec didn't clear NextSnapshotTime: %v", s.Status.NextSnapshotTime)
-	}
-
-	s = &snapschedulerv1alpha1.SnapshotSchedule{}
-	s.Status.NextSnapshotTime = "marker"
-	_ = ensureNextSnapTime(&logf.NullLogger{}, s)
-	if s.Status.NextSnapshotTime != "marker" {
-		t.Errorf("NextSnapshotTime should not have been updated")
 	}
 }

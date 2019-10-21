@@ -4,5 +4,13 @@ kind: SnapshotSchedule
 metadata:
   name: example-hourly
 spec:
-  # schedule fields: sec min hr dom mo dow
-  schedule: "0 0 * * * *"
+  retention:
+    # Snapshot expriation is a time.Duration and only supports up to hours
+    expires: "168h"  # 1 week
+    maxCount: 10
+  # schedule fields: min hr dom mo dow
+  schedule: "0 * * * *"
+  snapshotTemplate:
+    labels:
+      mylabel: "myvalue"
+    snapshotClassName: csi-rbd
