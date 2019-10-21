@@ -20,7 +20,7 @@ spec:
           # Replace this with the built image name
           image: quay.io/backube/snapscheduler
           command:
-          - snapscheduler
+            - snapscheduler
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE

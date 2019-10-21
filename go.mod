@@ -1,7 +1,7 @@
 module github.com/backube/snapscheduler
 
 require (
-	github.com/backube/snap-scheduler v0.0.0-20190904172411-6c4bf9a3bd3b
+	github.com/NYTimes/gziphandler v1.0.1 // indirect
 	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.19.0
 	github.com/kubernetes-csi/external-snapshotter v1.2.2
