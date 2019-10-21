@@ -85,6 +85,9 @@ spec:
                 create the next set of snapshots.
               format: date-time
               type: string
+            reconcileResult:
+              description: ReconcileResult describes the result of the last reconcile
+              type: string
             state:
               description: State is the current reconciliation state of this resource
               type: string

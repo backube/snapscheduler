@@ -26,13 +26,13 @@ import (
 
 const (
 	// Max amount of time between reconciling a schedule object
-	maxRequeueTime = 60 * time.Second
+	maxRequeueTime = 5 * time.Minute
 	// ScheduleKey is a label applied to every snapshot created by
 	// snap-scheduler, denoting the schedule that created it
-	ScheduleKey = "snap-scheduler.backube/schedule"
+	ScheduleKey = "snapscheduler.backube/schedule"
 	// WhenKey is a label applied to every snapshot created by
 	// snap-scheduler, denoting the scheduled (not actual) time of the snapshot
-	WhenKey = "snap-scheduler.backube/when"
+	WhenKey = "snapscheduler.backube/when"
 )
 
 var log = logf.Log.WithName("controller_snapshotschedule")
@@ -95,28 +95,13 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 		return reconcile.Result{}, err
 	}
 
-	// If necessary, initialize time of next snap based on schedule
-	if instance.Status.NextSnapshotTime.IsZero() {
-		// Update nextSnapshot time based on current time and cronspec
-		if err = updateNextSnapTime(instance, time.Now()); err != nil {
-			reqLogger.Error(err, "couldn't update next snap time",
-				"cronspec", instance.Spec.Schedule)
-			return reconcile.Result{}, err
-		}
-	}
+	result, err := r.doReconcile(instance, reqLogger)
 
-	var result reconcile.Result
-	if instance.Status.State == snapschedulerv1alpha1.StateUnknown {
-		// Unknown state immediately transitions to Idle
-		instance.Status.State = snapschedulerv1alpha1.StateIdle
-		result = reconcile.Result{Requeue: true}
-		err = nil
-	} else if instance.Status.State == snapschedulerv1alpha1.StateIdle {
-		result, err = r.handleIdle(instance, reqLogger)
-		// result = reconcile.Result{RequeueAfter: maxRequeueTime}
-		// err = nil
-	} else if instance.Status.State == snapschedulerv1alpha1.StateSnapshotting {
-		result, err = r.handleSnapshotting(instance, reqLogger)
+	// Update result in CR
+	if err != nil {
+		instance.Status.ReconcileResult = err.Error()
+	} else {
+		instance.Status.ReconcileResult = "reconcile ok"
 	}
 
 	// Update instance.Status
@@ -124,6 +109,36 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 	if err == nil { // Don't mask previous error
 		err = err2
 	}
+	return result, err
+}
+
+func (r *ReconcileSnapshotSchedule) doReconcile(schedule *snapschedulerv1alpha1.SnapshotSchedule, logger logr.Logger) (reconcile.Result, error) {
+	var err error
+
+	// If necessary, initialize time of next snap based on schedule
+	if schedule.Status.NextSnapshotTime.IsZero() {
+		// Update nextSnapshot time based on current time and cronspec
+		if err = updateNextSnapTime(schedule, time.Now()); err != nil {
+			logger.Error(err, "couldn't update next snap time",
+				"cronspec", schedule.Spec.Schedule)
+			return reconcile.Result{}, err
+		}
+	}
+
+	// Dispatch based on State
+	logger.Info("reconciling", "state", schedule.Status.State)
+	var result reconcile.Result
+	if schedule.Status.State == snapschedulerv1alpha1.StateUnknown {
+		// Unknown state immediately transitions to Idle
+		schedule.Status.State = snapschedulerv1alpha1.StateIdle
+		result = reconcile.Result{Requeue: true}
+		err = nil
+	} else if schedule.Status.State == snapschedulerv1alpha1.StateIdle {
+		result, err = r.handleIdle(schedule, logger)
+	} else if schedule.Status.State == snapschedulerv1alpha1.StateSnapshotting {
+		result, err = r.handleSnapshotting(schedule, logger)
+	}
+
 	return result, err
 }
 
