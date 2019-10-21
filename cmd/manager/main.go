@@ -11,8 +11,8 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 
-	"github.com/backube/snap-scheduler/pkg/apis"
-	"github.com/backube/snap-scheduler/pkg/controller"
+	"github.com/backube/snapscheduler/pkg/apis"
+	"github.com/backube/snapscheduler/pkg/controller"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
@@ -82,7 +82,7 @@ func main() {
 
 	ctx := context.TODO()
 	// Become the leader before proceeding
-	err = leader.Become(ctx, "snap-scheduler-lock")
+	err = leader.Become(ctx, "snapscheduler-lock")
 	if err != nil {
 		log.Error(err, "")
 		os.Exit(1)
