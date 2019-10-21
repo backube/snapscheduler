@@ -5,17 +5,17 @@ Generate the scaffolding like it is a new project:
 ```
 $ mkdir ~/temp
 $ cd temp/
-$ operator-sdk new snap-scheduler --repo github.com/backube/snap-scheduler
-INFO[0000] Creating new Go operator 'snap-scheduler'.
+$ operator-sdk new snapscheduler --repo github.com/backube/snapscheduler
+INFO[0000] Creating new Go operator 'snapscheduler'.
 ...
 INFO[0003] Project creation complete.
-$ cd snap-scheduler/
-$ operator-sdk add api --api-version snap-scheduler.backube/v1alpha1 --kind SnapshotSchedule
-INFO[0000] Generating api version snap-scheduler.backube/v1alpha1 for kind SnapshotSchedule.
+$ cd snapscheduler/
+$ operator-sdk add api --api-version snapscheduler.backube/v1alpha1 --kind SnapshotSchedule
+INFO[0000] Generating api version snapscheduler.backube/v1alpha1 for kind SnapshotSchedule.
 ...
 INFO[0016] API generation complete.
-$ operator-sdk add controller --api-version snap-scheduler.backube/v1alpha1 --kind SnapshotSchedule
-INFO[0000] Generating controller version snap-scheduler.backube/v1alpha1 for kind SnapshotSchedule.
+$ operator-sdk add controller --api-version snapscheduler.backube/v1alpha1 --kind SnapshotSchedule
+INFO[0000] Generating controller version snapscheduler.backube/v1alpha1 for kind SnapshotSchedule.
 ...
 INFO[0000] Controller generation complete.
 ```
@@ -32,7 +32,7 @@ Replace the files w/ the newly generated ones:
 
 ```
 $ rm -rf *
-$ cp -a ~/temp/snap-scheduler/* .
+$ cp -a ~/temp/snapscheduler/* .
 $
 ```
 
