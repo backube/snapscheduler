@@ -23,7 +23,7 @@ jobs:
     - name: Build
       language: go
       go: "1.12.x"
-      go_import_path: github.com/backube/snap-scheduler
+      go_import_path: github.com/backube/snapscheduler
       cache:
         directories:
           # Save downloaded modules across builds to make them quicker
