@@ -53,7 +53,7 @@ type SnapshotScheduleSpec struct {
 	Retention SnapshotRetentionSpec `json:"retention,omitempty"`
 	// Schedule is a Cronspec specifying when snapshots should be taken. See
 	// https://en.wikipedia.org/wiki/Cron for a description of the format.
-	// +kubebuilder:validation:Pattern=^((\d+|\*)(/\d+)?(\s+(\d+|\*)(/\d+)?){4}|@\w+)$
+	// +kubebuilder:validation:Pattern=^((\d+|\*)(/\d+)?(\s+(\d+|\*)(/\d+)?){4}|@(hourly|daily|weekly|monthly|yearly))$
 	Schedule string `json:"schedule,omitempty"`
 	// Disabled determines whether this schedule is currently disabled.
 	Disabled bool `json:"disabled,omitempty"`
