@@ -49,7 +49,6 @@ lint: generate
 	  --enable=gosimple \
 	  --enable=govet \
 	  --enable=ineffassign \
-	  --enable=interfacer \
 	  --enable=misspell \
 	  --enable=staticcheck \
 	  --enable=structcheck \
