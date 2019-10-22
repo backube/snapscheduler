@@ -88,7 +88,8 @@ func TestNewSnapForClaim(t *testing.T) {
 			t.Errorf("Wrong SchedulerKey in snapshot labels. expected: %v -- got: %v", scheduleName, snap.Labels[ScheduleKey])
 		}
 		if schedTime.Format(timeYYYYMMDDHHMMSS) != snap.Labels[WhenKey] {
-			t.Errorf("Wrong WhenKey in snapshot labels. expected: %v -- got: %v", schedTime.Format(timeYYYYMMDDHHMMSS), snap.Labels[WhenKey])
+			t.Errorf("Wrong WhenKey in snapshot labels. expected: %v -- got: %v",
+				schedTime.Format(timeYYYYMMDDHHMMSS), snap.Labels[WhenKey])
 		}
 		if "four" != snap.Labels["three"] {
 			t.Errorf("labels are not properly passed through")

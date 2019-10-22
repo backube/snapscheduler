@@ -1,7 +1,7 @@
 # Container image to build
 IMAGE := quay.io/backube/snapscheduler
 # Version of golangci-lint to install (if asked)
-GOLANGCI_VERSION := v1.17.1
+GOLANGCI_VERSION := v1.21.0
 # Version of operator-sdk to install (if asked)
 OPERATOR_SDK_VERSION := v0.10.0
 GOBINDIR := $(shell go env GOPATH)/bin
@@ -40,24 +40,7 @@ install-operator-sdk:
 .PHONY: lint
 lint: generate
 	./.travis/pre-commit.sh
-	golangci-lint run --no-config --deadline 30m --disable-all -v \
-	  --enable=deadcode \
-	  --enable=errcheck \
-	  --enable=gocyclo \
-	  --enable=goimports \
-	  --enable=gosec \
-	  --enable=gosimple \
-	  --enable=govet \
-	  --enable=ineffassign \
-	  --enable=interfacer \
-	  --enable=misspell \
-	  --enable=staticcheck \
-	  --enable=structcheck \
-	  --enable=typecheck \
-	  --enable=unconvert \
-	  --enable=unused \
-	  --enable=varcheck \
-	  ./...
+	golangci-lint run ./...
 
 .PHONY: test
 test: coverage.txt
