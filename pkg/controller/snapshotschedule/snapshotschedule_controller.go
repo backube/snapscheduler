@@ -99,13 +99,13 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 		return reconcile.Result{}, err
 	}
 
-	result, err := r.doReconcile(instance, reqLogger)
+	result, err := doReconcile(instance, reqLogger, r.client)
 
 	// Update result in CR
 	if err != nil {
 		instance.Status.ReconcileResult = err.Error()
 	} else {
-		instance.Status.ReconcileResult = "reconcile ok"
+		instance.Status.ReconcileResult = "ok"
 	}
 
 	// Update instance.Status
@@ -116,8 +116,8 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 	return result, err
 }
 
-func (r *ReconcileSnapshotSchedule) doReconcile(schedule *snapschedulerv1alpha1.SnapshotSchedule,
-	logger logr.Logger) (reconcile.Result, error) {
+func doReconcile(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+	logger logr.Logger, c client.Client) (reconcile.Result, error) {
 	var err error
 
 	// If necessary, initialize time of next snap based on schedule
@@ -139,16 +139,16 @@ func (r *ReconcileSnapshotSchedule) doReconcile(schedule *snapschedulerv1alpha1.
 		result = reconcile.Result{Requeue: true}
 		err = nil
 	} else if schedule.Status.State == snapschedulerv1alpha1.StateIdle {
-		result, err = r.handleIdle(schedule, logger)
+		result, err = handleIdle(schedule, logger, c)
 	} else if schedule.Status.State == snapschedulerv1alpha1.StateSnapshotting {
-		result, err = r.handleSnapshotting(schedule, logger)
+		result, err = handleSnapshotting(schedule, logger, c)
 	}
 
 	return result, err
 }
 
-func (r *ReconcileSnapshotSchedule) handleIdle(schedule *snapschedulerv1alpha1.SnapshotSchedule,
-	logger logr.Logger) (reconcile.Result, error) {
+func handleIdle(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+	logger logr.Logger, c client.Client) (reconcile.Result, error) {
 	timeNow := time.Now()
 	timeNext := schedule.Status.NextSnapshotTime.Time
 
@@ -165,7 +165,7 @@ func (r *ReconcileSnapshotSchedule) handleIdle(schedule *snapschedulerv1alpha1.S
 		return reconcile.Result{}, err
 	}
 
-	if err := r.expireByTime(schedule, logger); err != nil {
+	if err := expireByTime(schedule, logger, c); err != nil {
 		logger.Error(err, "expireByTime")
 		return reconcile.Result{}, err
 	}
@@ -179,9 +179,9 @@ func (r *ReconcileSnapshotSchedule) handleIdle(schedule *snapschedulerv1alpha1.S
 	return reconcile.Result{RequeueAfter: requeueTime}, nil
 }
 
-func (r *ReconcileSnapshotSchedule) handleSnapshotting(schedule *snapschedulerv1alpha1.SnapshotSchedule,
-	logger logr.Logger) (reconcile.Result, error) {
-	pvcList, err := listPVCsMatchingSelector(logger, r.client, schedule.Namespace, &schedule.Spec.ClaimSelector)
+func handleSnapshotting(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+	logger logr.Logger, c client.Client) (reconcile.Result, error) {
+	pvcList, err := listPVCsMatchingSelector(logger, c, schedule.Namespace, &schedule.Spec.ClaimSelector)
 	if err != nil {
 		logger.Error(err, "unable to get matching PVCs")
 		return reconcile.Result{}, err
@@ -194,14 +194,14 @@ func (r *ReconcileSnapshotSchedule) handleSnapshotting(schedule *snapschedulerv1
 		snapName := snapshotName(pvc.Name, schedule.Name, snapTime)
 		found := &snapv1alpha1.VolumeSnapshot{}
 		logger.Info("looking for snapshot", "name", snapName)
-		err = r.client.Get(context.TODO(), types.NamespacedName{Name: snapName, Namespace: pvc.Namespace}, found)
+		err = c.Get(context.TODO(), types.NamespacedName{Name: snapName, Namespace: pvc.Namespace}, found)
 		if err != nil {
 			if kerrors.IsNotFound(err) {
 				logger.Info("creating a snapshot", "PVC", pvc.Name, "Snapshot", snapName)
 				snap := newSnapForClaim(snapName, pvc, schedule.Name, snapTime,
 					schedule.Spec.SnapshotTemplate.Labels,
 					schedule.Spec.SnapshotTemplate.SnapshotClassName)
-				err = r.client.Create(context.TODO(), &snap)
+				err = c.Create(context.TODO(), &snap)
 			} else {
 				logger.Error(err, "looking for snapshot", "name", snapName)
 				return reconcile.Result{}, err
@@ -305,8 +305,8 @@ func getNextSnapTime(cronspec string, when time.Time) (time.Time, error) {
 	return next, nil
 }
 
-func (r *ReconcileSnapshotSchedule) expireByTime(schedule *snapschedulerv1alpha1.SnapshotSchedule,
-	logger logr.Logger) error {
+func expireByTime(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+	logger logr.Logger, c client.Client) error {
 	if schedule.Spec.Retention.Expires == "" {
 		// No time-based retention configured
 		return nil
@@ -338,7 +338,7 @@ func (r *ReconcileSnapshotSchedule) expireByTime(schedule *snapschedulerv1alpha1
 	}
 
 	snapList := &snapv1alpha1.VolumeSnapshotList{}
-	err = r.client.List(context.TODO(),
+	err = c.List(context.TODO(),
 		&client.ListOptions{LabelSelector: selector, Namespace: schedule.Namespace}, snapList)
 	if err != nil {
 		logger.Error(err, "unable to retrieve list of snapshots")
@@ -349,7 +349,7 @@ func (r *ReconcileSnapshotSchedule) expireByTime(schedule *snapschedulerv1alpha1
 	for _, snap := range snapList.Items {
 		if snap.CreationTimestamp.Time.Before(expiration) {
 			logger.Info("deleting expired snapshot", "name", snap.Name)
-			err = r.client.Delete(context.TODO(), &snap, client.PropagationPolicy(metav1.DeletePropagationBackground))
+			err = c.Delete(context.TODO(), &snap, client.PropagationPolicy(metav1.DeletePropagationBackground))
 			if err != nil {
 				logger.Error(err, "error deleting snapshot", "name", snap.Name)
 				return err
