@@ -40,8 +40,8 @@ const (
 
 var log = logf.Log.WithName("controller_snapshotschedule")
 
-// Add creates a new SnapshotSchedule Controller and adds it to the Manager. The Manager will set fields on the Controller
-// and Start it when the Manager is Started.
+// Add creates a new SnapshotSchedule Controller and adds it to the Manager.
+// The Manager will set fields on the Controller and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
 }
@@ -115,7 +115,8 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 	return result, err
 }
 
-func (r *ReconcileSnapshotSchedule) doReconcile(schedule *snapschedulerv1alpha1.SnapshotSchedule, logger logr.Logger) (reconcile.Result, error) {
+func (r *ReconcileSnapshotSchedule) doReconcile(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+	logger logr.Logger) (reconcile.Result, error) {
 	var err error
 
 	// If necessary, initialize time of next snap based on schedule
@@ -145,7 +146,8 @@ func (r *ReconcileSnapshotSchedule) doReconcile(schedule *snapschedulerv1alpha1.
 	return result, err
 }
 
-func (r *ReconcileSnapshotSchedule) handleIdle(schedule *snapschedulerv1alpha1.SnapshotSchedule, logger logr.Logger) (reconcile.Result, error) {
+func (r *ReconcileSnapshotSchedule) handleIdle(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+	logger logr.Logger) (reconcile.Result, error) {
 	timeNow := time.Now()
 	timeNext := schedule.Status.NextSnapshotTime.Time
 
@@ -171,7 +173,8 @@ func (r *ReconcileSnapshotSchedule) handleIdle(schedule *snapschedulerv1alpha1.S
 	return reconcile.Result{RequeueAfter: requeueTime}, nil
 }
 
-func (r *ReconcileSnapshotSchedule) handleSnapshotting(schedule *snapschedulerv1alpha1.SnapshotSchedule, logger logr.Logger) (reconcile.Result, error) {
+func (r *ReconcileSnapshotSchedule) handleSnapshotting(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+	logger logr.Logger) (reconcile.Result, error) {
 	pvcList, err := listPVCsMatchingSelector(logger, r.client, schedule.Namespace, &schedule.Spec.ClaimSelector)
 	if err != nil {
 		logger.Error(err, "unable to get matching PVCs")
@@ -189,7 +192,9 @@ func (r *ReconcileSnapshotSchedule) handleSnapshotting(schedule *snapschedulerv1
 		if err != nil {
 			if errors.IsNotFound(err) {
 				logger.Info("creating a snapshot", "PVC", pvc.Name, "Snapshot", snapName)
-				snap := newSnapForClaim(snapName, pvc, schedule.Name, snapTime, schedule.Spec.SnapshotTemplate.Labels, schedule.Spec.SnapshotTemplate.SnapshotClassName)
+				snap := newSnapForClaim(snapName, pvc, schedule.Name, snapTime,
+					schedule.Spec.SnapshotTemplate.Labels,
+					schedule.Spec.SnapshotTemplate.SnapshotClassName)
 				err = r.client.Create(context.TODO(), &snap)
 			} else {
 				logger.Error(err, "looking for snapshot", "name", snapName)
@@ -235,7 +240,9 @@ func updateNextSnapTime(snapshotSchedule *snapschedulerv1alpha1.SnapshotSchedule
 }
 
 // newSnapForClaim returns a VolumeSnapshot object based on a PVC
-func newSnapForClaim(snapName string, pvc corev1.PersistentVolumeClaim, scheduleName string, scheduleTime time.Time, labels map[string]string, snapClass *string) snapv1alpha1.VolumeSnapshot {
+func newSnapForClaim(snapName string, pvc corev1.PersistentVolumeClaim,
+	scheduleName string, scheduleTime time.Time,
+	labels map[string]string, snapClass *string) snapv1alpha1.VolumeSnapshot {
 	numLabels := 2
 	if labels != nil {
 		numLabels += len(labels)
@@ -264,7 +271,8 @@ func newSnapForClaim(snapName string, pvc corev1.PersistentVolumeClaim, schedule
 }
 
 // listPVCsMatchingSelector retrieves a list of PVCs that match the given selector
-func listPVCsMatchingSelector(logger logr.Logger, c client.Client, namespace string, ls *metav1.LabelSelector) (*corev1.PersistentVolumeClaimList, error) {
+func listPVCsMatchingSelector(logger logr.Logger, c client.Client,
+	namespace string, ls *metav1.LabelSelector) (*corev1.PersistentVolumeClaimList, error) {
 	selector, err := metav1.LabelSelectorAsSelector(ls)
 	if err != nil {
 		return nil, err
