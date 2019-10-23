@@ -5,10 +5,13 @@ import (
 	"time"
 
 	snapschedulerv1alpha1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	tlogr "github.com/go-logr/logr/testing"
+	snapv1alpha1 "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
@@ -159,5 +162,62 @@ func TestGetExpirationTime(t *testing.T) {
 	}
 	if expiration == nil || expected != *expiration {
 		t.Errorf("incorrect expiration time. expected: %v -- got: %v", expected, expiration)
+	}
+}
+
+func TestFilterExpiredSnaps(t *testing.T) {
+	threshold, _ := time.Parse(timeFormat, "2000-01-01T00:00:00Z")
+	times := []string{
+		"1990-01-01T00:00:00Z", // expired
+		"2010-02-10T10:30:05Z",
+		"1999-12-31T23:59:00Z", // expired
+		"2001-01-01T00:00:00Z",
+		"2005-01-01T00:00:00Z",
+	}
+	expired := 2
+
+	inList := &snapv1alpha1.VolumeSnapshotList{}
+	for _, i := range times {
+		theTime, _ := time.Parse(timeFormat, i)
+		inList.Items = append(inList.Items, snapv1alpha1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				CreationTimestamp: metav1.Time{
+					Time: theTime,
+				},
+			},
+		})
+	}
+
+	outList := filterExpiredSnaps(inList, threshold)
+	if outList == nil {
+		t.Error("unexpected nil output")
+	}
+	if len(outList.Items) != expired {
+		t.Errorf("incorrect snapshots filtered. expected: %v -- got: %v", expired, len(outList.Items))
+	}
+}
+
+func TestSnapshotsFromSchedule(t *testing.T) {
+	l := tlogr.NullLogger{}
+	objects := []runtime.Object{
+		&snapv1alpha1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "default",
+				Labels: map[string]string{
+					"foo": "bar",
+				},
+			},
+		},
+	}
+	scheme := runtime.NewScheme()
+	snapschedulerv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	snapv1alpha1.AddToScheme(scheme)
+	c := fake.NewFakeClientWithScheme(scheme, objects...)
+	s := &snapschedulerv1alpha1.SnapshotSchedule{}
+
+	_, err := snapshotsFromSchedule(s, l, c)
+	if err != nil {
+		t.Errorf("unexpected error. got: %v", err)
 	}
 }
