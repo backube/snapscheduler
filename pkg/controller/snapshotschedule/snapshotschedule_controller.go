@@ -305,6 +305,9 @@ func getNextSnapTime(cronspec string, when time.Time) (time.Time, error) {
 	return next, nil
 }
 
+// getExpirationTime returns the cutoff Time for snapshots created with the
+// referenced schedule. Any snapshot created prior to the returned time should
+// be considered expired.
 func getExpirationTime(schedule *snapschedulerv1alpha1.SnapshotSchedule,
 	now time.Time, logger logr.Logger) (*time.Time, error) {
 	if schedule.Spec.Retention.Expires == "" {
@@ -328,6 +331,44 @@ func getExpirationTime(schedule *snapschedulerv1alpha1.SnapshotSchedule,
 	return &expiration, nil
 }
 
+// filterExpiredSnaps returns the set of expired snapshots from the provided list.
+func filterExpiredSnaps(snaps *snapv1alpha1.VolumeSnapshotList,
+	expiration time.Time) *snapv1alpha1.VolumeSnapshotList {
+	outList := &snapv1alpha1.VolumeSnapshotList{}
+	for _, snap := range snaps.Items {
+		if snap.CreationTimestamp.Time.Before(expiration) {
+			outList.Items = append(outList.Items, snap)
+		}
+	}
+	return outList
+}
+
+// snapshotsFromSchedule returns a list of snapshots that were created by the
+// supplied schedule
+func snapshotsFromSchedule(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+	logger logr.Logger, c client.Client) (*snapv1alpha1.VolumeSnapshotList, error) {
+	labelSelector := &metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			ScheduleKey: schedule.Name,
+		},
+	}
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		logger.Error(err, "unable to create label selector for snapshot expiration")
+		return nil, err
+	}
+
+	snapList := &snapv1alpha1.VolumeSnapshotList{}
+	err = c.List(context.TODO(),
+		&client.ListOptions{LabelSelector: selector, Namespace: schedule.Namespace}, snapList)
+	if err != nil {
+		logger.Error(err, "unable to retrieve list of snapshots")
+		return nil, err
+	}
+
+	return snapList, nil
+}
+
 func expireByTime(schedule *snapschedulerv1alpha1.SnapshotSchedule,
 	logger logr.Logger, c client.Client) error {
 	expiration, err := getExpirationTime(schedule, time.Now(), logger)
@@ -340,38 +381,22 @@ func expireByTime(schedule *snapschedulerv1alpha1.SnapshotSchedule,
 		return nil
 	}
 
-	logger.Info("expiring snapshots", "expiration", expiration.Format(time.RFC3339))
-
-	labelSelector := &metav1.LabelSelector{
-		MatchLabels: map[string]string{
-			ScheduleKey: schedule.Name,
-		},
-	}
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
-	if err != nil {
-		logger.Error(err, "unable to create label selector for snapshot expiration")
-		return err
-	}
-
-	snapList := &snapv1alpha1.VolumeSnapshotList{}
-	err = c.List(context.TODO(),
-		&client.ListOptions{LabelSelector: selector, Namespace: schedule.Namespace}, snapList)
+	snapList, err := snapshotsFromSchedule(schedule, logger, c)
 	if err != nil {
 		logger.Error(err, "unable to retrieve list of snapshots")
 		return err
 	}
 
-	logger.Info("evaluating snapshots", "count", len(snapList.Items))
-	for _, snap := range snapList.Items {
-		if snap.CreationTimestamp.Time.Before(*expiration) {
-			logger.Info("deleting expired snapshot", "name", snap.Name)
-			err = c.Delete(context.TODO(), &snap, client.PropagationPolicy(metav1.DeletePropagationBackground))
-			if err != nil {
-				logger.Error(err, "error deleting snapshot", "name", snap.Name)
-				return err
-			}
+	expiredSnaps := filterExpiredSnaps(snapList, *expiration)
+
+	logger.Info("deleting expired snapshots", "expiration", expiration.Format(time.RFC3339),
+		"total", len(snapList.Items), "expired", len(expiredSnaps.Items))
+	for _, snap := range expiredSnaps.Items {
+		err = c.Delete(context.TODO(), &snap, client.PropagationPolicy(metav1.DeletePropagationBackground))
+		if err != nil {
+			logger.Error(err, "error deleting snapshot", "name", snap.Name)
+			return err
 		}
 	}
-
 	return nil
 }
