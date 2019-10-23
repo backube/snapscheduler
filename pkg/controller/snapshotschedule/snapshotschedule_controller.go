@@ -305,25 +305,41 @@ func getNextSnapTime(cronspec string, when time.Time) (time.Time, error) {
 	return next, nil
 }
 
-func expireByTime(schedule *snapschedulerv1alpha1.SnapshotSchedule,
-	logger logr.Logger, c client.Client) error {
+func getExpirationTime(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+	now time.Time, logger logr.Logger) (*time.Time, error) {
 	if schedule.Spec.Retention.Expires == "" {
 		// No time-based retention configured
-		return nil
+		return nil, nil
 	}
 
 	lifetime, err := time.ParseDuration(schedule.Spec.Retention.Expires)
 	if err != nil {
 		logger.Error(err, "unable to parse spec.retention.expires")
-		return err
+		return nil, err
 	}
+
 	if lifetime < 0 {
 		err := errors.New("duration must be greater than 0")
 		logger.Error(err, "invalid value for spec.retention.expires")
-		return err
+		return nil, err
 	}
 
-	expiration := time.Now().Add(-lifetime).UTC()
+	expiration := now.Add(-lifetime).UTC()
+	return &expiration, nil
+}
+
+func expireByTime(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+	logger logr.Logger, c client.Client) error {
+	expiration, err := getExpirationTime(schedule, time.Now(), logger)
+	if err != nil {
+		logger.Error(err, "unable to determine snapshot expiration time")
+		return err
+	}
+	if expiration == nil {
+		// No time-based retention configured
+		return nil
+	}
+
 	logger.Info("expiring snapshots", "expiration", expiration.Format(time.RFC3339))
 
 	labelSelector := &metav1.LabelSelector{
@@ -347,7 +363,7 @@ func expireByTime(schedule *snapschedulerv1alpha1.SnapshotSchedule,
 
 	logger.Info("evaluating snapshots", "count", len(snapList.Items))
 	for _, snap := range snapList.Items {
-		if snap.CreationTimestamp.Time.Before(expiration) {
+		if snap.CreationTimestamp.Time.Before(*expiration) {
 			logger.Info("deleting expired snapshot", "name", snap.Name)
 			err = c.Delete(context.TODO(), &snap, client.PropagationPolicy(metav1.DeletePropagationBackground))
 			if err != nil {

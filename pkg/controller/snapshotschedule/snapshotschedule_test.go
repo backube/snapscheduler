@@ -6,6 +6,7 @@ import (
 
 	snapschedulerv1alpha1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1alpha1"
 
+	tlogr "github.com/go-logr/logr/testing"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -121,6 +122,42 @@ func TestUpdateNextSnapTime(t *testing.T) {
 	}
 	expected, _ := time.Parse(timeFormat, "2010-07-23T01:02:00Z")
 	if s.Status.NextSnapshotTime.Time != expected {
-		t.Errorf("incorrect next snap time. expected %v -- got: %v", expected, s.Status.NextSnapshotTime)
+		t.Errorf("incorrect next snap time. expected: %v -- got: %v", expected, s.Status.NextSnapshotTime)
+	}
+}
+
+func TestGetExpirationTime(t *testing.T) {
+	l := tlogr.NullLogger{}
+	s := &snapschedulerv1alpha1.SnapshotSchedule{}
+
+	// No retention time set
+	expiration, err := getExpirationTime(s, time.Now(), l)
+	if expiration != nil || err != nil {
+		t.Errorf("empty spec.retention.expires. expected: nil,nil -- got: %v,%v", expiration, err)
+	}
+
+	// Unparsable retention time
+	s.Spec.Retention.Expires = "garbage"
+	_, err = getExpirationTime(s, time.Now(), l)
+	if err == nil {
+		t.Errorf("invalid spec.retention.expires. expected: error -- got: nil")
+	}
+
+	// Negative retention time
+	s.Spec.Retention.Expires = "-10s"
+	_, err = getExpirationTime(s, time.Now(), l)
+	if err == nil {
+		t.Errorf("negative spec.retention.expires. expected: error -- got: nil")
+	}
+
+	s.Spec.Retention.Expires = "1h"
+	theTime, _ := time.Parse(time.RFC3339, "2013-02-01T11:04:05Z")
+	expected := theTime.Add(-1 * time.Hour)
+	expiration, err = getExpirationTime(s, theTime, l)
+	if err != nil {
+		t.Errorf("unexpected error return. expected: nil -- got: %v", err)
+	}
+	if expiration == nil || expected != *expiration {
+		t.Errorf("incorrect expiration time. expected: %v -- got: %v", expected, expiration)
 	}
 }
