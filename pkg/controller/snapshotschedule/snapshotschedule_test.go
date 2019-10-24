@@ -5,6 +5,7 @@ import (
 	"time"
 
 	snapschedulerv1alpha1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	tlogr "github.com/go-logr/logr/testing"
@@ -17,6 +18,13 @@ import (
 const (
 	timeFormat = time.RFC3339
 )
+
+func fakeClient(initialObjects []runtime.Object) client.Client {
+	scheme := runtime.NewScheme()
+	_ = snapschedulerv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	_ = snapv1alpha1.AddToScheme(scheme)
+	return fake.NewFakeClientWithScheme(scheme, initialObjects...)
+}
 
 func TestGetNextSnapTime(t *testing.T) {
 	var tests = []struct {
@@ -205,19 +213,52 @@ func TestSnapshotsFromSchedule(t *testing.T) {
 				Name:      "foo",
 				Namespace: "default",
 				Labels: map[string]string{
-					"foo": "bar",
+					"foo":       "bar",
+					ScheduleKey: "s1",
+				},
+			},
+		},
+		&snapv1alpha1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "bar",
+				Namespace: "default",
+				Labels: map[string]string{
+					"foo":       "bar",
+					ScheduleKey: "s1",
+				},
+			},
+		},
+		&snapv1alpha1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "baz",
+				Namespace: "default",
+				Labels: map[string]string{
+					"foo":       "bar",
+					ScheduleKey: "s2",
 				},
 			},
 		},
 	}
-	scheme := runtime.NewScheme()
-	snapschedulerv1alpha1.SchemeBuilder.AddToScheme(scheme)
-	snapv1alpha1.AddToScheme(scheme)
-	c := fake.NewFakeClientWithScheme(scheme, objects...)
+	c := fakeClient(objects)
 	s := &snapschedulerv1alpha1.SnapshotSchedule{}
 
+	s.Name = "%%!! Invalid !!%%"
 	_, err := snapshotsFromSchedule(s, l, c)
+	if err == nil {
+		t.Errorf("invalid schedule name should have produced an error")
+	}
+
+	s.Name = "s1"
+	snapList, err := snapshotsFromSchedule(s, l, c)
 	if err != nil {
 		t.Errorf("unexpected error. got: %v", err)
+	}
+	if len(snapList.Items) != 2 {
+		t.Errorf("matched wrong number of snapshots. expected: 2 -- got: %v", len(snapList.Items))
+	}
+	for _, snap := range snapList.Items {
+		if snap.Name != "foo" && snap.Name != "bar" {
+			t.Errorf("matched wrong snapshots. found: %v", snap.Name)
+		}
 	}
 }
