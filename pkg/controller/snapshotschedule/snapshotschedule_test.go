@@ -1,6 +1,8 @@
+// nolint funlen  // Long test functions ok
 package snapshotschedule
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -260,5 +262,77 @@ func TestSnapshotsFromSchedule(t *testing.T) {
 		if snap.Name != "foo" && snap.Name != "bar" {
 			t.Errorf("matched wrong snapshots. found: %v", snap.Name)
 		}
+	}
+}
+
+func TestExpireByTime(t *testing.T) {
+	s := &snapschedulerv1alpha1.SnapshotSchedule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "schedule",
+			Namespace: "same",
+		},
+	}
+	s.Spec.Retention.Expires = "24h"
+
+	noexpire := &snapschedulerv1alpha1.SnapshotSchedule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "schedule",
+			Namespace: "same",
+		},
+	}
+
+	now := time.Now()
+
+	data := []struct {
+		namespace   string
+		created     time.Time
+		schedule    string
+		wantExpired bool
+	}{
+		{"same", now.Add(-1 * time.Hour), "schedule", false},
+		{"different", now.Add(-1 * time.Hour), "schedule", false},
+		{"same", now.Add(-48 * time.Hour), "schedule", true},
+		{"different", now.Add(-48 * time.Hour), "schedule", false},
+		{"same", now.Add(-1 * time.Hour), "different", false},
+		{"different", now.Add(-1 * time.Hour), "different", false},
+		{"same", now.Add(-48 * time.Hour), "different", false},
+		{"different", now.Add(-48 * time.Hour), "different", false},
+	}
+	var objects []runtime.Object
+	for _, d := range data {
+		objects = append(objects, &snapv1alpha1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:              d.namespace + "-" + d.schedule + "-" + d.created.Format("200601021504"),
+				Namespace:         d.namespace,
+				CreationTimestamp: metav1.Time{Time: d.created},
+				Labels: map[string]string{
+					"foo":       "bar",
+					ScheduleKey: d.schedule,
+				},
+			},
+		})
+	}
+
+	c := fakeClient(objects)
+	l := tlogr.NullLogger{}
+
+	err := expireByTime(noexpire, l, c)
+	if err != nil {
+		t.Errorf("unexpected error. got: %v", err)
+	}
+	snapList := &snapv1alpha1.VolumeSnapshotList{}
+	_ = c.List(context.TODO(), &client.ListOptions{}, snapList)
+	if len(snapList.Items) != len(data) {
+		t.Errorf("wrong number of snapshots remain. expected: %v -- got: %v", len(data), len(snapList.Items))
+	}
+
+	err = expireByTime(s, l, c)
+	if err != nil {
+		t.Errorf("unexpected error. got: %v", err)
+	}
+	snapList = &snapv1alpha1.VolumeSnapshotList{}
+	_ = c.List(context.TODO(), &client.ListOptions{}, snapList)
+	if len(snapList.Items) != len(data)-1 {
+		t.Errorf("wrong number of snapshots remain. expected: %v -- got: %v", len(data)-1, len(snapList.Items))
 	}
 }
