@@ -2,6 +2,7 @@ package snapshotschedule
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 	snapv1alpha1 "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
 	cron "github.com/robfig/cron/v3"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -89,7 +90,7 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 	instance := &snapschedulerv1alpha1.SnapshotSchedule{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if kerrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Return and don't requeue
 			return reconcile.Result{}, nil
@@ -98,13 +99,13 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 		return reconcile.Result{}, err
 	}
 
-	result, err := r.doReconcile(instance, reqLogger)
+	result, err := doReconcile(instance, reqLogger, r.client)
 
 	// Update result in CR
 	if err != nil {
 		instance.Status.ReconcileResult = err.Error()
 	} else {
-		instance.Status.ReconcileResult = "reconcile ok"
+		instance.Status.ReconcileResult = "ok"
 	}
 
 	// Update instance.Status
@@ -115,8 +116,8 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 	return result, err
 }
 
-func (r *ReconcileSnapshotSchedule) doReconcile(schedule *snapschedulerv1alpha1.SnapshotSchedule,
-	logger logr.Logger) (reconcile.Result, error) {
+func doReconcile(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+	logger logr.Logger, c client.Client) (reconcile.Result, error) {
 	var err error
 
 	// If necessary, initialize time of next snap based on schedule
@@ -138,29 +139,34 @@ func (r *ReconcileSnapshotSchedule) doReconcile(schedule *snapschedulerv1alpha1.
 		result = reconcile.Result{Requeue: true}
 		err = nil
 	} else if schedule.Status.State == snapschedulerv1alpha1.StateIdle {
-		result, err = r.handleIdle(schedule, logger)
+		result, err = handleIdle(schedule, logger, c)
 	} else if schedule.Status.State == snapschedulerv1alpha1.StateSnapshotting {
-		result, err = r.handleSnapshotting(schedule, logger)
+		result, err = handleSnapshotting(schedule, logger, c)
 	}
 
 	return result, err
 }
 
-func (r *ReconcileSnapshotSchedule) handleIdle(schedule *snapschedulerv1alpha1.SnapshotSchedule,
-	logger logr.Logger) (reconcile.Result, error) {
+func handleIdle(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+	logger logr.Logger, c client.Client) (reconcile.Result, error) {
 	timeNow := time.Now()
 	timeNext := schedule.Status.NextSnapshotTime.Time
 
 	if !schedule.Spec.Disabled && timeNow.After(timeNext) {
 		// It's time to take snaps... switch state
 		schedule.Status.State = snapschedulerv1alpha1.StateSnapshotting
-		return reconcile.Result{Requeue: true}, nil
+		return reconcile.Result{}, nil
 	}
 
 	// We always update nextSnapshot in case the schedule changed
 	if err := updateNextSnapTime(schedule, timeNow); err != nil {
 		logger.Error(err, "couldn't update next snap time",
 			"cronspec", schedule.Spec.Schedule)
+		return reconcile.Result{}, err
+	}
+
+	if err := expireByTime(schedule, logger, c); err != nil {
+		logger.Error(err, "expireByTime")
 		return reconcile.Result{}, err
 	}
 
@@ -173,9 +179,9 @@ func (r *ReconcileSnapshotSchedule) handleIdle(schedule *snapschedulerv1alpha1.S
 	return reconcile.Result{RequeueAfter: requeueTime}, nil
 }
 
-func (r *ReconcileSnapshotSchedule) handleSnapshotting(schedule *snapschedulerv1alpha1.SnapshotSchedule,
-	logger logr.Logger) (reconcile.Result, error) {
-	pvcList, err := listPVCsMatchingSelector(logger, r.client, schedule.Namespace, &schedule.Spec.ClaimSelector)
+func handleSnapshotting(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+	logger logr.Logger, c client.Client) (reconcile.Result, error) {
+	pvcList, err := listPVCsMatchingSelector(logger, c, schedule.Namespace, &schedule.Spec.ClaimSelector)
 	if err != nil {
 		logger.Error(err, "unable to get matching PVCs")
 		return reconcile.Result{}, err
@@ -188,14 +194,14 @@ func (r *ReconcileSnapshotSchedule) handleSnapshotting(schedule *snapschedulerv1
 		snapName := snapshotName(pvc.Name, schedule.Name, snapTime)
 		found := &snapv1alpha1.VolumeSnapshot{}
 		logger.Info("looking for snapshot", "name", snapName)
-		err = r.client.Get(context.TODO(), types.NamespacedName{Name: snapName, Namespace: pvc.Namespace}, found)
+		err = c.Get(context.TODO(), types.NamespacedName{Name: snapName, Namespace: pvc.Namespace}, found)
 		if err != nil {
-			if errors.IsNotFound(err) {
+			if kerrors.IsNotFound(err) {
 				logger.Info("creating a snapshot", "PVC", pvc.Name, "Snapshot", snapName)
 				snap := newSnapForClaim(snapName, pvc, schedule.Name, snapTime,
 					schedule.Spec.SnapshotTemplate.Labels,
 					schedule.Spec.SnapshotTemplate.SnapshotClassName)
-				err = r.client.Create(context.TODO(), &snap)
+				err = c.Create(context.TODO(), &snap)
 			} else {
 				logger.Error(err, "looking for snapshot", "name", snapName)
 				return reconcile.Result{}, err
@@ -217,7 +223,8 @@ func (r *ReconcileSnapshotSchedule) handleSnapshotting(schedule *snapschedulerv1
 			"cronspec", schedule.Spec.Schedule)
 		return reconcile.Result{}, err
 	}
-	return reconcile.Result{Requeue: true}, nil
+	// Changing .status will automatically cause requeuing
+	return reconcile.Result{}, nil
 }
 
 func snapshotName(pvcName string, scheduleName string, time time.Time) string {
@@ -296,4 +303,100 @@ func getNextSnapTime(cronspec string, when time.Time) (time.Time, error) {
 
 	next := schedule.Next(when)
 	return next, nil
+}
+
+// getExpirationTime returns the cutoff Time for snapshots created with the
+// referenced schedule. Any snapshot created prior to the returned time should
+// be considered expired.
+func getExpirationTime(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+	now time.Time, logger logr.Logger) (*time.Time, error) {
+	if schedule.Spec.Retention.Expires == "" {
+		// No time-based retention configured
+		return nil, nil
+	}
+
+	lifetime, err := time.ParseDuration(schedule.Spec.Retention.Expires)
+	if err != nil {
+		logger.Error(err, "unable to parse spec.retention.expires")
+		return nil, err
+	}
+
+	if lifetime < 0 {
+		err := errors.New("duration must be greater than 0")
+		logger.Error(err, "invalid value for spec.retention.expires")
+		return nil, err
+	}
+
+	expiration := now.Add(-lifetime).UTC()
+	return &expiration, nil
+}
+
+// filterExpiredSnaps returns the set of expired snapshots from the provided list.
+func filterExpiredSnaps(snaps *snapv1alpha1.VolumeSnapshotList,
+	expiration time.Time) *snapv1alpha1.VolumeSnapshotList {
+	outList := &snapv1alpha1.VolumeSnapshotList{}
+	for _, snap := range snaps.Items {
+		if snap.CreationTimestamp.Time.Before(expiration) {
+			outList.Items = append(outList.Items, snap)
+		}
+	}
+	return outList
+}
+
+// snapshotsFromSchedule returns a list of snapshots that were created by the
+// supplied schedule
+func snapshotsFromSchedule(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+	logger logr.Logger, c client.Client) (*snapv1alpha1.VolumeSnapshotList, error) {
+	labelSelector := &metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			ScheduleKey: schedule.Name,
+		},
+	}
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		logger.Error(err, "unable to create label selector for snapshot expiration")
+		return nil, err
+	}
+
+	snapList := &snapv1alpha1.VolumeSnapshotList{}
+	err = c.List(context.TODO(),
+		&client.ListOptions{LabelSelector: selector, Namespace: schedule.Namespace}, snapList)
+	if err != nil {
+		logger.Error(err, "unable to retrieve list of snapshots")
+		return nil, err
+	}
+
+	return snapList, nil
+}
+
+func expireByTime(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+	logger logr.Logger, c client.Client) error {
+	expiration, err := getExpirationTime(schedule, time.Now(), logger)
+	if err != nil {
+		logger.Error(err, "unable to determine snapshot expiration time")
+		return err
+	}
+	if expiration == nil {
+		// No time-based retention configured
+		return nil
+	}
+
+	snapList, err := snapshotsFromSchedule(schedule, logger, c)
+	if err != nil {
+		logger.Error(err, "unable to retrieve list of snapshots")
+		return err
+	}
+
+	expiredSnaps := filterExpiredSnaps(snapList, *expiration)
+
+	logger.Info("deleting expired snapshots", "expiration", expiration.Format(time.RFC3339),
+		"total", len(snapList.Items), "expired", len(expiredSnaps.Items))
+	for _, snap := range expiredSnaps.Items {
+		err = c.Delete(context.TODO(), &snap, client.PropagationPolicy(metav1.DeletePropagationBackground))
+		if err != nil {
+			logger.Error(err, "error deleting snapshot", "name", snap.Name)
+			return err
+		}
+	}
+	return nil
 }
