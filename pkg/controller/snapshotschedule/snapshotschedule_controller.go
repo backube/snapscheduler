@@ -169,6 +169,10 @@ func handleIdle(schedule *snapschedulerv1alpha1.SnapshotSchedule,
 		return reconcile.Result{}, err
 	}
 
+	if err := expireByCount(schedule, logger, c); err != nil {
+		logger.Error(err, "expireByCount")
+		return reconcile.Result{}, err
+	}
 	// Ensure we requeue in time for the next scheduled snapshot time
 	durTillNext := timeNext.Sub(timeNow)
 	requeueTime := maxRequeueTime

@@ -3,6 +3,7 @@ package snapshotschedule
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 
 	tlogr "github.com/go-logr/logr/testing"
 	snapv1alpha1 "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -218,5 +220,83 @@ func TestExpireByTime(t *testing.T) {
 	_ = c.List(context.TODO(), &client.ListOptions{}, snapList)
 	if len(snapList.Items) != len(data)-1 {
 		t.Errorf("wrong number of snapshots remain. expected: %v -- got: %v", len(data)-1, len(snapList.Items))
+	}
+}
+
+func TestGroupSnapsByPVC(t *testing.T) {
+	data := []struct {
+		snapName string
+		pvcName  string
+	}{
+		// testdata: s/^pvc/snap/ to get start of snap name
+		{"snap1-1", "pvc1"},
+		{"snap2-1", "pvc2"},
+		{"snap1-2", "pvc1"},
+		{"snap2-2", "pvc2"},
+		{"snap3-blah", "pvc3"},
+	}
+	snapList := &snapv1alpha1.VolumeSnapshotList{}
+	for _, d := range data {
+		snapList.Items = append(snapList.Items, snapv1alpha1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: d.snapName,
+			},
+			Spec: snapv1alpha1.VolumeSnapshotSpec{
+				Source: &v1.TypedLocalObjectReference{
+					Name: d.pvcName,
+				},
+			},
+		})
+	}
+
+	groupedSnaps := groupSnapsByPVC(snapList)
+	wantSnaps := len(data)
+	foundSnaps := 0
+	for pvcName, list := range groupedSnaps {
+		wantPrefix := strings.Replace(pvcName, "pvc", "snap", -1)
+		for _, snap := range list.Items {
+			foundSnaps++
+			if !strings.HasPrefix(snap.Name, wantPrefix) {
+				t.Errorf("Improper snapshot grouping. PVC name: %v -- snap name: %v", pvcName, snap.Name)
+			}
+		}
+	}
+	if wantSnaps != foundSnaps {
+		t.Errorf("Total number of grouped snaps is wrong. expected: %v -- got: %v", wantSnaps, foundSnaps)
+	}
+}
+
+func TestSortSnapsByTime(t *testing.T) {
+	now := time.Now()
+	inSnapList := &snapv1alpha1.VolumeSnapshotList{
+		Items: []snapv1alpha1.VolumeSnapshot{
+			snapv1alpha1.VolumeSnapshot{
+				ObjectMeta: metav1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: now.Add(1 * time.Hour)},
+				},
+			},
+			snapv1alpha1.VolumeSnapshot{
+				ObjectMeta: metav1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: now.Add(-1 * time.Hour)},
+				},
+			},
+			snapv1alpha1.VolumeSnapshot{
+				ObjectMeta: metav1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: now},
+				},
+			},
+		},
+	}
+	outSnapList := sortSnapsByTime(inSnapList)
+	if len(outSnapList.Items) != len(inSnapList.Items) {
+		t.Errorf("wrong number of snaps. expected: %v -- got: %v", len(inSnapList.Items), len(outSnapList.Items))
+	}
+	if outSnapList.Items[0].CreationTimestamp.After(outSnapList.Items[1].CreationTimestamp.Time) ||
+		outSnapList.Items[1].CreationTimestamp.After(outSnapList.Items[2].CreationTimestamp.Time) {
+		t.Error("snapshots were not properly sorted.")
+	}
+
+	if sortSnapsByTime(nil) != nil {
+		t.Error("expected nil")
 	}
 }
