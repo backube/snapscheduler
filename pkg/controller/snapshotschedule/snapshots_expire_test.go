@@ -18,6 +18,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+var nullLogger = tlogr.NullLogger{}
+
 func fakeClient(initialObjects []runtime.Object) client.Client {
 	scheme := runtime.NewScheme()
 	_ = snapschedulerv1alpha1.SchemeBuilder.AddToScheme(scheme)
@@ -26,25 +28,24 @@ func fakeClient(initialObjects []runtime.Object) client.Client {
 }
 
 func TestGetExpirationTime(t *testing.T) {
-	l := tlogr.NullLogger{}
 	s := &snapschedulerv1alpha1.SnapshotSchedule{}
 
 	// No retention time set
-	expiration, err := getExpirationTime(s, time.Now(), l)
+	expiration, err := getExpirationTime(s, time.Now(), nullLogger)
 	if expiration != nil || err != nil {
 		t.Errorf("empty spec.retention.expires. expected: nil,nil -- got: %v,%v", expiration, err)
 	}
 
 	// Unparsable retention time
 	s.Spec.Retention.Expires = "garbage"
-	_, err = getExpirationTime(s, time.Now(), l)
+	_, err = getExpirationTime(s, time.Now(), nullLogger)
 	if err == nil {
 		t.Errorf("invalid spec.retention.expires. expected: error -- got: nil")
 	}
 
 	// Negative retention time
 	s.Spec.Retention.Expires = "-10s"
-	_, err = getExpirationTime(s, time.Now(), l)
+	_, err = getExpirationTime(s, time.Now(), nullLogger)
 	if err == nil {
 		t.Errorf("negative spec.retention.expires. expected: error -- got: nil")
 	}
@@ -52,7 +53,7 @@ func TestGetExpirationTime(t *testing.T) {
 	s.Spec.Retention.Expires = "1h"
 	theTime, _ := time.Parse(timeFormat, "2013-02-01T11:04:05Z")
 	expected := theTime.Add(-1 * time.Hour)
-	expiration, err = getExpirationTime(s, theTime, l)
+	expiration, err = getExpirationTime(s, theTime, nullLogger)
 	if err != nil {
 		t.Errorf("unexpected error return. expected: nil -- got: %v", err)
 	}
@@ -94,7 +95,6 @@ func TestFilterExpiredSnaps(t *testing.T) {
 }
 
 func TestSnapshotsFromSchedule(t *testing.T) {
-	l := tlogr.NullLogger{}
 	objects := []runtime.Object{
 		&snapv1alpha1.VolumeSnapshot{
 			ObjectMeta: metav1.ObjectMeta{
@@ -131,13 +131,13 @@ func TestSnapshotsFromSchedule(t *testing.T) {
 	s := &snapschedulerv1alpha1.SnapshotSchedule{}
 
 	s.Name = "%%!! Invalid !!%%"
-	_, err := snapshotsFromSchedule(s, l, c)
+	_, err := snapshotsFromSchedule(s, nullLogger, c)
 	if err == nil {
 		t.Errorf("invalid schedule name should have produced an error")
 	}
 
 	s.Name = "s1"
-	snapList, err := snapshotsFromSchedule(s, l, c)
+	snapList, err := snapshotsFromSchedule(s, nullLogger, c)
 	if err != nil {
 		t.Errorf("unexpected error. got: %v", err)
 	}
@@ -200,9 +200,8 @@ func TestExpireByTime(t *testing.T) {
 	}
 
 	c := fakeClient(objects)
-	l := tlogr.NullLogger{}
 
-	err := expireByTime(noexpire, l, c)
+	err := expireByTime(noexpire, nullLogger, c)
 	if err != nil {
 		t.Errorf("unexpected error. got: %v", err)
 	}
@@ -212,7 +211,7 @@ func TestExpireByTime(t *testing.T) {
 		t.Errorf("wrong number of snapshots remain. expected: %v -- got: %v", len(data), len(snapList.Items))
 	}
 
-	err = expireByTime(s, l, c)
+	err = expireByTime(s, nullLogger, c)
 	if err != nil {
 		t.Errorf("unexpected error. got: %v", err)
 	}
