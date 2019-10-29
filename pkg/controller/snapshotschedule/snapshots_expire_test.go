@@ -14,8 +14,10 @@ import (
 	tlogr "github.com/go-logr/logr/testing"
 	snapv1alpha1 "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
 	v1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 var nullLogger = tlogr.NullLogger{}
@@ -297,5 +299,64 @@ func TestSortSnapsByTime(t *testing.T) {
 
 	if sortSnapsByTime(nil) != nil {
 		t.Error("expected nil")
+	}
+}
+
+func TestDeleteSnapshots(t *testing.T) {
+	snaps := []*snapv1alpha1.VolumeSnapshot{
+		&snapv1alpha1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "default",
+			},
+		},
+		&snapv1alpha1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "bar",
+				Namespace: "default",
+			},
+		},
+		&snapv1alpha1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "baz",
+				Namespace: "whatever",
+			},
+		},
+		&snapv1alpha1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "splat",
+				Namespace: "whatever",
+			},
+		},
+	}
+
+	snapList := &snapv1alpha1.VolumeSnapshotList{}
+	snapList.Items = append(snapList.Items, *snaps[1])
+	snapList.Items = append(snapList.Items, *snaps[2])
+
+	var objects []runtime.Object
+	for _, o := range snaps {
+		objects = append(objects, o)
+	}
+	c := fakeClient(objects)
+
+	err := deleteSnapshots(snapList, nullLogger, c)
+	if err != nil {
+		t.Errorf("unexpected error. err: %v", err)
+	}
+
+	snap := &snapv1alpha1.VolumeSnapshot{}
+	err = c.Get(context.TODO(), types.NamespacedName{Name: "bar", Namespace: "default"}, snap)
+	if err == nil || !kerrors.IsNotFound(err) {
+		t.Errorf("failed looking for deleted snap. expected NotFound -- got: %v", err)
+	}
+	err = c.Get(context.TODO(), types.NamespacedName{Name: "splat", Namespace: "whatever"}, snap)
+	if err != nil {
+		t.Errorf("unexpected error looking for snapshot -- got: %v", err)
+	}
+
+	err = deleteSnapshots(nil, nullLogger, c)
+	if err != nil {
+		t.Errorf("unexpected error -- got: %v", err)
 	}
 }
