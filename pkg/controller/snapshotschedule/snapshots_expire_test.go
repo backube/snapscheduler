@@ -249,6 +249,12 @@ func TestGroupSnapsByPVC(t *testing.T) {
 			},
 		})
 	}
+	// add one w/ nil Source
+	snapList.Items = append(snapList.Items, snapv1alpha1.VolumeSnapshot{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "i-have-nil-source",
+		},
+	})
 
 	groupedSnaps := groupSnapsByPVC(snapList)
 	wantSnaps := len(data)
@@ -358,5 +364,83 @@ func TestDeleteSnapshots(t *testing.T) {
 	err = deleteSnapshots(nil, nullLogger, c)
 	if err != nil {
 		t.Errorf("unexpected error -- got: %v", err)
+	}
+}
+
+func TestExpireByCount(t *testing.T) {
+	s := &snapschedulerv1alpha1.SnapshotSchedule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "schedule",
+			Namespace: "same",
+		},
+	}
+	maxCount := int32(3)
+	s.Spec.Retention.MaxCount = &maxCount
+
+	noexpire := &snapschedulerv1alpha1.SnapshotSchedule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "schedule",
+			Namespace: "same",
+		},
+	}
+
+	now := time.Now()
+
+	data := []struct {
+		namespace string
+		created   time.Time
+		schedule  string
+		pvcName   string
+	}{
+		{"same", now.Add(-1 * time.Hour), "schedule", "pvc1"},
+		{"same", now.Add(-12 * time.Hour), "schedule", "pvc1"},
+		{"same", now.Add(-24 * time.Hour), "schedule", "pvc1"},
+		{"same", now.Add(-48 * time.Hour), "schedule", "pvc1"},      // this one will be deleted
+		{"different", now.Add(-48 * time.Hour), "schedule", "pvc1"}, // diff namespace, no match
+		{"same", now.Add(-2 * time.Hour), "schedule", "different"},  // diff pvc, only 1 of these
+		{"same", now.Add(-1 * time.Hour), "different", "pvc1"},      // diff schedule, no match
+	}
+	var objects []runtime.Object
+	for _, d := range data {
+		objects = append(objects, &snapv1alpha1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:              d.namespace + "-" + d.schedule + "-" + d.created.Format("200601021504"),
+				Namespace:         d.namespace,
+				CreationTimestamp: metav1.Time{Time: d.created},
+				Labels: map[string]string{
+					"foo":       "bar",
+					ScheduleKey: d.schedule,
+				},
+			},
+			Spec: snapv1alpha1.VolumeSnapshotSpec{
+				Source: &v1.TypedLocalObjectReference{
+					Name: d.pvcName,
+				},
+			},
+		})
+	}
+
+	c := fakeClient(objects)
+
+	// no maxCount, none should be pruned
+	err := expireByCount(noexpire, nullLogger, c)
+	if err != nil {
+		t.Errorf("unexpected error. got: %v", err)
+	}
+	snapList := &snapv1alpha1.VolumeSnapshotList{}
+	_ = c.List(context.TODO(), &client.ListOptions{}, snapList)
+	if len(snapList.Items) != len(data) {
+		t.Errorf("wrong number of snapshots remain. expected: %v -- got: %v", len(data), len(snapList.Items))
+	}
+
+	// one should get pruned
+	err = expireByCount(s, nullLogger, c)
+	if err != nil {
+		t.Errorf("unexpected error. got: %v", err)
+	}
+	snapList = &snapv1alpha1.VolumeSnapshotList{}
+	_ = c.List(context.TODO(), &client.ListOptions{}, snapList)
+	if len(snapList.Items) != len(data)-1 {
+		t.Errorf("wrong number of snapshots remain. expected: %v -- got: %v", len(data)-1, len(snapList.Items))
 	}
 }

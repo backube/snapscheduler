@@ -34,7 +34,7 @@ func expireByCount(schedule *snapschedulerv1alpha1.SnapshotSchedule,
 	for _, list := range grouped {
 		list = sortSnapsByTime(list)
 		if len(list.Items) > int(*schedule.Spec.Retention.MaxCount) {
-			list.Items = list.Items[:*schedule.Spec.Retention.MaxCount]
+			list.Items = list.Items[:len(list.Items)-int(*schedule.Spec.Retention.MaxCount)]
 			err := deleteSnapshots(list, logger, c)
 			if err != nil {
 				return err
@@ -157,11 +157,13 @@ func snapshotsFromSchedule(schedule *snapschedulerv1alpha1.SnapshotSchedule,
 func groupSnapsByPVC(snaps *snapv1alpha1.VolumeSnapshotList) map[string]*snapv1alpha1.VolumeSnapshotList {
 	groupedSnaps := make(map[string]*snapv1alpha1.VolumeSnapshotList)
 	for _, snap := range snaps.Items {
-		pvcName := snap.Spec.Source.Name
-		if groupedSnaps[pvcName] == nil {
-			groupedSnaps[pvcName] = &snapv1alpha1.VolumeSnapshotList{}
+		if snap.Spec.Source != nil {
+			pvcName := snap.Spec.Source.Name
+			if groupedSnaps[pvcName] == nil {
+				groupedSnaps[pvcName] = &snapv1alpha1.VolumeSnapshotList{}
+			}
+			groupedSnaps[pvcName].Items = append(groupedSnaps[pvcName].Items, snap)
 		}
-		groupedSnaps[pvcName].Items = append(groupedSnaps[pvcName].Items, snap)
 	}
 
 	return groupedSnaps
