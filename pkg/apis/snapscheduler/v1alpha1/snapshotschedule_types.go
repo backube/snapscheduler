@@ -82,6 +82,11 @@ type SnapshotScheduleStatus struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Schedule",type=string,JSONPath=".spec.schedule"
+// +kubebuilder:printcolumn:name="Max age",type=string,JSONPath=".spec.retention.expires"
+// +kubebuilder:printcolumn:name="Max num",type=integer,JSONPath=".spec.retention.maxCount"
+// +kubebuilder:printcolumn:name="Disabled",type=boolean,JSONPath=".spec.disabled"
+// +kubebuilder:printcolumn:name="Next snapshot",type=string,JSONPath=".status.nextSnapshotTime"
 type SnapshotSchedule struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
