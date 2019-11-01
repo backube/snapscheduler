@@ -13,4 +13,4 @@ spec:
   snapshotTemplate:
     labels:
       mylabel: "myvalue"
-    snapshotClassName: csi-rbd
+    snapshotClassName: openshift-storage-ceph-rbd

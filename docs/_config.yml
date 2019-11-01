@@ -8,6 +8,8 @@
 # you will see them accessed via {{ site.title }}, {{ site.email }}, and so on.
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
+# Full list of site.github metadata:
+# https://jekyll.github.io/github-metadata/site.github/
 
 title: snapscheduler
 description: >-
