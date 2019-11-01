@@ -9,23 +9,15 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - pods
-  - services
-  - services/finalizers
-  - endpoints
-  - persistentvolumeclaims
-  - events
-  - configmaps
-  - secrets
+  - services  # metrics service
+  - services/finalizers  # metrics?
+  - configmaps  # For leader lock
   verbs:
   - '*'
 - apiGroups:
   - apps
   resources:
   - deployments
-  - daemonsets
-  - replicasets
-  - statefulsets
   verbs:
   - '*'
 - apiGroups:
@@ -55,9 +47,25 @@ rules:
   - replicasets
   verbs:
   - get
+# Operator has full control of its CRs
 - apiGroups:
   - snapscheduler.backube
   resources:
   - '*'
   verbs:
   - '*'
+# Operator has full control of snapshots
+- apiGroups:
+  - "snapshot.storage.k8s.io"
+  resources:
+  - volumesnapshots
+  verbs:
+  - '*'
+# Operator must monitor PVCs to snapshot them
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - get
+  - list
