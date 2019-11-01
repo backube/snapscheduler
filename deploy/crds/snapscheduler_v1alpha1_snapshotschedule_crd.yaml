@@ -3,6 +3,22 @@ kind: CustomResourceDefinition
 metadata:
   name: snapshotschedules.snapscheduler.backube
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .spec.schedule
+    name: Schedule
+    type: string
+  - JSONPath: .spec.retention.expires
+    name: Max age
+    type: string
+  - JSONPath: .spec.retention.maxCount
+    name: Max num
+    type: integer
+  - JSONPath: .spec.disabled
+    name: Disabled
+    type: boolean
+  - JSONPath: .status.nextSnapshotTime
+    name: Next snapshot
+    type: string
   group: snapscheduler.backube
   names:
     kind: SnapshotSchedule
