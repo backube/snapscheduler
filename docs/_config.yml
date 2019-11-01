@@ -1,0 +1,44 @@
+---
+# NOTE: this file is *NOT* reloaded automatically when you use
+# 'bundle exec jekyll serve'. If you change this file, please restart the
+# server process.
+#
+# Site settings
+# These are used to personalize your new site. If you look in the HTML files,
+# you will see them accessed via {{ site.title }}, {{ site.email }}, and so on.
+# You can create any custom variable you would like, and they will be accessible
+# in the templates via {{ site.myvariable }}.
+
+title: snapscheduler
+description: >-
+  Take scheduled snapshots of your Kubernetes persistent volumes.
+logo: media/snapscheduler.svg
+show_downloads: false
+# google_analytics: <trackingID>
+
+# Build settings
+# theme: jekyll-theme-leap-day  # https://github.com/pages-themes/leap-day
+theme: jekyll-theme-minimal  # https://github.com/pages-themes/minimal
+# theme: jekyll-theme-slate  # https://github.com/pages-themes/slate
+plugins:
+  - jemoji
+
+# Exclude from processing.
+# The following items will not be processed, by default.
+# Any item listed under the `exclude:` key here will be automatically added to
+# the internal "default list".
+#
+# Excluded items can be processed by explicitly listing the directories or
+# their entries' file path in the `include:` list.
+#
+# exclude:
+#   - .sass-cache/
+#   - .jekyll-cache/
+#   - gemfiles/
+#   - Gemfile
+#   - Gemfile.lock
+#   - node_modules/
+#   - vendor/bundle/
+#   - vendor/cache/
+#   - vendor/gems/
+#   - vendor/ruby/
