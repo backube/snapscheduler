@@ -18,7 +18,10 @@ function run_check() {
     shift
 
     if [ -x "$(command -v "$exe")" ]; then
-        find . -name vendor -prune -o \
+        find . \
+            -path ./vendor -prune -o \
+            -path ./docs/_site -prune -o \
+            -path ./docs/vendor -prune -o \
             -regextype egrep -iregex "$regex" -print0 | \
             xargs -0rt -n1 "$exe" "$@"
     elif [ "$all_required" -eq 0 ]; then
