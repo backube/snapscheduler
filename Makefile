@@ -23,7 +23,7 @@ BUILDDATE := $(shell date -u '+%Y-%m-%dT%H:%M:%S.%NZ')
 VERSION := $(shell git describe --tags --dirty 2> /dev/null || git describe --always --dirty)
 image: generate
 	operator-sdk build $(IMAGE) \
-	  --go-build-args "-ldflags -X=github.com/backube/SnapScheduler/version.Version=$(VERSION)" \
+	  --go-build-args "-ldflags -X=github.com/backube/snapscheduler/version.Version=$(VERSION)" \
 	  --image-build-args "--build-arg builddate=$(BUILDDATE) --build-arg version=$(VERSION)"
 
 .PHONY: install-golangci
