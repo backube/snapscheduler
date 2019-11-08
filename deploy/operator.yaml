@@ -5,7 +5,7 @@ kind: Deployment
 metadata:
   name: snapscheduler
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       name: snapscheduler
@@ -17,7 +17,6 @@ spec:
       serviceAccountName: snapscheduler
       containers:
         - name: snapscheduler
-          # Replace this with the built image name
           image: quay.io/backube/snapscheduler
           command:
             - snapscheduler
@@ -33,3 +32,7 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: "snapscheduler"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 100Mi
