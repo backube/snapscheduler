@@ -14,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -231,6 +232,23 @@ func handleSnapshotting(schedule *snapschedulerv1alpha1.SnapshotSchedule,
 }
 
 func snapshotName(pvcName string, scheduleName string, time time.Time) string {
+	// How much room we have for PVC + schedule names
+	nameBudget := validation.DNS1123SubdomainMaxLength - len(timeYYYYMMDDHHMMSS) - 2
+	// Goal is to minimize the truncation. If one name is short, let the other use the excess
+	if len(pvcName)+len(scheduleName) > nameBudget {
+		pvcOverBudget := len(pvcName) > nameBudget/2
+		scheduleOverBudget := len(scheduleName) > nameBudget/2
+		if pvcOverBudget && !scheduleOverBudget {
+			pvcName = pvcName[0 : nameBudget-len(scheduleName)]
+		}
+		if !pvcOverBudget && scheduleOverBudget {
+			scheduleName = scheduleName[0 : nameBudget-len(pvcName)]
+		}
+		if pvcOverBudget && scheduleOverBudget {
+			scheduleName = scheduleName[0 : nameBudget/2]
+			pvcName = pvcName[0 : nameBudget/2]
+		}
+	}
 	return pvcName + "-" + scheduleName + "-" + time.Format(timeYYYYMMDDHHMMSS)
 }
 
