@@ -14,6 +14,6 @@ coverage:
     changes: false
 
 comment:
-  layout: "header, diff"
+  layout: "diff, files"
   behavior: default
   require_changes: true
