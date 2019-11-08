@@ -2,6 +2,7 @@
 package snapshotschedule
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -123,5 +124,45 @@ func TestUpdateNextSnapTime(t *testing.T) {
 	expected, _ := time.Parse(timeFormat, "2010-07-23T01:02:00Z")
 	if s.Status.NextSnapshotTime.Time != expected {
 		t.Errorf("incorrect next snap time. expected: %v -- got: %v", expected, s.Status.NextSnapshotTime)
+	}
+}
+
+func TestSnapshotName(t *testing.T) {
+	data := []struct {
+		pvcName   string
+		schedName string
+	}{
+		// both are "short"
+		{"foo", "bar"},
+		// PVC name is long
+		{strings.Repeat("x", 250), "blah"},
+		// schedule name is long
+		{"blah", strings.Repeat("y", 250)},
+		// both are long
+		{strings.Repeat("x", 250), strings.Repeat("y", 250)},
+	}
+
+	// https://github.com/kubernetes/community/blob/master/contributors/design-proposals/architecture/identifiers.md
+	maxAllowedNameLength := 253
+
+	for _, d := range data {
+		sName := snapshotName(d.pvcName, d.schedName, time.Now())
+		if len(sName) > maxAllowedNameLength {
+			t.Errorf("snapshot name is too long. max: %v -- got: %v", maxAllowedNameLength, len(sName))
+		}
+		plen := len(d.pvcName)
+		if plen > 10 {
+			plen = 10
+		}
+		if !strings.Contains(sName, d.pvcName[0:plen]) {
+			t.Errorf("Unable to find pvcName in snapshot name. snapshotName: %v -- pvcName: %v", sName, d.pvcName)
+		}
+		slen := len(d.schedName)
+		if slen > 10 {
+			slen = 10
+		}
+		if !strings.Contains(sName, d.schedName[0:slen]) {
+			t.Errorf("Unable to find schedName in snapshot name. snapshotName: %v -- schedName: %v", sName, d.schedName)
+		}
 	}
 }
