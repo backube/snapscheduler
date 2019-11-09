@@ -9,5 +9,5 @@
 snapscheduler provides scheduled snapshotting capabilities for Kubernetes
 CSI-based volumes.
 
-Interested is giving it a try? [Check out the
+Interested in giving it a try? [Check out the
 docs.](https://backube.github.io/snapscheduler/)
