@@ -22,4 +22,4 @@ The documentation can be viewed/edited locally using [jekyll](https://jekyllrb.c
 * Install/update the local gems
   * `bundle update`
 * Serve the docs
-  * `bundle exec jekyll serve -l`
+  * `PAGES_REPO_NWO=backube/snapscheduler bundle exec jekyll serve -l`
