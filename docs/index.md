@@ -17,12 +17,13 @@ that are capable of taking volume snapshots.
 
 User documentation
 
-* [Installing snapscheduler](install.md)
-* [Using the scheduler](usage.md)
+- [Installing snapscheduler](install.md)
+- [Using the scheduler](usage.md)
+  - [Approaches to labeling PVCs](labeling.md)
 
 Developer documentation
 
-* [Building & running snapscheduler locally](development.md)
-* [Editing the documentation](docs.md)
-* [Upgrading the operator-sdk version](sdk-upgrade.md)
-* [Project tracking & roadmap](roadmap.md)
+- [Building & running snapscheduler locally](development.md)
+- [Editing the documentation](docs.md)
+- [Upgrading the operator-sdk version](sdk-upgrade.md)
+- [Project tracking & roadmap](roadmap.md)
