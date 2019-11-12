@@ -27,6 +27,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
@@ -181,5 +182,78 @@ func TestSnapshotName(t *testing.T) {
 		if !strings.Contains(sName, d.schedName[0:slen]) {
 			t.Errorf("Unable to find schedName in snapshot name. snapshotName: %v -- schedName: %v", sName, d.schedName)
 		}
+	}
+}
+
+func TestListPVCSelector(t *testing.T) {
+	objects := []runtime.Object{
+		&corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name-foo",
+				Namespace: "mynamespace",
+				Labels: map[string]string{
+					"mylabel": "foo",
+				},
+			},
+		},
+		&corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name-bar",
+				Namespace: "mynamespace",
+				Labels: map[string]string{
+					"mylabel": "bar",
+				},
+			},
+		},
+		&corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "name-whatever",
+				Namespace: "mynamespace",
+				Labels: map[string]string{
+					"some": "label",
+					"or":   "another",
+				},
+			},
+		},
+	}
+	c := fakeClient(objects)
+	mlFoo := &metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			"mylabel": "foo",
+		},
+	}
+	pvcList, err := listPVCsMatchingSelector(nullLogger, c, "mynamespace", mlFoo)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if len(pvcList.Items) != 1 || pvcList.Items[0].Name != "name-foo" {
+		t.Errorf("failed to find correct PVCs using matchlabels. expected: name-foo -- got: %v", pvcList.Items)
+	}
+
+	meBar := &metav1.LabelSelector{
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			metav1.LabelSelectorRequirement{
+				Key:      "mylabel",
+				Operator: metav1.LabelSelectorOpIn,
+				Values: []string{
+					"bar",
+				},
+			},
+		},
+	}
+	pvcList, err = listPVCsMatchingSelector(nullLogger, c, "mynamespace", meBar)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if len(pvcList.Items) != 1 || pvcList.Items[0].Name != "name-bar" {
+		t.Errorf("failed to find correct PVCs using matchexpressions. expected: name-bar -- got: %v", pvcList.Items)
+	}
+
+	pvcList, err = listPVCsMatchingSelector(nullLogger, c, "mynamespace", &metav1.LabelSelector{})
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if len(pvcList.Items) != len(objects) {
+		t.Errorf("empty selector should have returned all items. expected:%v -- got: %v", len(objects), len(pvcList.Items))
 	}
 }
