@@ -25,9 +25,6 @@ import (
 	"time"
 
 	snapschedulerv1alpha1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1alpha1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
 	tlogr "github.com/go-logr/logr/testing"
 	snapv1alpha1 "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
 	v1 "k8s.io/api/core/v1"
@@ -35,6 +32,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 var nullLogger = tlogr.NullLogger{}
@@ -43,6 +42,7 @@ func fakeClient(initialObjects []runtime.Object) client.Client {
 	scheme := runtime.NewScheme()
 	_ = snapschedulerv1alpha1.SchemeBuilder.AddToScheme(scheme)
 	_ = snapv1alpha1.AddToScheme(scheme)
+	_ = v1.AddToScheme(scheme)
 	return fake.NewFakeClientWithScheme(scheme, initialObjects...)
 }
 
