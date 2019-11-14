@@ -314,7 +314,13 @@ func listPVCsMatchingSelector(logger logr.Logger, c client.Client,
 		return nil, err
 	}
 	pvcList := &corev1.PersistentVolumeClaimList{}
-	err = c.List(context.TODO(), &client.ListOptions{LabelSelector: selector, Namespace: namespace}, pvcList)
+	listOpts := []client.ListOption{
+		client.InNamespace(namespace),
+		client.MatchingLabelsSelector{
+			Selector: selector,
+		},
+	}
+	err = c.List(context.TODO(), pvcList, listOpts...)
 	logger.Info("Created list of matching PVCs", "count", len(pvcList.Items))
 	return pvcList, err
 }

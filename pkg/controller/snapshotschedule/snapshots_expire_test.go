@@ -225,7 +225,8 @@ func TestExpireByTime(t *testing.T) {
 		t.Errorf("unexpected error. got: %v", err)
 	}
 	snapList := &snapv1alpha1.VolumeSnapshotList{}
-	_ = c.List(context.TODO(), &client.ListOptions{}, snapList)
+	listOpts := []client.ListOption{}
+	_ = c.List(context.TODO(), snapList, listOpts...)
 	if len(snapList.Items) != len(data) {
 		t.Errorf("wrong number of snapshots remain. expected: %v -- got: %v", len(data), len(snapList.Items))
 	}
@@ -235,7 +236,8 @@ func TestExpireByTime(t *testing.T) {
 		t.Errorf("unexpected error. got: %v", err)
 	}
 	snapList = &snapv1alpha1.VolumeSnapshotList{}
-	_ = c.List(context.TODO(), &client.ListOptions{}, snapList)
+	listOpts = []client.ListOption{}
+	_ = c.List(context.TODO(), snapList, listOpts...)
 	if len(snapList.Items) != len(data)-1 {
 		t.Errorf("wrong number of snapshots remain. expected: %v -- got: %v", len(data)-1, len(snapList.Items))
 	}
@@ -445,7 +447,8 @@ func TestExpireByCount(t *testing.T) {
 		t.Errorf("unexpected error. got: %v", err)
 	}
 	snapList := &snapv1alpha1.VolumeSnapshotList{}
-	_ = c.List(context.TODO(), &client.ListOptions{}, snapList)
+	listOpts := []client.ListOption{}
+	_ = c.List(context.TODO(), snapList, listOpts...)
 	if len(snapList.Items) != len(data) {
 		t.Errorf("wrong number of snapshots remain. expected: %v -- got: %v", len(data), len(snapList.Items))
 	}
@@ -456,7 +459,8 @@ func TestExpireByCount(t *testing.T) {
 		t.Errorf("unexpected error. got: %v", err)
 	}
 	snapList = &snapv1alpha1.VolumeSnapshotList{}
-	_ = c.List(context.TODO(), &client.ListOptions{}, snapList)
+	listOpts = []client.ListOption{}
+	_ = c.List(context.TODO(), snapList, listOpts...)
 	if len(snapList.Items) != len(data)-1 {
 		t.Errorf("wrong number of snapshots remain. expected: %v -- got: %v", len(data)-1, len(snapList.Items))
 	}

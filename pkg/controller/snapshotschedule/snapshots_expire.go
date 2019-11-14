@@ -159,8 +159,13 @@ func snapshotsFromSchedule(schedule *snapschedulerv1alpha1.SnapshotSchedule,
 	}
 
 	snapList := &snapv1alpha1.VolumeSnapshotList{}
-	err = c.List(context.TODO(),
-		&client.ListOptions{LabelSelector: selector, Namespace: schedule.Namespace}, snapList)
+	listOpts := []client.ListOption{
+		client.InNamespace(schedule.Namespace),
+		client.MatchingLabelsSelector{
+			Selector: selector,
+		},
+	}
+	err = c.List(context.TODO(), snapList, listOpts...)
 	if err != nil {
 		logger.Error(err, "unable to retrieve list of snapshots")
 		return nil, err
