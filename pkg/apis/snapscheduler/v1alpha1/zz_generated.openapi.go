@@ -22,6 +22,7 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotSchedule(ref common.Referenc
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SnapshotSchedule is the Schema for the snapshotschedules API",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -65,10 +66,9 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleSpec(ref common.Refe
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SnapshotScheduleSpec defines the desired state of SnapshotSchedule",
-				Properties:  map[string]spec.Schema{},
+				Type:        []string{"object"},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -77,9 +77,8 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleStatus(ref common.Re
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SnapshotScheduleStatus defines the observed state of SnapshotSchedule",
-				Properties:  map[string]spec.Schema{},
+				Type:        []string{"object"},
 			},
 		},
-		Dependencies: []string{},
 	}
 }

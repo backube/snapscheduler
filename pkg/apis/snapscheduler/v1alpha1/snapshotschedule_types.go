@@ -28,6 +28,7 @@ type SnapshotScheduleStatus struct {
 // SnapshotSchedule is the Schema for the snapshotschedules API
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:path=snapshotschedules,scope=Namespaced
 type SnapshotSchedule struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

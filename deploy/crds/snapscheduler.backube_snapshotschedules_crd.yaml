@@ -14,6 +14,7 @@ spec:
     status: {}
   validation:
     openAPIV3Schema:
+      description: SnapshotSchedule is the Schema for the snapshotschedules API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -28,9 +29,12 @@ spec:
         metadata:
           type: object
         spec:
+          description: SnapshotScheduleSpec defines the desired state of SnapshotSchedule
           type: object
         status:
+          description: SnapshotScheduleStatus defines the observed state of SnapshotSchedule
           type: object
+      type: object
   version: v1alpha1
   versions:
   - name: v1alpha1
