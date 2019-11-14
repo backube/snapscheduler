@@ -81,7 +81,7 @@ type SnapshotScheduleSpec struct {
 	Retention SnapshotRetentionSpec `json:"retention,omitempty"`
 	// Schedule is a Cronspec specifying when snapshots should be taken. See
 	// https://en.wikipedia.org/wiki/Cron for a description of the format.
-	// +kubebuilder:validation:Pattern=^((\d+|\*)(/\d+)?(\s+(\d+|\*)(/\d+)?){4}|@(hourly|daily|weekly|monthly|yearly))$
+	// +kubebuilder:validation:Pattern=`^((\d+|\*)(/\d+)?(\s+(\d+|\*)(/\d+)?){4}|@(hourly|daily|weekly|monthly|yearly))$`
 	Schedule string `json:"schedule,omitempty"`
 	// Disabled determines whether this schedule is currently disabled.
 	// +optional
@@ -127,6 +127,7 @@ const (
 // +kubebuilder:printcolumn:name="Max num",type=integer,JSONPath=".spec.retention.maxCount"
 // +kubebuilder:printcolumn:name="Disabled",type=boolean,JSONPath=".spec.disabled"
 // +kubebuilder:printcolumn:name="Next snapshot",type=string,JSONPath=".status.nextSnapshotTime"
+// +kubebuilder:resource:path=snapshotschedules,scope=Namespaced
 type SnapshotSchedule struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -17,8 +17,6 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+// Place any runtime dependencies as imports in this file.
+// Go modules will be forced to download and install them.
 package tools
-
-import (
-	_ "sigs.k8s.io/controller-tools/pkg/crd/generator"
-)
