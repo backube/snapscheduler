@@ -4,10 +4,10 @@ extends: default
 rules:
   document-start:
     ignore: |
-      deploy/crds/snapscheduler_v1alpha1_snapshotschedule_crd.yaml
+      deploy/crds/snapscheduler.backube_snapshotschedules_crd.yaml
   indentation:
     indent-sequences: consistent
   line-length:
     allow-non-breakable-inline-mappings: true
     ignore: |
-      deploy/crds/snapscheduler_v1alpha1_snapshotschedule_crd.yaml
+      deploy/crds/snapscheduler.backube_snapshotschedules_crd.yaml
