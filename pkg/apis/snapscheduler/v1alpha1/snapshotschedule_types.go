@@ -95,6 +95,7 @@ type SnapshotScheduleSpec struct {
 type SnapshotScheduleStatus struct {
 	// Conditions is a list of conditions related to operator reconciliation.
 	// +optional
+	// +listType=set
 	// +patchMergeKey=type
 	// +patchStrategy=merge
 	Conditions []conditionsv1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`

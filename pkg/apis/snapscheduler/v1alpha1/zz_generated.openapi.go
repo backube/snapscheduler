@@ -146,6 +146,7 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleStatus(ref common.Re
 					"conditions": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
+								"x-kubernetes-list-type":       "set",
 								"x-kubernetes-patch-merge-key": "type",
 								"x-kubernetes-patch-strategy":  "merge",
 							},
