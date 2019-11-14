@@ -25,6 +25,7 @@ import (
 	snapschedulerv1alpha1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1alpha1"
 	"github.com/go-logr/logr"
 	snapv1alpha1 "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
+	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 	cron "github.com/robfig/cron/v3"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -120,9 +121,19 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 
 	// Update result in CR
 	if err != nil {
-		instance.Status.ReconcileResult = err.Error()
+		conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
+			Type:    snapschedulerv1alpha1.ConditionReconciled,
+			Status:  corev1.ConditionFalse,
+			Reason:  snapschedulerv1alpha1.ReconciledReasonError,
+			Message: err.Error(),
+		})
 	} else {
-		instance.Status.ReconcileResult = "ok"
+		conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
+			Type:    snapschedulerv1alpha1.ConditionReconciled,
+			Status:  corev1.ConditionTrue,
+			Reason:  snapschedulerv1alpha1.ReconciledReasonComplete,
+			Message: "Reconcile complete",
+		})
 	}
 
 	// Update instance.Status
@@ -147,32 +158,14 @@ func doReconcile(schedule *snapschedulerv1alpha1.SnapshotSchedule,
 		}
 	}
 
-	// Dispatch based on State
-	logger.Info("reconciling", "state", schedule.Status.State)
-	var result reconcile.Result
-	if schedule.Status.State == snapschedulerv1alpha1.StateUnknown {
-		// Unknown state immediately transitions to Idle
-		schedule.Status.State = snapschedulerv1alpha1.StateIdle
-		result = reconcile.Result{Requeue: true}
-		err = nil
-	} else if schedule.Status.State == snapschedulerv1alpha1.StateIdle {
-		result, err = handleIdle(schedule, logger, c)
-	} else if schedule.Status.State == snapschedulerv1alpha1.StateSnapshotting {
-		result, err = handleSnapshotting(schedule, logger, c)
-	}
-
-	return result, err
-}
-
-func handleIdle(schedule *snapschedulerv1alpha1.SnapshotSchedule,
-	logger logr.Logger, c client.Client) (reconcile.Result, error) {
 	timeNow := time.Now()
 	timeNext := schedule.Status.NextSnapshotTime.Time
-
 	if !schedule.Spec.Disabled && timeNow.After(timeNext) {
-		// It's time to take snaps... switch state
-		schedule.Status.State = snapschedulerv1alpha1.StateSnapshotting
-		return reconcile.Result{}, nil
+		// It's not necessary to check and contitionally return on error since
+		// modifying .status will immediately cause an addl reconcile pass
+		// (which will cover the rest of this reconcile function). We also don't
+		// want to update nextSnapshot until this round is done.
+		return handleSnapshotting(schedule, logger, c)
 	}
 
 	// We always update nextSnapshot in case the schedule changed
@@ -234,8 +227,6 @@ func handleSnapshotting(schedule *snapschedulerv1alpha1.SnapshotSchedule,
 		}
 	}
 
-	// We're done taking snapshots. Transition back to idle
-	schedule.Status.State = snapschedulerv1alpha1.StateIdle
 	// Update lastSnapshot & nextSnapshot times
 	timeNow := metav1.Now()
 	schedule.Status.LastSnapshotTime = &timeNow

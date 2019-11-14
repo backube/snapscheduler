@@ -140,18 +140,23 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleStatus(ref common.Re
 			SchemaProps: spec.SchemaProps{
 				Description: "SnapshotScheduleStatus defines the observed state of SnapshotSchedule",
 				Properties: map[string]spec.Schema{
-					"state": {
-						SchemaProps: spec.SchemaProps{
-							Description: "State is the current reconciliation state of this resource",
-							Type:        []string{"string"},
-							Format:      "",
+					"conditions": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-patch-merge-key": "type",
+								"x-kubernetes-patch-strategy":  "merge",
+							},
 						},
-					},
-					"reconcileResult": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ReconcileResult describes the result of the last reconcile",
-							Type:        []string{"string"},
-							Format:      "",
+							Description: "Conditions is a list of conditions related to operator reconciliation.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/openshift/custom-resource-status/conditions/v1.Condition"),
+									},
+								},
+							},
 						},
 					},
 					"lastSnapshotTime": {
@@ -170,7 +175,7 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleStatus(ref common.Re
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+			"github.com/openshift/custom-resource-status/conditions/v1.Condition", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 
