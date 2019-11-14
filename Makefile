@@ -3,7 +3,7 @@ IMAGE := quay.io/backube/snapscheduler
 # Version of golangci-lint to install (if asked)
 GOLANGCI_VERSION := v1.21.0
 # Version of operator-sdk to install (if asked)
-OPERATOR_SDK_VERSION := v0.10.0
+OPERATOR_SDK_VERSION := v0.12.0
 GOBINDIR := $(shell go env GOPATH)/bin
 
 

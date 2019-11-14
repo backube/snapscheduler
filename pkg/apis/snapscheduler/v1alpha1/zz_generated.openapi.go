@@ -24,6 +24,7 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotRetentionSpec(ref common.Ref
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SnapshotRetentionSpec defines how long snapshots should be kept.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"expires": {
 						SchemaProps: spec.SchemaProps{
@@ -41,7 +42,6 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotRetentionSpec(ref common.Ref
 				},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -50,6 +50,7 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotSchedule(ref common.Referenc
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SnapshotSchedule is the Schema for the snapshotschedules API",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -93,6 +94,7 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleSpec(ref common.Refe
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SnapshotScheduleSpec defines the desired state of SnapshotSchedule",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"claimSelector": {
 						SchemaProps: spec.SchemaProps{
@@ -139,10 +141,12 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotScheduleStatus(ref common.Re
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SnapshotScheduleStatus defines the observed state of SnapshotSchedule",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"conditions": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
+								"x-kubernetes-list-type":       "set",
 								"x-kubernetes-patch-merge-key": "type",
 								"x-kubernetes-patch-strategy":  "merge",
 							},
@@ -184,12 +188,14 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotTemplateSpec(ref common.Refe
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "SnapshotTemplateSpec defines the template for Snapshot objects",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"labels": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Labels is a list of labels that should be added to each Snapshot created by this schedule.",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Type:   []string{"string"},
@@ -209,6 +215,5 @@ func schema_pkg_apis_snapscheduler_v1alpha1_SnapshotTemplateSpec(ref common.Refe
 				},
 			},
 		},
-		Dependencies: []string{},
 	}
 }

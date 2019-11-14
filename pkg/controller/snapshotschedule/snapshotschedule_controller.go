@@ -36,9 +36,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	// "k8s.io/apimachinery/pkg/types"
 	// "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -314,7 +314,13 @@ func listPVCsMatchingSelector(logger logr.Logger, c client.Client,
 		return nil, err
 	}
 	pvcList := &corev1.PersistentVolumeClaimList{}
-	err = c.List(context.TODO(), &client.ListOptions{LabelSelector: selector, Namespace: namespace}, pvcList)
+	listOpts := []client.ListOption{
+		client.InNamespace(namespace),
+		client.MatchingLabelsSelector{
+			Selector: selector,
+		},
+	}
+	err = c.List(context.TODO(), pvcList, listOpts...)
 	logger.Info("Created list of matching PVCs", "count", len(pvcList.Items))
 	return pvcList, err
 }

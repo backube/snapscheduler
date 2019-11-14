@@ -45,6 +45,7 @@ rules:
   - apps
   resources:
   - replicasets
+  - deployments
   verbs:
   - get
 # Operator has full control of its CRs
