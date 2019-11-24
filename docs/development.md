@@ -33,7 +33,7 @@ ensure proper flags are provided.
 
 To build the operator's binary and container, use the `image` target:
 
-```
+```console
 $ make image
 operator-sdk build quay.io/backube/snapscheduler \
   --go-build-args "-ldflags -X=github.com/backube/snapscheduler/version.Version=291d1fd-dirty" \
@@ -51,8 +51,9 @@ The above can then be pushed to a custom repository and tested in-cluster.
 However, during development, it's much quicker to run the operator locally. For
 that, just use the SDK from the top-level directory:
 
-```
-operator-sdk up local --kubeconfig=/path/to/kubeconfig --namespace <ns-to-watch>
+```console
+$ operator-sdk up local --kubeconfig=/path/to/kubeconfig --namespace ""
+...
 ```
 
 ## Modifying the code
@@ -64,7 +65,9 @@ running the operator.
 After making modifications, and before committing code, please ensure both the
 tests and linters pass or the PR will be rejected by the CI system:
 
-```
-make test
-make lint
+```console
+$ make test
+...
+$ make lint
+...
 ```

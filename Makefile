@@ -10,6 +10,11 @@ GOBINDIR := $(shell go env GOPATH)/bin
 .PHONY: all
 all: image
 
+.PHONY: docs
+docs:
+	cd docs && bundle update
+	cd docs && PAGES_REPO_NWO=backube/snapscheduler bundle exec jekyll serve -l
+
 .PHONY: generate
 ZZ_GENERATED := $(shell find pkg -name 'zz_generated*')
 ZZ_GEN_SOURCE := $(shell find pkg -name '*_types.go')
