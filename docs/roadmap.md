@@ -13,16 +13,6 @@ of cards as they progress.
 Longer-term roadmap items may not yet be tracked on the project board. Such
 items include:
 
-### Installation as a cluster-scoped operator
-
-Currently, the scheduler must be installed into each namespace where scheduling
-is desired. This is convenient for users (non-admins) who want to quickly add
-scheduling to their own namespace(s), but it is not convenient for an
-administrator who wishes to make scheduling available cluster-wide.
-
-This would enable installing snapscheduler once for the entire cluster, allowing
-it to watch and act on schedules in all namespaces.
-
 ### Cluster-wide schedule definitions
 
 This would introduce a the notion of a cluster-scoped snapshot schedule that

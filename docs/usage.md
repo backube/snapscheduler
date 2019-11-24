@@ -1,7 +1,7 @@
 # Using the scheduler
 
-The scheduler should be running in the namespace where snapshots are going to be
-created. If not, [go back to installation](install.md).
+The scheduler should already be running in the cluster. If not, [go back to
+installation](install.md).
 
 ## Creating schedules
 
@@ -77,7 +77,7 @@ carry a label of `thislabel: that` in their `metadata.labels` list.
 
 The existing schedules can be viewed by:
 
-```
+```console
 $ kubectl -n myns get snapshotschedules
 NAME     SCHEDULE    MAX AGE   MAX NUM   DISABLED   NEXT SNAPSHOT
 hourly   0 * * * *   168h      10                   2019-11-01T20:00:00Z
@@ -92,7 +92,7 @@ The example, below, shows two snapshots of the PVC named `data` which were taken
 by the `hourly` schedule. The time of these two snapshots is visible in the
 `YYYYMMDDHHMM` format, UTC timezone.
 
-```
+```console
 $ kubectl -n myns get volumesnapshots
 NAME                       AGE
 data-hourly-201911011900   82m

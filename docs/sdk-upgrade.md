@@ -2,7 +2,7 @@
 
 Generate the scaffolding like it is a new project:
 
-```
+```console
 $ mkdir ~/temp
 $ cd temp/
 $ operator-sdk new snapscheduler --repo github.com/backube/snapscheduler
@@ -22,7 +22,7 @@ INFO[0000] Controller generation complete.
 
 In the existing repo, switch to the `sdk-scaffolding` branch:
 
-```
+```console
 $ cd <existing-repo>
 $ git checkout sdk-scaffolding
 Switched to branch 'sdk-scaffolding'
@@ -30,7 +30,7 @@ Switched to branch 'sdk-scaffolding'
 
 Replace the files w/ the newly generated ones:
 
-```
+```console
 $ rm -rf *
 $ cp -a ~/temp/snapscheduler/* .
 $
@@ -38,7 +38,7 @@ $
 
 Commit the result:
 
-```
+```console
 $ git add .
 $ git commit -m 'Upgrade to operator-sdk v0.10.0'
 [sdk-scaffolding 0192b10] Upgrade to operator-sdk v0.10.0
