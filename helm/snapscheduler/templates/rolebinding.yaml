@@ -1,0 +1,14 @@
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ include "snapscheduler.fullname" . }}
+  labels:
+    {{- include "snapscheduler.labels" . | nindent 4 }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "snapscheduler.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: {{ include "snapscheduler.fullname" . }}
+  apiGroup: rbac.authorization.k8s.io
