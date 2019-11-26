@@ -57,7 +57,7 @@ $ kubectl -n <mynampspace> get snapshotschedules
 The schedule for snapshotting is controlled by the
 `snapshotschedules.snapscheduler.backube` Custom Resource. This is a namespaced
 resource that applies only to the PersistentVolumeClaims in its namespace. Below
-are a few simple examples. See the [usage
+is a simple example. See the [usage
 documentation](https://backube.github.io/snapscheduler/usage.html) for full
 details.
 
@@ -76,3 +76,39 @@ spec:
   snapshotTemplate:
     snapshotClassName: csi-ebs
 ```
+
+## Configuration
+
+The following optional parameters in the chart can be configured, either by
+using `--set` on the command line or via a `values.yaml` file. In the general
+case, the defaults should be sufficient.
+
+- `replicaCount`: `2`
+  - The number of replicas of the operator to run. Only one is active at a time
+    via leader election.
+- `image.repository`: `quay.io/backube/snapscheduler`
+  - The location of the operator container image
+- `image.tagOverride`: `""`
+  - If set, it will override the operator container image tag. The default tag
+    is set per chart version and can be viewed (as `appVersion`) via `helm show
+    chart`.
+- `image.pullPolicy`: `IfNotPresent`
+  - Overrides the container image pull policy
+- `imagePullSecrets`: none
+  - May be set if pull secret(s) are needed to retrieve the operator image
+- `serviceAccount.create`: `true`
+  - Whether to create the ServiceAccount for the operator
+- `serviceAccount.name`: none
+  - Override the name of the operator's ServiceAccount
+- `podSecurityContext`: none
+  - Allows setting the security context for the operator pod
+- `securityContext`: none
+  - Allows setting the operator container's security context
+- `resources`: requests for 10m CPU and 100Mi memory; no limits
+  - Allows overriding the resource requests/limits for the operator pod
+- `nodeSelector`: none
+  - Allows applying a node selector to the operator pod
+- `tolerations`: none
+  - Allows applying tolerations to the operator pod
+- `affinity`: none
+  - Allows setting the operator pod's affinity
