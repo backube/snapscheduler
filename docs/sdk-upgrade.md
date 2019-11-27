@@ -10,12 +10,12 @@ INFO[0000] Creating new Go operator 'snapscheduler'.
 ...
 INFO[0003] Project creation complete.
 $ cd snapscheduler/
-$ operator-sdk add api --api-version snapscheduler.backube/v1alpha1 --kind SnapshotSchedule
-INFO[0000] Generating api version snapscheduler.backube/v1alpha1 for kind SnapshotSchedule.
+$ operator-sdk add api --api-version snapscheduler.backube/v1 --kind SnapshotSchedule
+INFO[0000] Generating api version snapscheduler.backube/v1 for kind SnapshotSchedule.
 ...
 INFO[0016] API generation complete.
-$ operator-sdk add controller --api-version snapscheduler.backube/v1alpha1 --kind SnapshotSchedule
-INFO[0000] Generating controller version snapscheduler.backube/v1alpha1 for kind SnapshotSchedule.
+$ operator-sdk add controller --api-version snapscheduler.backube/v1 --kind SnapshotSchedule
+INFO[0000] Generating controller version snapscheduler.backube/v1 for kind SnapshotSchedule.
 ...
 INFO[0000] Controller generation complete.
 ```

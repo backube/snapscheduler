@@ -17,7 +17,7 @@ schedule for that application:
 
 ```yaml
 ---
-apiVersion: snapscheduler.backube/v1alpha1
+apiVersion: snapscheduler.backube/v1
 kind: SnapshotSchedule
 metadata:
   name: myapp
@@ -41,7 +41,7 @@ Schedules can be defined with their own unique label:
 
 ```yaml
 ---
-apiVersion: snapscheduler.backube/v1alpha1
+apiVersion: snapscheduler.backube/v1
 kind: SnapshotSchedule
 metadata:
   name: hourly
@@ -52,7 +52,7 @@ spec:
   schedule: "@hourly"
 
 ---
-apiVersion: snapscheduler.backube/v1alpha1
+apiVersion: snapscheduler.backube/v1
 kind: SnapshotSchedule
 metadata:
   name: daily
@@ -91,7 +91,7 @@ provides:
 
 ```yaml
 ---
-apiVersion: snapscheduler.backube/v1alpha1
+apiVersion: snapscheduler.backube/v1
 kind: SnapshotSchedule
 metadata:
   name: gold-hourly
@@ -104,7 +104,7 @@ spec:
   schedule: "@hourly"
 
 ---
-apiVersion: snapscheduler.backube/v1alpha1
+apiVersion: snapscheduler.backube/v1
 kind: SnapshotSchedule
 metadata:
   name: gold-daily
@@ -117,7 +117,7 @@ spec:
   schedule: "@daily"
 
 ---
-apiVersion: snapscheduler.backube/v1alpha1
+apiVersion: snapscheduler.backube/v1
 kind: SnapshotSchedule
 metadata:
   name: gold-weekly

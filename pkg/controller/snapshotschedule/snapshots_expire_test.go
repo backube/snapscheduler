@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	snapschedulerv1alpha1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1alpha1"
+	snapschedulerv1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1"
 	tlogr "github.com/go-logr/logr/testing"
 	snapv1alpha1 "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
 	v1 "k8s.io/api/core/v1"
@@ -40,14 +40,14 @@ var nullLogger = tlogr.NullLogger{}
 
 func fakeClient(initialObjects []runtime.Object) client.Client {
 	scheme := runtime.NewScheme()
-	_ = snapschedulerv1alpha1.SchemeBuilder.AddToScheme(scheme)
+	_ = snapschedulerv1.SchemeBuilder.AddToScheme(scheme)
 	_ = snapv1alpha1.AddToScheme(scheme)
 	_ = v1.AddToScheme(scheme)
 	return fake.NewFakeClientWithScheme(scheme, initialObjects...)
 }
 
 func TestGetExpirationTime(t *testing.T) {
-	s := &snapschedulerv1alpha1.SnapshotSchedule{}
+	s := &snapschedulerv1.SnapshotSchedule{}
 
 	// No retention time set
 	expiration, err := getExpirationTime(s, time.Now(), nullLogger)
@@ -147,7 +147,7 @@ func TestSnapshotsFromSchedule(t *testing.T) {
 		},
 	}
 	c := fakeClient(objects)
-	s := &snapschedulerv1alpha1.SnapshotSchedule{}
+	s := &snapschedulerv1.SnapshotSchedule{}
 
 	s.Name = "%%!! Invalid !!%%"
 	_, err := snapshotsFromSchedule(s, nullLogger, c)
@@ -171,7 +171,7 @@ func TestSnapshotsFromSchedule(t *testing.T) {
 }
 
 func TestExpireByTime(t *testing.T) {
-	s := &snapschedulerv1alpha1.SnapshotSchedule{
+	s := &snapschedulerv1.SnapshotSchedule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "schedule",
 			Namespace: "same",
@@ -179,7 +179,7 @@ func TestExpireByTime(t *testing.T) {
 	}
 	s.Spec.Retention.Expires = "24h"
 
-	noexpire := &snapschedulerv1alpha1.SnapshotSchedule{
+	noexpire := &snapschedulerv1.SnapshotSchedule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "schedule",
 			Namespace: "same",
@@ -387,7 +387,7 @@ func TestDeleteSnapshots(t *testing.T) {
 }
 
 func TestExpireByCount(t *testing.T) {
-	s := &snapschedulerv1alpha1.SnapshotSchedule{
+	s := &snapschedulerv1.SnapshotSchedule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "schedule",
 			Namespace: "same",
@@ -396,7 +396,7 @@ func TestExpireByCount(t *testing.T) {
 	maxCount := int32(3)
 	s.Spec.Retention.MaxCount = &maxCount
 
-	noexpire := &snapschedulerv1alpha1.SnapshotSchedule{
+	noexpire := &snapschedulerv1.SnapshotSchedule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "schedule",
 			Namespace: "same",

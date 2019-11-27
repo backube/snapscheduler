@@ -17,7 +17,7 @@ Below is an example snapshot schedule to perform hourly snapshots:
 
 ```yaml
 ---
-apiVersion: snapscheduler.backube/v1alpha1
+apiVersion: snapscheduler.backube/v1
 kind: SnapshotSchedule
 metadata:
   # The name for this schedule. It is also used as a part
@@ -49,7 +49,7 @@ spec:
     # The SnapshotClassName to use when creating the
     # snapshots. If omitted, the cluster default will
     # be used.
-    snapshotClassName: openshift-storage-ceph-rbd  # optional
+    snapshotClassName: ebs-csi  # optional
 ```
 
 ### Selecting PVCs

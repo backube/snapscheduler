@@ -31,7 +31,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1alpha1 contains API Schema definitions for the snapscheduler v1alpha1 API group
-// +k8s:deepcopy-gen=package,register
-// +groupName=snapscheduler.backube
-package v1alpha1
+package apis
+
+import (
+	v1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1"
+)
+
+func init() {
+	// Register the types with the Scheme so the components can map objects to GroupVersionKinds and back
+	AddToSchemes = append(AddToSchemes, v1.SchemeBuilder.AddToScheme)
+}

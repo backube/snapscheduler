@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"time"
 
-	snapschedulerv1alpha1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1alpha1"
+	snapschedulerv1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1"
 	"github.com/go-logr/logr"
 	snapv1alpha1 "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
@@ -79,7 +79,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource SnapshotSchedule
-	err = c.Watch(&source.Kind{Type: &snapschedulerv1alpha1.SnapshotSchedule{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &snapschedulerv1.SnapshotSchedule{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 	reqLogger.Info("Reconciling SnapshotSchedule")
 
 	// Fetch the SnapshotSchedule instance
-	instance := &snapschedulerv1alpha1.SnapshotSchedule{}
+	instance := &snapschedulerv1.SnapshotSchedule{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if kerrors.IsNotFound(err) {
@@ -122,16 +122,16 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 	// Update result in CR
 	if err != nil {
 		conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
-			Type:    snapschedulerv1alpha1.ConditionReconciled,
+			Type:    snapschedulerv1.ConditionReconciled,
 			Status:  corev1.ConditionFalse,
-			Reason:  snapschedulerv1alpha1.ReconciledReasonError,
+			Reason:  snapschedulerv1.ReconciledReasonError,
 			Message: err.Error(),
 		})
 	} else {
 		conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
-			Type:    snapschedulerv1alpha1.ConditionReconciled,
+			Type:    snapschedulerv1.ConditionReconciled,
 			Status:  corev1.ConditionTrue,
-			Reason:  snapschedulerv1alpha1.ReconciledReasonComplete,
+			Reason:  snapschedulerv1.ReconciledReasonComplete,
 			Message: "Reconcile complete",
 		})
 	}
@@ -144,7 +144,7 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 	return result, err
 }
 
-func doReconcile(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+func doReconcile(schedule *snapschedulerv1.SnapshotSchedule,
 	logger logr.Logger, c client.Client) (reconcile.Result, error) {
 	var err error
 
@@ -193,7 +193,7 @@ func doReconcile(schedule *snapschedulerv1alpha1.SnapshotSchedule,
 	return reconcile.Result{RequeueAfter: requeueTime}, nil
 }
 
-func handleSnapshotting(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+func handleSnapshotting(schedule *snapschedulerv1.SnapshotSchedule,
 	logger logr.Logger, c client.Client) (reconcile.Result, error) {
 	pvcList, err := listPVCsMatchingSelector(logger, c, schedule.Namespace, &schedule.Spec.ClaimSelector)
 	if err != nil {
@@ -260,7 +260,7 @@ func snapshotName(pvcName string, scheduleName string, time time.Time) string {
 	return pvcName + "-" + scheduleName + "-" + time.Format(timeYYYYMMDDHHMMSS)
 }
 
-func updateNextSnapTime(snapshotSchedule *snapschedulerv1alpha1.SnapshotSchedule, referenceTime time.Time) error {
+func updateNextSnapTime(snapshotSchedule *snapschedulerv1.SnapshotSchedule, referenceTime time.Time) error {
 	if snapshotSchedule == nil {
 		return fmt.Errorf("nil snapshotschedule instance")
 	}
