@@ -23,7 +23,7 @@ import (
 	"sort"
 	"time"
 
-	snapschedulerv1alpha1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1alpha1"
+	snapschedulerv1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1"
 	"github.com/go-logr/logr"
 	snapv1alpha1 "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +34,7 @@ import (
 // a given PVC (created by the supplied schedule) is no more than the
 // schedule's maxCount. This function is the entry point for count-based
 // expiration of snapshots.
-func expireByCount(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+func expireByCount(schedule *snapschedulerv1.SnapshotSchedule,
 	logger logr.Logger, c client.Client) error {
 	if schedule.Spec.Retention.MaxCount == nil {
 		// No count-based retention configured
@@ -65,7 +65,7 @@ func expireByCount(schedule *snapschedulerv1alpha1.SnapshotSchedule,
 // expireByTime deletes snapshots that are older than the retention time in the
 // specified schedule. It only affects snapshots that were created by the provided schedule.
 // This function is the entry point for the time-based expiration of snapshots
-func expireByTime(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+func expireByTime(schedule *snapschedulerv1.SnapshotSchedule,
 	logger logr.Logger, c client.Client) error {
 	expiration, err := getExpirationTime(schedule, time.Now(), logger)
 	if err != nil {
@@ -108,7 +108,7 @@ func deleteSnapshots(snapshots *snapv1alpha1.VolumeSnapshotList, logger logr.Log
 // getExpirationTime returns the cutoff Time for snapshots created with the
 // referenced schedule. Any snapshot created prior to the returned time should
 // be considered expired.
-func getExpirationTime(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+func getExpirationTime(schedule *snapschedulerv1.SnapshotSchedule,
 	now time.Time, logger logr.Logger) (*time.Time, error) {
 	if schedule.Spec.Retention.Expires == "" {
 		// No time-based retention configured
@@ -145,7 +145,7 @@ func filterExpiredSnaps(snaps *snapv1alpha1.VolumeSnapshotList,
 
 // snapshotsFromSchedule returns a list of snapshots that were created by the
 // supplied schedule
-func snapshotsFromSchedule(schedule *snapschedulerv1alpha1.SnapshotSchedule,
+func snapshotsFromSchedule(schedule *snapschedulerv1.SnapshotSchedule,
 	logger logr.Logger, c client.Client) (*snapv1alpha1.VolumeSnapshotList, error) {
 	labelSelector := &metav1.LabelSelector{
 		MatchLabels: map[string]string{

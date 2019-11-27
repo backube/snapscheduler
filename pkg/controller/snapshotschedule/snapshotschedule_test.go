@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	snapschedulerv1alpha1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1alpha1"
+	snapschedulerv1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -127,7 +127,7 @@ func TestUpdateNextSnapTime(t *testing.T) {
 		t.Error("nil schedule should generate an error")
 	}
 
-	s := &snapschedulerv1alpha1.SnapshotSchedule{}
+	s := &snapschedulerv1.SnapshotSchedule{}
 	err = updateNextSnapTime(s, time.Now())
 	if err == nil {
 		t.Error("empty cronspec should generate an error")

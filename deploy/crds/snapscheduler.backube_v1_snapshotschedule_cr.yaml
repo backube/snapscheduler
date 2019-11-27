@@ -1,0 +1,13 @@
+---
+apiVersion: snapscheduler.backube/v1
+kind: SnapshotSchedule
+metadata:
+  name: daily
+spec:
+  retention:
+    maxCount: 7
+  # schedule fields: min hr dom mo dow
+  # also supports @shortcuts
+  schedule: "@daily"
+  snapshotTemplate:
+    snapshotClassName: ebs-csi
