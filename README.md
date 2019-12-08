@@ -18,6 +18,12 @@ docs.](https://backube.github.io/snapscheduler/)
 Have feedback? Got questions? Having trouble? [![Gitter
 chat](https://badges.gitter.im/backube/snapscheduler.png)](https://gitter.im/backube/snapscheduler)
 
+## Helpful links
+
+- [snapscheduler Changelog](CHANGELOG.md)
+- [Contributing guidelines](https://github.com/backube/.github/blob/master/CONTRIBUTING.md)
+- [Organization code of conduct](https://github.com/backube/.github/blob/master/CODE_OF_CONDUCT.md)
+
 ## Licensing
 
 This project is licensed under the [GNU AGPL 3.0 License](LICENSE) with the following
