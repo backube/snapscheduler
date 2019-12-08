@@ -16,7 +16,7 @@ description: >-
   Take scheduled snapshots of your Kubernetes persistent volumes.
 logo: media/snapscheduler.svg
 show_downloads: false
-# google_analytics: <trackingID>
+google_analytics: UA-154117660-1
 
 # Build settings
 # theme: jekyll-theme-leap-day  # https://github.com/pages-themes/leap-day
