@@ -65,7 +65,7 @@ Keep 7 daily snapshots of all PVCs in a given namespace:
 
 ```yaml
 ---
-apiVersion: snapscheduler.backube/v1alpha1
+apiVersion: snapscheduler.backube/v1
 kind: SnapshotSchedule
 metadata:
   name: daily
