@@ -36,6 +36,10 @@ GOLANGCI_URL := https://install.goreleaser.com/github.com/golangci/golangci-lint
 install-golangci:
 	curl -fL ${GOLANGCI_URL} | sh -s -- -b ${GOBINDIR} ${GOLANGCI_VERSION}
 
+.PHONY: install-helm
+install-helm:
+	curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
 .PHONY: install-operator-sdk
 OPERATOR_SDK_URL := https://github.com/operator-framework/operator-sdk/releases/download/$(OPERATOR_SDK_VERSION)/operator-sdk-$(OPERATOR_SDK_VERSION)-x86_64-linux-gnu
 install-operator-sdk:
@@ -45,6 +49,7 @@ install-operator-sdk:
 .PHONY: lint
 lint: generate
 	./.travis/pre-commit.sh
+	helm lint helm/snapscheduler
 	golangci-lint run ./...
 
 .PHONY: test

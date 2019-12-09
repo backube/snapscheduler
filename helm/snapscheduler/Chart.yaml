@@ -1,0 +1,25 @@
+---
+apiVersion: v2
+name: snapscheduler
+# Chart version: Incremented during chart, template, or appVersion changes.
+version: "0.1.0"
+description: >-
+    An operator to take scheduled snapshots of Kubernetes persistent volumes
+type: application
+# Minimum kube version 1.12 since we use CSI snapshots
+kubeVersion: "^1.12"
+keywords:
+  - csi
+  - scheduler
+  - snapshot
+  - storage
+home: https://backube.github.io/snapscheduler/
+sources:
+  - https://github.com/backube/snapscheduler
+maintainers:
+  - name: John Strunk
+    email: jstrunk@redhat.com
+    url: https://github.com/JohnStrunk
+icon: https://raw.githubusercontent.com/backube/snapscheduler/master/docs/media/snapscheduler.svg
+# This is the version number of the application being deployed.
+appVersion: "latest"

@@ -1,0 +1,34 @@
+---
+# replicaCount is the number of replicas of the snapscheduler operator to run.
+replicaCount: 2
+
+image:
+  repository: quay.io/backube/snapscheduler
+  tagOverride: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # The name of the service account to use. If not set and create is true, a
+  # name is generated using the fullname template
+  name:
+
+podSecurityContext: {}
+
+securityContext: {}
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 100Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

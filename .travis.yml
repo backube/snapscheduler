@@ -32,6 +32,7 @@ jobs:
       install:
         - travis_retry gem install asciidoctor mdl
         - travis_retry pip install --user yamllint
+        - travis_retry make install-helm
         - travis_retry make install-golangci
         - travis_retry make install-operator-sdk
       script:
