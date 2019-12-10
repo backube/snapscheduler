@@ -8,6 +8,8 @@ Card](https://goreportcard.com/badge/github.com/backube/snapscheduler)](https://
 [![Docker Repository on
 Quay](https://quay.io/repository/backube/snapscheduler/status "Docker Repository
 on Quay")](https://quay.io/repository/backube/snapscheduler)
+[![FOSSA
+Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fbackube%2Fsnapscheduler.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fbackube%2Fsnapscheduler?ref=badge_shield)
 
 snapscheduler provides scheduled snapshotting capabilities for Kubernetes
 CSI-based volumes.
