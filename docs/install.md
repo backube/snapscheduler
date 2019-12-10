@@ -5,6 +5,44 @@ operator is cluster-scoped, but its resources are namespaced. This means, a
 single instance of teh operator will permit snapshot scheduling for the entire
 cluster. However, the snapshot schedules are unique per-namespace.
 
+## Installation via Helm v3
+
+There is a [Helm](https://helm.sh) chart available to install the snapscheduler
+operator. For production deployments, this is the recommended method of
+deployment.
+
+First, add the backube chart repository to your list of repos in Helm:
+
+```console
+$ helm repo add backube https://backube.github.io/helm-charts/
+"backube" has been added to your repositories
+```
+
+Then, install the operator's chart:
+
+```console
+$ kubectl create namespace backube-snapscheduler
+namespace/backube-snapscheduler created
+
+$ helm install -n backube-snapscheduler snapscheduler backube/snapscheduler
+NAME: snapscheduler
+LAST DEPLOYED: Tue Dec 10 09:32:26 2019
+NAMESPACE: backube-snapscheduler
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+Thank you for installing snapscheduler!
+
+The snapscheduler operator is now installed in the backube-snapscheduler
+namespace, and snapshotschedules should be enabled cluster-wide.
+
+See https://backube.github.io/snapscheduler/usage.html to get started.
+
+Schedules can be viewed via:
+$ kubectl -n <mynampspace> get snapshotschedules
+```
+
 ## Manual installation
 
 Manual installation consists of several steps:
