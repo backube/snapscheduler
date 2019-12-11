@@ -2,7 +2,7 @@
 apiVersion: v2
 name: snapscheduler
 # Chart version: Incremented during chart, template, or appVersion changes.
-version: "1.0.1"
+version: "1.0.2"
 description: >-
     An operator to take scheduled snapshots of Kubernetes persistent volumes
 type: application
