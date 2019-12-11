@@ -2,7 +2,7 @@
 
 This page provides instructions to deploy the snapscheduler operator. The
 operator is cluster-scoped, but its resources are namespaced. This means, a
-single instance of teh operator will permit snapshot scheduling for the entire
+single instance of the operator will permit snapshot scheduling for the entire
 cluster. However, the snapshot schedules are unique per-namespace.
 
 ## Installation via Helm v3

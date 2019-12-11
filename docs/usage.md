@@ -1,13 +1,14 @@
 # Using the scheduler
 
-The scheduler should already be running in the cluster. If not, [go back to
-installation](install.md).
+The scheduler should already be running in the cluster. If not, go back to
+[installation](install.md).
 
 ## Creating schedules
 
 A snapshot schedule defines:
 
-* A cron-like schedule for taking snapshots
+* A [cron-like schedule](https://en.wikipedia.org/wiki/Cron#Overview) for taking
+  snapshots
 * The set of PVCs that will be selected to snapshot
 * The retention policy for the snapshots
 
@@ -51,6 +52,15 @@ spec:
     # be used.
     snapshotClassName: ebs-csi  # optional
 ```
+
+### Snapshot retention
+
+The `spec.retention` field permits specifying how long a snapshot should be
+retained. The retention can be specified either as a duration or as a maximum
+number of snapshots (per PVC) to keep. If both are specified, the snapshot will
+be deleted according to the more restrictive of the two. For example, the hourly
+schedule shown, above, will keep a maximum of 10 snapshots since that is more
+restrictive than 168 hours since new snapshots are taken hourly.
 
 ### Selecting PVCs
 
