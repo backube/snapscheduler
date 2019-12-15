@@ -43,12 +43,12 @@ install-helm:
 .PHONY: install-operator-sdk
 OPERATOR_SDK_URL := https://github.com/operator-framework/operator-sdk/releases/download/$(OPERATOR_SDK_VERSION)/operator-sdk-$(OPERATOR_SDK_VERSION)-x86_64-linux-gnu
 install-operator-sdk:
+	mkdir -p ${GOBINDIR}
 	curl -fL "${OPERATOR_SDK_URL}" > "${GOBINDIR}/operator-sdk"
 	chmod a+x "${GOBINDIR}/operator-sdk"
 
 .PHONY: lint
 lint: generate
-	./.travis/pre-commit.sh
 	helm lint helm/snapscheduler
 	golangci-lint run ./...
 

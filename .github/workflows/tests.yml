@@ -1,0 +1,268 @@
+---
+# yamllint disable rule:line-length
+
+name: Tests
+on:  # yamllint disable-line rule:truthy
+  push:
+  pull_request:
+  schedule:
+    - cron: "15 6 * * 1"  # 6:15 every Monday
+
+env:
+  GO_VERSION: "1.13"
+  HELM_VERSION: "3.0.2"
+  KIND_VERSION: "0.6.1"
+  OPERATOR_SDK_VERSION: "0.12.0"
+  GOLANGCI_VERSION: "1.21.0"
+  GO111MODULE: "on"
+  IMAGE: "quay.io/backube/snapscheduler"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v1
+
+      - name: Install prereqs
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python-pip ruby
+          sudo gem install asciidoctor mdl
+          sudo pip install yamllint
+
+      - name: Run linters
+        run: ./.travis/pre-commit.sh --require-all
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v1
+
+      - name: Install Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Install Helm
+        run: |
+          curl -fL 'https://raw.githubusercontent.com/helm/helm/master/scripts/get' | bash -s -- --version v${HELM_VERSION}
+          helm version
+          helm version | grep -q "${HELM_VERSION}"
+
+      - name: Install GolangCI-Lint
+        run: |
+          curl -fL 'https://install.goreleaser.com/github.com/golangci/golangci-lint.sh' | sudo sh -s -- -b /usr/local/bin "v${GOLANGCI_VERSION}"
+          golangci-lint version
+          golangci-lint version |& grep -q "${GOLANGCI_VERSION}"
+
+      - name: Install operator-sdk
+        run: |
+          curl -fL -o /tmp/operator-sdk "https://github.com/operator-framework/operator-sdk/releases/download/v${OPERATOR_SDK_VERSION}/operator-sdk-v${OPERATOR_SDK_VERSION}-x86_64-linux-gnu"
+          sudo install /tmp/operator-sdk /usr/local/bin && rm -f /tmp/operator-sdk
+          operator-sdk version
+          operator-sdk version | grep -q "${OPERATOR_SDK_VERSION}"
+
+      - name: Download modules
+        run: go mod download
+
+      - name: Lint
+        run: make lint
+
+      - name: Build operator container
+        run: make image
+
+      - name: Export container image
+        run: docker save -o /tmp/image.tar ${IMAGE}
+
+      - name: Save container as artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: container
+          path: /tmp/image.tar
+
+      - name: Calculate test coverage
+        run: make coverage.txt
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: coverage.txt
+          yml: .codecov.yml
+
+  e2e:
+    name: End-to-end
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # There must be kindest/node images for these versions
+        # See: https://hub.docker.com/r/kindest/node/tags?page=1&ordering=name
+        KUBERNETES_VERSIONS: ["1.14.9", "1.15.6", "1.16.3"]
+
+    env:
+      KUBECONFIG: /tmp/kubeconfig
+      KUBERNETES_VERSION: ${{ matrix.KUBERNETES_VERSIONS }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v1
+
+      - name: Install Helm
+        run: |
+          curl -fL 'https://raw.githubusercontent.com/helm/helm/master/scripts/get' | bash -s -- --version v${HELM_VERSION}
+          helm version
+          helm version | grep -q "${HELM_VERSION}"
+
+      - name: Install kubectl
+        run: |
+          curl -LO "https://storage.googleapis.com/kubernetes-release/release/v${KUBERNETES_VERSION}/bin/linux/amd64/kubectl"
+          sudo install ./kubectl /usr/local/bin/
+          kubectl version --short --client
+          kubectl version --short --client | grep -q ${KUBERNETES_VERSION}
+
+      - name: Install kind
+        run: |
+          curl -L -o kind https://github.com/kubernetes-sigs/kind/releases/download/v${KIND_VERSION}/kind-linux-amd64
+          sudo install ./kind /usr/local/bin && rm kind
+          kind version
+          kind version | grep -q ${KIND_VERSION}
+
+      - name: Create Kubernetes cluster
+        run: |
+          kind create cluster --image "kindest/node:v${KUBERNETES_VERSION}"
+          kubectl version
+          kubectl get nodes
+
+      - name: Load container artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: container
+          path: /tmp
+
+      - name: Import container image
+        run: |
+          docker load -i /tmp/image.tar
+          docker inspect ${IMAGE}
+
+      - name: Insert operator image into cluster
+        run: kind load docker-image "${IMAGE}"
+
+      - name: Install CSI snapshot controller & CRDs
+        run: |
+          # Determine kube minor version
+          [[ "${KUBERNETES_VERSION}" =~ ^[0-9]+\.([0-9]+) ]] && KUBE_MINOR="${BASH_REMATCH[1]}" || exit 1
+          # Nothing to do for kube < 1.17
+          [[ ${KUBE_MINOR} -lt 17 ]] && exit 0 || true
+          # Starting w/ Kube 1.17, the CSI snapshot CRDs & controller must be added manually
+          SNAPSHOTTER_TAG="v2.0.0"
+          SNAPSHOTTER_TAG="master"
+          curl -Lf https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_TAG}/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml | kubectl create -f -
+          curl -Lf https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_TAG}/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml | kubectl create -f -
+          curl -Lf https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_TAG}/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml | kubectl create -f -
+          curl -Lf https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_TAG}/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml | kubectl create -f -
+          curl -Lf https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_TAG}/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml | kubectl create -f -
+
+      - name: Install hostpath csi driver
+        run: |
+          git clone https://github.com/kubernetes-csi/csi-driver-host-path.git /tmp/hostpath-driver
+          cd /tmp/hostpath-driver
+          export MAJOR_MINOR=$(echo $KUBERNETES_VERSION | sed -nre 's/^([[:digit:]]+\.[[:digit:]]+).*/\1/p')
+          "./deploy/kubernetes-${MAJOR_MINOR}/deploy-hostpath.sh"
+
+      - name: Start operator
+        run: |
+          kubectl create ns backube-snapscheduler
+          helm install -n backube-snapscheduler --set image.tagOverride=latest snapscheduler ./helm/snapscheduler
+
+      - name: Verify snapscheduler is running
+        run: kubectl -n backube-snapscheduler wait --for condition=Available --timeout 60s deploy/snapscheduler
+
+      - name: Verify snapshot scheduling
+        run: |
+          cat - <<PVC | kubectl create -f -
+          ---
+          kind: PersistentVolumeClaim
+          apiVersion: v1
+          metadata:
+            name: pvc
+          spec:
+            storageClassName: standard
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 1Gi
+          PVC
+          cat - <<SCHED | kubectl create -f -
+          ---
+          apiVersion: snapscheduler.backube/v1
+          kind: SnapshotSchedule
+          metadata:
+            name: minute
+          spec:
+            retention:
+              maxCount: 2
+            schedule: "* * * * *"
+            snapshotTemplate:
+              snapshotClassName: csi-hostpath-snapclass
+          SCHED
+          DEADLINE=$(( $SECONDS + 90 ))
+          while [[ $(kubectl get volumesnapshots 2> /dev/null | wc -l) -lt 1 ]]; do
+            echo "Waiting for snapshots..."
+            [[ $SECONDS -lt $DEADLINE ]] || ( echo "Timeout waiting. No snapshots were created." && exit 1 )
+            sleep 10
+          done
+
+  push:
+    name: Push container to registry
+    needs: [build, e2e]
+    if: >
+      (github.event_name == 'push' || github.event_name == 'schedule') &&
+      (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Load container artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: container
+          path: /tmp
+
+      - name: Import container image
+        run: |
+          docker load -i /tmp/image.tar
+          docker inspect ${IMAGE}
+
+      - name: Login to registry
+        # If the registry server is specified in the image name, we use that.
+        # If the server isn't in the image name, default to docker.io
+        run: |
+          [[ "${IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="docker.io"
+          echo "Attempting docker login to: ${REGISTRY}"
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin ${REGISTRY}
+
+      - name: Push to registry (latest)
+        if: >
+          (github.event_name == 'push' || github.event_name == 'schedule') &&
+          github.ref == 'refs/heads/master'
+        run: |
+          docker push "${IMAGE}"
+
+      - name: Push to registry (version tag)
+        if: >
+          (github.event_name == 'push' || github.event_name == 'schedule') &&
+          startsWith(github.ref, 'refs/tags/v')
+        run: |
+          [[ "${{ github.ref }}" =~ ^refs/tags/v([0-9]+\..*) ]] || exit 0
+          TAG="${BASH_REMATCH[1]}"
+          echo "Pushing to $TAG"
+          docker tag "${IMAGE}" "${IMAGE}:${TAG}"
+          docker push "${IMAGE}:${TAG}"
