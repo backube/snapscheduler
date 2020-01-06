@@ -25,7 +25,7 @@ generate: $(ZZ_GENERATED)
 
 .PHONY: image
 BUILDDATE := $(shell date -u '+%Y-%m-%dT%H:%M:%S.%NZ')
-VERSION := $(shell git describe --tags --dirty 2> /dev/null || git describe --always --dirty)
+VERSION := $(shell git describe --tags --dirty --match 'v*' 2> /dev/null || git describe --always --dirty)
 image: generate
 	operator-sdk build $(IMAGE) \
 	  --go-build-args "-ldflags -X=github.com/backube/snapscheduler/version.Version=$(VERSION)" \
