@@ -1,5 +1,7 @@
 # SnapScheduler
 
+![Build
+Status](https://github.com/backube/snapscheduler/workflows/Tests/badge.svg)
 [![Build
 Status](https://travis-ci.com/backube/snapscheduler.svg?branch=master)](https://travis-ci.com/backube/snapscheduler)
 [![Go Report
@@ -7,8 +9,7 @@ Card](https://goreportcard.com/badge/github.com/backube/snapscheduler)](https://
 [![codecov](https://codecov.io/gh/backube/snapscheduler/branch/master/graph/badge.svg)](https://codecov.io/gh/backube/snapscheduler)
 [![Docker Repository on
 Quay](https://quay.io/repository/backube/snapscheduler/status "Docker Repository
-on Quay")](https://quay.io/repository/backube/snapscheduler)
-[![FOSSA
+on Quay")](https://quay.io/repository/backube/snapscheduler) [![FOSSA
 Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fbackube%2Fsnapscheduler.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fbackube%2Fsnapscheduler?ref=badge_shield)
 
 snapscheduler provides scheduled snapshotting capabilities for Kubernetes
