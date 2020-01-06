@@ -25,7 +25,7 @@ generate: $(ZZ_GENERATED)
 
 .PHONY: image
 BUILDDATE := $(shell date -u '+%Y-%m-%dT%H:%M:%S.%NZ')
-VERSION := $(shell git describe --tags --dirty 2> /dev/null || git describe --always --dirty)
+VERSION := $(shell git describe --tags --dirty --match 'v*' 2> /dev/null || git describe --always --dirty)
 image: generate
 	operator-sdk build $(IMAGE) \
 	  --go-build-args "-ldflags -X=github.com/backube/snapscheduler/version.Version=$(VERSION)" \
@@ -43,12 +43,12 @@ install-helm:
 .PHONY: install-operator-sdk
 OPERATOR_SDK_URL := https://github.com/operator-framework/operator-sdk/releases/download/$(OPERATOR_SDK_VERSION)/operator-sdk-$(OPERATOR_SDK_VERSION)-x86_64-linux-gnu
 install-operator-sdk:
+	mkdir -p ${GOBINDIR}
 	curl -fL "${OPERATOR_SDK_URL}" > "${GOBINDIR}/operator-sdk"
 	chmod a+x "${GOBINDIR}/operator-sdk"
 
 .PHONY: lint
 lint: generate
-	./.travis/pre-commit.sh
 	helm lint helm/snapscheduler
 	golangci-lint run ./...
 
