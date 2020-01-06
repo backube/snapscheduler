@@ -34,7 +34,7 @@ jobs:
           sudo pip install yamllint
 
       - name: Run linters
-        run: ./.travis/pre-commit.sh --require-all
+        run: ./.ci-scripts/pre-commit.sh --require-all
 
   build:
     name: Build
