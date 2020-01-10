@@ -105,7 +105,7 @@ jobs:
       matrix:
         # There must be kindest/node images for these versions
         # See: https://hub.docker.com/r/kindest/node/tags?page=1&ordering=name
-        KUBERNETES_VERSIONS: ["1.14.9", "1.15.6", "1.16.3", "1.17.0"]
+        KUBERNETES_VERSIONS: ["1.15.6", "1.16.3", "1.17.0"]
 
     env:
       KUBECONFIG: /tmp/kubeconfig
