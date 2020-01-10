@@ -25,7 +25,6 @@ import (
 
 	snapschedulerv1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1"
 	"github.com/go-logr/logr"
-	snapv1alpha1 "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -50,8 +49,8 @@ func expireByCount(schedule *snapschedulerv1.SnapshotSchedule,
 	grouped := groupSnapsByPVC(snapList)
 	for _, list := range grouped {
 		list = sortSnapsByTime(list)
-		if len(list.Items) > int(*schedule.Spec.Retention.MaxCount) {
-			list.Items = list.Items[:len(list.Items)-int(*schedule.Spec.Retention.MaxCount)]
+		if len(list) > int(*schedule.Spec.Retention.MaxCount) {
+			list = list[:len(list)-int(*schedule.Spec.Retention.MaxCount)]
 			err := deleteSnapshots(list, logger, c)
 			if err != nil {
 				return err
@@ -86,19 +85,16 @@ func expireByTime(schedule *snapschedulerv1.SnapshotSchedule,
 	expiredSnaps := filterExpiredSnaps(snapList, *expiration)
 
 	logger.Info("deleting expired snapshots", "expiration", expiration.Format(time.RFC3339),
-		"total", len(snapList.Items), "expired", len(expiredSnaps.Items))
+		"total", len(snapList), "expired", len(expiredSnaps))
 	err = deleteSnapshots(expiredSnaps, logger, c)
 	return err
 }
 
-func deleteSnapshots(snapshots *snapv1alpha1.VolumeSnapshotList, logger logr.Logger, c client.Client) error {
-	if snapshots == nil {
-		return nil
-	}
-	for _, snap := range snapshots.Items {
-		err := c.Delete(context.TODO(), &snap, client.PropagationPolicy(metav1.DeletePropagationBackground))
+func deleteSnapshots(snapshots []MultiversionSnapshot, logger logr.Logger, c client.Client) error {
+	for _, snap := range snapshots {
+		err := snap.Delete(context.TODO(), c, client.PropagationPolicy(metav1.DeletePropagationBackground))
 		if err != nil {
-			logger.Error(err, "error deleting snapshot", "name", snap.Name)
+			logger.Error(err, "error deleting snapshot", "name", snap.ObjectMeta().Name)
 			return err
 		}
 	}
@@ -132,12 +128,12 @@ func getExpirationTime(schedule *snapschedulerv1.SnapshotSchedule,
 }
 
 // filterExpiredSnaps returns the set of expired snapshots from the provided list.
-func filterExpiredSnaps(snaps *snapv1alpha1.VolumeSnapshotList,
-	expiration time.Time) *snapv1alpha1.VolumeSnapshotList {
-	outList := &snapv1alpha1.VolumeSnapshotList{}
-	for _, snap := range snaps.Items {
-		if snap.CreationTimestamp.Time.Before(expiration) {
-			outList.Items = append(outList.Items, snap)
+func filterExpiredSnaps(snaps []MultiversionSnapshot,
+	expiration time.Time) []MultiversionSnapshot {
+	outList := make([]MultiversionSnapshot, 0)
+	for _, snap := range snaps {
+		if snap.ObjectMeta().CreationTimestamp.Time.Before(expiration) {
+			outList = append(outList, snap)
 		}
 	}
 	return outList
@@ -146,7 +142,7 @@ func filterExpiredSnaps(snaps *snapv1alpha1.VolumeSnapshotList,
 // snapshotsFromSchedule returns a list of snapshots that were created by the
 // supplied schedule
 func snapshotsFromSchedule(schedule *snapschedulerv1.SnapshotSchedule,
-	logger logr.Logger, c client.Client) (*snapv1alpha1.VolumeSnapshotList, error) {
+	logger logr.Logger, c client.Client) ([]MultiversionSnapshot, error) {
 	labelSelector := &metav1.LabelSelector{
 		MatchLabels: map[string]string{
 			ScheduleKey: schedule.Name,
@@ -158,14 +154,13 @@ func snapshotsFromSchedule(schedule *snapschedulerv1.SnapshotSchedule,
 		return nil, err
 	}
 
-	snapList := &snapv1alpha1.VolumeSnapshotList{}
 	listOpts := []client.ListOption{
 		client.InNamespace(schedule.Namespace),
 		client.MatchingLabelsSelector{
 			Selector: selector,
 		},
 	}
-	err = c.List(context.TODO(), snapList, listOpts...)
+	snapList, err := ListMVSnapshot(context.TODO(), c, listOpts...)
 	if err != nil {
 		logger.Error(err, "unable to retrieve list of snapshots")
 		return nil, err
@@ -176,15 +171,15 @@ func snapshotsFromSchedule(schedule *snapschedulerv1.SnapshotSchedule,
 
 // groupSnapsByPVC takes a list of snapshots and groups them by the PVC they
 // were created from
-func groupSnapsByPVC(snaps *snapv1alpha1.VolumeSnapshotList) map[string]*snapv1alpha1.VolumeSnapshotList {
-	groupedSnaps := make(map[string]*snapv1alpha1.VolumeSnapshotList)
-	for _, snap := range snaps.Items {
-		if snap.Spec.Source != nil {
-			pvcName := snap.Spec.Source.Name
-			if groupedSnaps[pvcName] == nil {
-				groupedSnaps[pvcName] = &snapv1alpha1.VolumeSnapshotList{}
+func groupSnapsByPVC(snaps []MultiversionSnapshot) map[string][]MultiversionSnapshot {
+	groupedSnaps := make(map[string][]MultiversionSnapshot)
+	for _, snap := range snaps {
+		pvcName := snap.SourcePvcName()
+		if pvcName != nil {
+			if groupedSnaps[*pvcName] == nil {
+				groupedSnaps[*pvcName] = []MultiversionSnapshot{}
 			}
-			groupedSnaps[pvcName].Items = append(groupedSnaps[pvcName].Items, snap)
+			groupedSnaps[*pvcName] = append(groupedSnaps[*pvcName], snap)
 		}
 	}
 
@@ -192,13 +187,10 @@ func groupSnapsByPVC(snaps *snapv1alpha1.VolumeSnapshotList) map[string]*snapv1a
 }
 
 // sortSnapsByTime sorts the snapshots in order of ascending CreationTimestamp
-func sortSnapsByTime(snaps *snapv1alpha1.VolumeSnapshotList) *snapv1alpha1.VolumeSnapshotList {
-	if snaps == nil {
-		return nil
-	}
-	list := snaps.DeepCopy()
-	sort.Slice(list.Items, func(i, j int) bool {
-		return list.Items[i].CreationTimestamp.Before(&list.Items[j].CreationTimestamp)
+func sortSnapsByTime(snaps []MultiversionSnapshot) []MultiversionSnapshot {
+	sorted := append([]MultiversionSnapshot(nil), snaps...)
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].ObjectMeta().CreationTimestamp.Before(&sorted[j].ObjectMeta().CreationTimestamp)
 	})
-	return list
+	return sorted
 }

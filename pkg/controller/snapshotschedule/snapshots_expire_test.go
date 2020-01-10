@@ -27,6 +27,7 @@ import (
 	snapschedulerv1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1"
 	tlogr "github.com/go-logr/logr/testing"
 	snapv1alpha1 "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
+	snapv1beta1 "github.com/kubernetes-csi/external-snapshotter/v2/pkg/apis/volumesnapshot/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,6 +43,7 @@ func fakeClient(initialObjects []runtime.Object) client.Client {
 	scheme := runtime.NewScheme()
 	_ = snapschedulerv1.SchemeBuilder.AddToScheme(scheme)
 	_ = snapv1alpha1.AddToScheme(scheme)
+	_ = snapv1beta1.AddToScheme(scheme)
 	_ = v1.AddToScheme(scheme)
 	return fake.NewFakeClientWithScheme(scheme, initialObjects...)
 }
@@ -81,7 +83,7 @@ func TestGetExpirationTime(t *testing.T) {
 	}
 }
 
-func TestFilterExpiredSnaps(t *testing.T) {
+func TestFilterExpiredSnapsAlpha(t *testing.T) {
 	threshold, _ := time.Parse(timeFormat, "2000-01-01T00:00:00Z")
 	times := []string{
 		"1990-01-01T00:00:00Z", // expired
@@ -92,28 +94,33 @@ func TestFilterExpiredSnaps(t *testing.T) {
 	}
 	expired := 2
 
-	inList := &snapv1alpha1.VolumeSnapshotList{}
+	VersionChecker.v1Alpha1 = true
+	VersionChecker.v1Alpha1 = false
+
+	inList := []MultiversionSnapshot{}
 	for _, i := range times {
 		theTime, _ := time.Parse(timeFormat, i)
-		inList.Items = append(inList.Items, snapv1alpha1.VolumeSnapshot{
+		mvs := WrapSnapshotAlpha(&snapv1alpha1.VolumeSnapshot{
 			ObjectMeta: metav1.ObjectMeta{
 				CreationTimestamp: metav1.Time{
 					Time: theTime,
 				},
 			},
 		})
+		inList = append(inList, *mvs)
 	}
 
 	outList := filterExpiredSnaps(inList, threshold)
 	if outList == nil {
 		t.Error("unexpected nil output")
 	}
-	if len(outList.Items) != expired {
-		t.Errorf("incorrect snapshots filtered. expected: %v -- got: %v", expired, len(outList.Items))
+	if len(outList) != expired {
+		t.Errorf("incorrect snapshots filtered. expected: %v -- got: %v", expired, len(outList))
 	}
 }
 
 func TestSnapshotsFromSchedule(t *testing.T) {
+	VersionChecker.v1Alpha1 = true
 	objects := []runtime.Object{
 		&snapv1alpha1.VolumeSnapshot{
 			ObjectMeta: metav1.ObjectMeta{
@@ -160,12 +167,12 @@ func TestSnapshotsFromSchedule(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error. got: %v", err)
 	}
-	if len(snapList.Items) != 2 {
-		t.Errorf("matched wrong number of snapshots. expected: 2 -- got: %v", len(snapList.Items))
+	if len(snapList) != 2 {
+		t.Errorf("matched wrong number of snapshots. expected: 2 -- got: %v", len(snapList))
 	}
-	for _, snap := range snapList.Items {
-		if snap.Name != "foo" && snap.Name != "bar" {
-			t.Errorf("matched wrong snapshots. found: %v", snap.Name)
+	for _, snap := range snapList {
+		if snap.ObjectMeta().Name != "foo" && snap.ObjectMeta().Name != "bar" {
+			t.Errorf("matched wrong snapshots. found: %v", snap.ObjectMeta().Name)
 		}
 	}
 }
@@ -255,9 +262,9 @@ func TestGroupSnapsByPVC(t *testing.T) {
 		{"snap2-2", "pvc2"},
 		{"snap3-blah", "pvc3"},
 	}
-	snapList := &snapv1alpha1.VolumeSnapshotList{}
+	snapList := []MultiversionSnapshot{}
 	for _, d := range data {
-		snapList.Items = append(snapList.Items, snapv1alpha1.VolumeSnapshot{
+		snapList = append(snapList, *WrapSnapshotAlpha(&snapv1alpha1.VolumeSnapshot{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: d.snapName,
 			},
@@ -266,24 +273,24 @@ func TestGroupSnapsByPVC(t *testing.T) {
 					Name: d.pvcName,
 				},
 			},
-		})
+		}))
 	}
 	// add one w/ nil Source
-	snapList.Items = append(snapList.Items, snapv1alpha1.VolumeSnapshot{
+	snapList = append(snapList, *WrapSnapshotAlpha(&snapv1alpha1.VolumeSnapshot{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "i-have-nil-source",
 		},
-	})
+	}))
 
 	groupedSnaps := groupSnapsByPVC(snapList)
 	wantSnaps := len(data)
 	foundSnaps := 0
 	for pvcName, list := range groupedSnaps {
 		wantPrefix := strings.Replace(pvcName, "pvc", "snap", -1)
-		for _, snap := range list.Items {
+		for _, snap := range list {
 			foundSnaps++
-			if !strings.HasPrefix(snap.Name, wantPrefix) {
-				t.Errorf("Improper snapshot grouping. PVC name: %v -- snap name: %v", pvcName, snap.Name)
+			if !strings.HasPrefix(snap.ObjectMeta().Name, wantPrefix) {
+				t.Errorf("Improper snapshot grouping. PVC name: %v -- snap name: %v", pvcName, snap.ObjectMeta().Name)
 			}
 		}
 	}
@@ -294,32 +301,31 @@ func TestGroupSnapsByPVC(t *testing.T) {
 
 func TestSortSnapsByTime(t *testing.T) {
 	now := time.Now()
-	inSnapList := &snapv1alpha1.VolumeSnapshotList{
-		Items: []snapv1alpha1.VolumeSnapshot{
-			snapv1alpha1.VolumeSnapshot{
-				ObjectMeta: metav1.ObjectMeta{
-					CreationTimestamp: metav1.Time{Time: now.Add(1 * time.Hour)},
-				},
+	inSnapList := []MultiversionSnapshot{
+		*WrapSnapshotAlpha(&snapv1alpha1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				CreationTimestamp: metav1.Time{Time: now.Add(1 * time.Hour)},
 			},
-			snapv1alpha1.VolumeSnapshot{
-				ObjectMeta: metav1.ObjectMeta{
-					CreationTimestamp: metav1.Time{Time: now.Add(-1 * time.Hour)},
-				},
+		}),
+		*WrapSnapshotAlpha(&snapv1alpha1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				CreationTimestamp: metav1.Time{Time: now.Add(-1 * time.Hour)},
 			},
-			snapv1alpha1.VolumeSnapshot{
-				ObjectMeta: metav1.ObjectMeta{
-					CreationTimestamp: metav1.Time{Time: now},
-				},
+		}),
+		*WrapSnapshotAlpha(&snapv1alpha1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				CreationTimestamp: metav1.Time{Time: now},
 			},
-		},
+		}),
 	}
 	outSnapList := sortSnapsByTime(inSnapList)
-	if len(outSnapList.Items) != len(inSnapList.Items) {
-		t.Errorf("wrong number of snaps. expected: %v -- got: %v", len(inSnapList.Items), len(outSnapList.Items))
-	}
-	if outSnapList.Items[0].CreationTimestamp.After(outSnapList.Items[1].CreationTimestamp.Time) ||
-		outSnapList.Items[1].CreationTimestamp.After(outSnapList.Items[2].CreationTimestamp.Time) {
-		t.Error("snapshots were not properly sorted.")
+	if len(outSnapList) != len(inSnapList) {
+		t.Errorf("wrong number of snaps. expected: %v -- got: %v", len(inSnapList), len(outSnapList))
+	} else {
+		if outSnapList[0].ObjectMeta().CreationTimestamp.After(outSnapList[1].ObjectMeta().CreationTimestamp.Time) ||
+			outSnapList[1].ObjectMeta().CreationTimestamp.After(outSnapList[2].ObjectMeta().CreationTimestamp.Time) {
+			t.Error("snapshots were not properly sorted.")
+		}
 	}
 
 	if sortSnapsByTime(nil) != nil {
@@ -355,9 +361,9 @@ func TestDeleteSnapshots(t *testing.T) {
 		},
 	}
 
-	snapList := &snapv1alpha1.VolumeSnapshotList{}
-	snapList.Items = append(snapList.Items, *snaps[1])
-	snapList.Items = append(snapList.Items, *snaps[2])
+	snapList := []MultiversionSnapshot{}
+	snapList = append(snapList, *WrapSnapshotAlpha(snaps[1]))
+	snapList = append(snapList, *WrapSnapshotAlpha(snaps[2]))
 
 	var objects []runtime.Object
 	for _, o := range snaps {
