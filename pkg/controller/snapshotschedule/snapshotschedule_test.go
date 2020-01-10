@@ -66,7 +66,7 @@ func TestGetNextSnapTime(t *testing.T) {
 	}
 }
 
-func TestNewSnapForClaim(t *testing.T) {
+func TestNewSnapForClaimV1beta1(t *testing.T) {
 	pvc := corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "mypvc",
@@ -77,20 +77,27 @@ func TestNewSnapForClaim(t *testing.T) {
 	snapClass := "snapclass"
 	scheduleName := "mysched"
 	schedTime, _ := time.Parse(timeFormat, "2010-07-23T01:02:00Z")
+	VersionChecker.v1Beta1 = true
+	VersionChecker.v1Alpha1 = false
 	snap := newSnapForClaim(snapname, pvc, scheduleName, schedTime, nil, &snapClass)
-	if snapname != snap.Name {
-		t.Errorf("invalid snapshot name. expected: %v -- got: %v", snapname, snap.Name)
+
+	snapMeta := snap.ObjectMeta()
+	// Some tests depend on knowing the internals :(
+	betaSnap := snap.v1Beta1
+
+	if snapname != snapMeta.Name {
+		t.Errorf("invalid snapshot name. expected: %v -- got: %v", snapname, snapMeta.Name)
 	}
-	if pvc.Namespace != snap.Namespace {
-		t.Errorf("invalid snapshot namespace. expected: %v -- got: %v", pvc.Namespace, snap.Namespace)
+	if pvc.Namespace != snapMeta.Namespace {
+		t.Errorf("invalid snapshot namespace. expected: %v -- got: %v", pvc.Namespace, snapMeta.Namespace)
 	}
-	if pvc.Name != snap.Spec.Source.Name {
-		t.Errorf("invalid pvc name. expected: %v -- got: %v", pvc.Name, snap.Spec.Source.Name)
+	if pvc.Name != *betaSnap.Spec.Source.PersistentVolumeClaimName {
+		t.Errorf("invalid pvc name. expected: %v -- got: %v", pvc.Name, betaSnap.Spec.Source.PersistentVolumeClaimName)
 	}
-	if nil == snap.Spec.VolumeSnapshotClassName || snapClass != *snap.Spec.VolumeSnapshotClassName {
-		t.Errorf("invalid snap class. expected: %v -- got: %v", snapClass, snap.Spec.VolumeSnapshotClassName)
+	if nil == betaSnap.Spec.VolumeSnapshotClassName || snapClass != *betaSnap.Spec.VolumeSnapshotClassName {
+		t.Errorf("invalid snap class. expected: %v -- got: %v", snapClass, betaSnap.Spec.VolumeSnapshotClassName)
 	}
-	if snap.ObjectMeta.Labels == nil || scheduleName != snap.ObjectMeta.Labels[ScheduleKey] {
+	if snapMeta.Labels == nil || scheduleName != snapMeta.Labels[ScheduleKey] {
 		t.Errorf("SchedulerKey not found in snapshot labels")
 	}
 
@@ -98,23 +105,91 @@ func TestNewSnapForClaim(t *testing.T) {
 	labels["one"] = "two"
 	labels["three"] = "four"
 	snap = newSnapForClaim(snapname, pvc, scheduleName, schedTime, labels, nil)
-	if nil != snap.Spec.VolumeSnapshotClassName {
-		t.Errorf("expected nil snap class -- got: %v", snap.Spec.VolumeSnapshotClassName)
+	// Some tests depend on knowing the internals :(
+	betaSnap = snap.v1Beta1
+	if nil != betaSnap.Spec.VolumeSnapshotClassName {
+		t.Errorf("expected nil snap class -- got: %v", betaSnap.Spec.VolumeSnapshotClassName)
 	}
-	if snap.Labels == nil {
+	snapMeta = snap.ObjectMeta()
+	if snapMeta.Labels == nil {
 		t.Errorf("unexpected nil set of labels")
 	} else {
-		if scheduleName != snap.Labels[ScheduleKey] {
-			t.Errorf("Wrong SchedulerKey in snapshot labels. expected: %v -- got: %v", scheduleName, snap.Labels[ScheduleKey])
+		if scheduleName != snapMeta.Labels[ScheduleKey] {
+			t.Errorf("Wrong SchedulerKey in snapshot labels. expected: %v -- got: %v", scheduleName, snapMeta.Labels[ScheduleKey])
 		}
-		if schedTime.Format(timeYYYYMMDDHHMMSS) != snap.Labels[WhenKey] {
+		if schedTime.Format(timeYYYYMMDDHHMMSS) != snapMeta.Labels[WhenKey] {
 			t.Errorf("Wrong WhenKey in snapshot labels. expected: %v -- got: %v",
-				schedTime.Format(timeYYYYMMDDHHMMSS), snap.Labels[WhenKey])
+				schedTime.Format(timeYYYYMMDDHHMMSS), snapMeta.Labels[WhenKey])
 		}
-		if "four" != snap.Labels["three"] {
+		if "four" != snapMeta.Labels["three"] {
 			t.Errorf("labels are not properly passed through")
 		}
-		numLabels := len(snap.ObjectMeta.Labels)
+		numLabels := len(snapMeta.Labels)
+		if numLabels != 4 {
+			t.Errorf("unexpected number of labels. expected: 4 -- got: %v", numLabels)
+		}
+	}
+}
+
+func TestNewSnapForClaimV1alpha1(t *testing.T) {
+	pvc := corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "mypvc",
+			Namespace: "mynamespace",
+		},
+	}
+	snapname := "mysnap"
+	snapClass := "snapclass"
+	scheduleName := "mysched"
+	schedTime, _ := time.Parse(timeFormat, "2010-07-23T01:02:00Z")
+	VersionChecker.v1Beta1 = false
+	VersionChecker.v1Alpha1 = true
+	snap := newSnapForClaim(snapname, pvc, scheduleName, schedTime, nil, &snapClass)
+
+	snapMeta := snap.ObjectMeta()
+	// Some tests depend on knowing the internals :(
+	alphaSnap := snap.v1Alpha1
+
+	if snapname != snapMeta.Name {
+		t.Errorf("invalid snapshot name. expected: %v -- got: %v", snapname, snapMeta.Name)
+	}
+	if pvc.Namespace != snapMeta.Namespace {
+		t.Errorf("invalid snapshot namespace. expected: %v -- got: %v", pvc.Namespace, snapMeta.Namespace)
+	}
+	if pvc.Name != alphaSnap.Spec.Source.Name {
+		t.Errorf("invalid pvc name. expected: %v -- got: %v", pvc.Name, alphaSnap.Spec.Source.Name)
+	}
+	if nil == alphaSnap.Spec.VolumeSnapshotClassName || snapClass != *alphaSnap.Spec.VolumeSnapshotClassName {
+		t.Errorf("invalid snap class. expected: %v -- got: %v", snapClass, alphaSnap.Spec.VolumeSnapshotClassName)
+	}
+	if snapMeta.Labels == nil || scheduleName != snapMeta.Labels[ScheduleKey] {
+		t.Errorf("SchedulerKey not found in snapshot labels")
+	}
+
+	labels := make(map[string]string, 2)
+	labels["one"] = "two"
+	labels["three"] = "four"
+	snap = newSnapForClaim(snapname, pvc, scheduleName, schedTime, labels, nil)
+	// Some tests depend on knowing the internals :(
+	alphaSnap = snap.v1Alpha1
+	if nil != alphaSnap.Spec.VolumeSnapshotClassName {
+		t.Errorf("expected nil snap class -- got: %v", alphaSnap.Spec.VolumeSnapshotClassName)
+	}
+	snapMeta = snap.ObjectMeta()
+	if snapMeta.Labels == nil {
+		t.Errorf("unexpected nil set of labels")
+	} else {
+		if scheduleName != snapMeta.Labels[ScheduleKey] {
+			t.Errorf("Wrong SchedulerKey in snapshot labels. expected: %v -- got: %v", scheduleName, snapMeta.Labels[ScheduleKey])
+		}
+		if schedTime.Format(timeYYYYMMDDHHMMSS) != snapMeta.Labels[WhenKey] {
+			t.Errorf("Wrong WhenKey in snapshot labels. expected: %v -- got: %v",
+				schedTime.Format(timeYYYYMMDDHHMMSS), snapMeta.Labels[WhenKey])
+		}
+		if "four" != snapMeta.Labels["three"] {
+			t.Errorf("labels are not properly passed through")
+		}
+		numLabels := len(snapMeta.Labels)
 		if numLabels != 4 {
 			t.Errorf("unexpected number of labels. expected: 4 -- got: %v", numLabels)
 		}

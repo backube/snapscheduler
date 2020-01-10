@@ -24,7 +24,6 @@ import (
 
 	snapschedulerv1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1"
 	"github.com/go-logr/logr"
-	snapv1alpha1 "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 	cron "github.com/robfig/cron/v3"
 	corev1 "k8s.io/api/core/v1"
@@ -40,8 +39,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	// "k8s.io/apimachinery/pkg/types"
-	// "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
@@ -158,6 +155,11 @@ func doReconcile(schedule *snapschedulerv1.SnapshotSchedule,
 		}
 	}
 
+	if err := VersionChecker.Refresh(logger); err != nil {
+		logger.Error(err, "unable to refresh list of VolumeSnapshot versions")
+		return reconcile.Result{}, err
+	}
+
 	timeNow := time.Now()
 	timeNext := schedule.Status.NextSnapshotTime.Time
 	if !schedule.Spec.Disabled && timeNow.After(timeNext) {
@@ -206,24 +208,26 @@ func handleSnapshotting(schedule *snapschedulerv1.SnapshotSchedule,
 	snapTime := schedule.Status.NextSnapshotTime.Time.UTC()
 	for _, pvc := range pvcList.Items {
 		snapName := snapshotName(pvc.Name, schedule.Name, snapTime)
-		found := &snapv1alpha1.VolumeSnapshot{}
-		logger.Info("looking for snapshot", "name", snapName)
-		err = c.Get(context.TODO(), types.NamespacedName{Name: snapName, Namespace: pvc.Namespace}, found)
-		if err != nil {
+		logger.V(4).Info("looking for snapshot", "name", snapName)
+		key := types.NamespacedName{Name: snapName, Namespace: pvc.Namespace}
+		if _, err := GetMVSnapshot(context.TODO(), c, key); err != nil {
 			if kerrors.IsNotFound(err) {
-				logger.Info("creating a snapshot", "PVC", pvc.Name, "Snapshot", snapName)
 				snap := newSnapForClaim(snapName, pvc, schedule.Name, snapTime,
 					schedule.Spec.SnapshotTemplate.Labels,
 					schedule.Spec.SnapshotTemplate.SnapshotClassName)
-				err = c.Create(context.TODO(), &snap)
+				if snap != nil {
+					logger.Info("creating a snapshot", "PVC", pvc.Name, "Snapshot", snapName)
+					if err = snap.Create(context.TODO(), c); err != nil {
+						logger.Error(err, "while creating snapshots", "name", snapName)
+						return reconcile.Result{}, err
+					}
+				} else {
+					logger.Info("unable to create snapshot -- no supported VolumeSnapshot CRD is registered")
+				}
 			} else {
 				logger.Error(err, "looking for snapshot", "name", snapName)
 				return reconcile.Result{}, err
 			}
-		}
-		if err != nil {
-			logger.Error(err, "while creating snapshots", "name", snapName)
-			return reconcile.Result{}, err
 		}
 	}
 
@@ -273,37 +277,6 @@ func updateNextSnapTime(snapshotSchedule *snapschedulerv1.SnapshotSchedule, refe
 		snapshotSchedule.Status.NextSnapshotTime = &mv1time
 	}
 	return err
-}
-
-// newSnapForClaim returns a VolumeSnapshot object based on a PVC
-func newSnapForClaim(snapName string, pvc corev1.PersistentVolumeClaim,
-	scheduleName string, scheduleTime time.Time,
-	labels map[string]string, snapClass *string) snapv1alpha1.VolumeSnapshot {
-	numLabels := 2
-	if labels != nil {
-		numLabels += len(labels)
-	}
-	snapLabels := make(map[string]string, numLabels)
-	for k, v := range labels {
-		snapLabels[k] = v
-	}
-	snapLabels[ScheduleKey] = scheduleName
-	snapLabels[WhenKey] = scheduleTime.Format(timeYYYYMMDDHHMMSS)
-	return snapv1alpha1.VolumeSnapshot{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      snapName,
-			Namespace: pvc.Namespace,
-			Labels:    snapLabels,
-		},
-		Spec: snapv1alpha1.VolumeSnapshotSpec{
-			Source: &corev1.TypedLocalObjectReference{
-				APIGroup: nil,
-				Kind:     "PersistentVolumeClaim",
-				Name:     pvc.Name,
-			},
-			VolumeSnapshotClassName: snapClass,
-		},
-	}
 }
 
 // listPVCsMatchingSelector retrieves a list of PVCs that match the given selector

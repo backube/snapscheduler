@@ -30,9 +30,11 @@ import (
 
 	"github.com/backube/snapscheduler/pkg/apis"
 	"github.com/backube/snapscheduler/pkg/controller"
+	"github.com/backube/snapscheduler/pkg/controller/snapshotschedule"
 	"github.com/backube/snapscheduler/version"
 
 	snapv1alpha1 "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
+	snapv1beta1 "github.com/kubernetes-csi/external-snapshotter/v2/pkg/apis/volumesnapshot/v1beta1"
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
 	"github.com/operator-framework/operator-sdk/pkg/leader"
@@ -129,8 +131,18 @@ func main() {
 	}
 
 	// We need to be able to create Snapshot objects
+	if err := snapv1beta1.AddToScheme(mgr.GetScheme()); err != nil {
+		log.Error(err, "")
+		os.Exit(1)
+	}
 	if err := snapv1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
 		log.Error(err, "")
+		os.Exit(1)
+	}
+
+	// Provide config to SnapshotVersionChecker
+	if err := snapshotschedule.VersionChecker.SetConfig(cfg); err != nil {
+		log.Error(err, "error setting version checker config")
 		os.Exit(1)
 	}
 
