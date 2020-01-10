@@ -7,6 +7,10 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added
+
+- Support Kubernetes 1.17 and `snapshot.storage.k8s.io/v1beta1` snapshot version
+
 ## [1.0.0] - 2019-12-09
 
 ### Added
