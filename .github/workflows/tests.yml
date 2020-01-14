@@ -30,7 +30,7 @@ jobs:
         run: |
           echo 'APT::Acquire::Retries "5";' | sudo tee /etc/apt/apt.conf.d/80-retries
           sudo apt-get update
-          sudo apt-get install -y python-pip ruby
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python-pip ruby
           sudo gem install asciidoctor mdl
           sudo pip install yamllint
 
