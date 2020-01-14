@@ -28,6 +28,7 @@ jobs:
 
       - name: Install prereqs
         run: |
+          echo 'APT::Acquire::Retries "5";' | sudo tee /etc/apt/apt.conf.d/80-retries
           sudo apt-get update
           sudo apt-get install -y python-pip ruby
           sudo gem install asciidoctor mdl
