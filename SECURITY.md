@@ -4,7 +4,8 @@ Administrators are encouraged to consider the implications of providing access
 to the snapshotscheduler. It allows users to create a potentially very large
 number of volume snapshots.
 
-The use of RBAC rules to control access is strongly encouraged.
+The use of RBAC rules and ResourceQuota to control access is strongly
+encouraged.
 
 ## Vulnerabilities
 

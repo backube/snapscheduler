@@ -108,3 +108,31 @@ NAME                       AGE
 data-hourly-201911011900   82m
 data-hourly-201911012000   22m
 ```
+
+## Quotas & Limiting resource usage
+
+Schedules that lack a retention policy can create a potentially unbounded number
+of snapshots. This has the potential to exhaust the underlying storage system or
+to overwhelm the Kubernetes etcd store with objects. To prevent this, it is
+suggested that ResourceQuotas be used to limit the total number of snapshots
+that can be created in a namespace.
+
+[Object count
+ouotas](https://kubernetes.io/docs/concepts/policy/resource-quotas/#object-count-quota)
+are the recommended way to limit Snapshot resources. For example, the following
+ResourceQuota object will limit the maximum number of snapshots in the specified
+namespace to 50:
+
+```yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: snapshots
+  namespace: default
+spec:
+  hard:
+    count/volumesnapshots.snapshot.storage.k8s.io: "50"
+```
+
+Remember to leave sufficient headroom for old snapshots to be expired
+asynchronously as well as for other snapshot use-cases.
