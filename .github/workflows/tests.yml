@@ -138,9 +138,7 @@ jobs:
 
       - name: Create Kubernetes cluster
         run: |
-          kind create cluster --image "kindest/node:v${KUBERNETES_VERSION}"
-          kubectl version
-          kubectl get nodes
+          ./hack/setup-kind-cluster.sh "${KUBERNETES_VERSION}"
 
       - name: Load container artifact
         uses: actions/download-artifact@v1
@@ -155,28 +153,6 @@ jobs:
 
       - name: Insert operator image into cluster
         run: kind load docker-image "${IMAGE}"
-
-      - name: Install CSI snapshot controller & CRDs
-        run: |
-          # Determine kube minor version
-          [[ "${KUBERNETES_VERSION}" =~ ^[0-9]+\.([0-9]+) ]] && KUBE_MINOR="${BASH_REMATCH[1]}" || exit 1
-          # Nothing to do for kube < 1.17
-          [[ ${KUBE_MINOR} -lt 17 ]] && exit 0 || true
-          # Starting w/ Kube 1.17, the CSI snapshot CRDs & controller must be added manually
-          SNAPSHOTTER_TAG="v2.0.0"
-          SNAPSHOTTER_TAG="master"
-          curl -Lf https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_TAG}/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml | kubectl create -f -
-          curl -Lf https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_TAG}/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml | kubectl create -f -
-          curl -Lf https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_TAG}/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml | kubectl create -f -
-          curl -Lf https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_TAG}/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml | kubectl create -f -
-          curl -Lf https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${SNAPSHOTTER_TAG}/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml | kubectl create -f -
-
-      - name: Install hostpath csi driver
-        run: |
-          git clone https://github.com/kubernetes-csi/csi-driver-host-path.git /tmp/hostpath-driver
-          cd /tmp/hostpath-driver
-          export MAJOR_MINOR=$(echo $KUBERNETES_VERSION | sed -nre 's/^([[:digit:]]+\.[[:digit:]]+).*/\1/p')
-          "./deploy/kubernetes-${MAJOR_MINOR}/deploy-hostpath.sh"
 
       - name: Start operator
         run: |
