@@ -163,40 +163,7 @@ jobs:
         run: kubectl -n backube-snapscheduler wait --for condition=Available --timeout 60s deploy/snapscheduler
 
       - name: Verify snapshot scheduling
-        run: |
-          cat - <<PVC | kubectl create -f -
-          ---
-          kind: PersistentVolumeClaim
-          apiVersion: v1
-          metadata:
-            name: pvc
-          spec:
-            storageClassName: csi-hostpath-sc
-            accessModes:
-              - ReadWriteOnce
-            resources:
-              requests:
-                storage: 1Gi
-          PVC
-          cat - <<SCHED | kubectl create -f -
-          ---
-          apiVersion: snapscheduler.backube/v1
-          kind: SnapshotSchedule
-          metadata:
-            name: minute
-          spec:
-            retention:
-              maxCount: 2
-            schedule: "* * * * *"
-            snapshotTemplate:
-              snapshotClassName: csi-hostpath-snapclass
-          SCHED
-          DEADLINE=$(( $SECONDS + 90 ))
-          while [[ $(kubectl get volumesnapshots 2> /dev/null | wc -l) -lt 1 ]]; do
-            echo "Waiting for snapshots..."
-            [[ $SECONDS -lt $DEADLINE ]] || ( echo "Timeout waiting. No snapshots were created." && exit 1 )
-            sleep 10
-          done
+        run: ./.ci-scripts/tests/test-simple-schedule.sh
 
   push:
     name: Push container to registry
