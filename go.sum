@@ -306,6 +306,8 @@ github.com/kubernetes-csi/external-snapshotter v1.2.1-0.20200106204216-fd8d8a33d
 github.com/kubernetes-csi/external-snapshotter v1.2.1-0.20200106204216-fd8d8a33ddb5/go.mod h1:gKddGJSgym4wD90elbB0lO6kp/lKJ4FmiQrB+kzVEgM=
 github.com/kubernetes-csi/external-snapshotter v1.2.2 h1:OPXoJydNqkWjhLwJ20dSqOhkmUYcpm+CCO0pYm+C8Q8=
 github.com/kubernetes-csi/external-snapshotter v1.2.2/go.mod h1:oYfxnsuh48V1UDYORl77YQxQbbdokNy7D73phuFpksY=
+github.com/kubernetes-csi/external-snapshotter/v2 v2.0.1 h1:cRf1gQAzIXC6043qgLMfV3/LLddLmcqi5/c2bkuxaGI=
+github.com/kubernetes-csi/external-snapshotter/v2 v2.0.1/go.mod h1:vUEcwbrEpsQ/rDgaO8WTe1gVIY/4CCj0S4Q+UuOq5wA=
 github.com/lib/pq v1.0.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/lib/pq v1.2.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/libopenstorage/openstorage v0.0.0-20170906232338-093a0c388875/go.mod h1:Sp1sIObHjat1BeXhfMqLZ14wnOzEhNx2YQedreMcUyc=

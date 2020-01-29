@@ -6,7 +6,7 @@ require (
 	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.19.0
 	github.com/kubernetes-csi/external-snapshotter v1.2.2
-	github.com/kubernetes-csi/external-snapshotter/v2 v2.0.0
+	github.com/kubernetes-csi/external-snapshotter/v2 v2.0.1
 	github.com/openshift/custom-resource-status v0.0.0-20190822192428-e62f2f3b79f3
 	github.com/operator-framework/operator-sdk v0.12.0
 	github.com/robfig/cron/v3 v3.0.0
@@ -41,6 +41,3 @@ replace (
 	k8s.io/metrics => k8s.io/metrics v0.0.0-20190918202012-3c1ca76f5bda
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.0.0-20190918201353-5cc279503896
 )
-
-// external-snapshotter isn't using modules correctly. Map v2 to the v2.0.0 tag
-replace github.com/kubernetes-csi/external-snapshotter/v2 => github.com/kubernetes-csi/external-snapshotter v1.2.1-0.20200106204216-fd8d8a33ddb5
