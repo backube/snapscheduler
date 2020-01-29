@@ -3,7 +3,7 @@ package snapshotschedule
 import (
 	"context"
 
-	snapschedulerv1alpha1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1alpha1"
+	snapschedulerv1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,7 +46,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to primary resource SnapshotSchedule
-	err = c.Watch(&source.Kind{Type: &snapschedulerv1alpha1.SnapshotSchedule{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &snapschedulerv1.SnapshotSchedule{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Watch for changes to secondary resource Pods and requeue the owner SnapshotSchedule
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &snapschedulerv1alpha1.SnapshotSchedule{},
+		OwnerType:    &snapschedulerv1.SnapshotSchedule{},
 	})
 	if err != nil {
 		return err
@@ -87,7 +87,7 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 	reqLogger.Info("Reconciling SnapshotSchedule")
 
 	// Fetch the SnapshotSchedule instance
-	instance := &snapschedulerv1alpha1.SnapshotSchedule{}
+	instance := &snapschedulerv1.SnapshotSchedule{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -130,7 +130,7 @@ func (r *ReconcileSnapshotSchedule) Reconcile(request reconcile.Request) (reconc
 }
 
 // newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *snapschedulerv1alpha1.SnapshotSchedule) *corev1.Pod {
+func newPodForCR(cr *snapschedulerv1.SnapshotSchedule) *corev1.Pod {
 	labels := map[string]string{
 		"app": cr.Name,
 	}

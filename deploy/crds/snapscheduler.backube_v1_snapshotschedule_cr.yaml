@@ -1,4 +1,4 @@
-apiVersion: snapscheduler.backube/v1alpha1
+apiVersion: snapscheduler.backube/v1
 kind: SnapshotSchedule
 metadata:
   name: example-snapshotschedule
