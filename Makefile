@@ -3,7 +3,7 @@ IMAGE := quay.io/backube/snapscheduler
 # Version of golangci-lint to install (if asked)
 GOLANGCI_VERSION := v1.23.1
 # Version of operator-sdk to install (if asked)
-OPERATOR_SDK_VERSION := v0.12.0
+OPERATOR_SDK_VERSION := v0.15.1
 GOBINDIR := $(shell go env GOPATH)/bin
 
 
@@ -19,8 +19,9 @@ docs:
 ZZ_GENERATED := $(shell find pkg -name 'zz_generated*')
 ZZ_GEN_SOURCE := $(shell find pkg -name '*_types.go')
 $(ZZ_GENERATED): $(ZZ_GEN_SOURCE)
+	operator-sdk generate crds
 	operator-sdk generate k8s
-	operator-sdk generate openapi
+	openapi-gen --logtostderr=true -o "" -i ./pkg/apis/snapscheduler/v1 -O zz_generated.openapi -p ./pkg/apis/snapscheduler/v1 -h ./hack/openapi-gen-boilerplate.go.txt -r "-"
 generate: $(ZZ_GENERATED)
 
 .PHONY: image
@@ -39,6 +40,10 @@ install-golangci:
 .PHONY: install-helm
 install-helm:
 	curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
+.PHONY: install-openapi-gen
+openapi-gen:
+	go get k8s.io/kube-openapi/cmd/openapi-gen
 
 .PHONY: install-operator-sdk
 OPERATOR_SDK_URL := https://github.com/operator-framework/operator-sdk/releases/download/$(OPERATOR_SDK_VERSION)/operator-sdk-$(OPERATOR_SDK_VERSION)-x86_64-linux-gnu
