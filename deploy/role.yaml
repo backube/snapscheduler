@@ -13,7 +13,13 @@ rules:
   - services/finalizers  # metrics?
   - configmaps  # For leader lock
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - monitoring.coreos.com
   resources:
@@ -48,14 +54,26 @@ rules:
   resources:
   - '*'
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 # Operator has full control of snapshots
 - apiGroups:
   - "snapshot.storage.k8s.io"
   resources:
   - volumesnapshots
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 # Operator must monitor PVCs to snapshot them
 - apiGroups:
   - ""
