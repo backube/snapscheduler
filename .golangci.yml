@@ -3,6 +3,8 @@
 
 run:
   timeout: 30m
+  skip-files:
+    - pkg/apis/snapscheduler/v1/zz_generated.openapi.go
 linters:
   disable-all: true
   enable:
