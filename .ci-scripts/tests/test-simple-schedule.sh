@@ -32,6 +32,30 @@ spec:
       storage: 1Gi
 PVC
 
+# Create a pod to ensure the PVC gets bound
+cat - <<POD | kubectl create -f -
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: busybox
+spec:
+  containers:
+    - name: busybox
+      image: busybox
+      command: ["sleep", "999999"]
+      volumeMounts:
+        - name: data
+          mountPath: "/mnt"
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: pvc
+  terminationGracePeriodSeconds: 2
+POD
+
+kubectl wait --for=condition=Ready --timeout=60s pod/busybox
+
 # Create a simple schedule
 cat - <<SCHED | kubectl create -f -
 ---
@@ -71,4 +95,5 @@ echo "Snapshot $SNAP_NAME is ready!"
 # Clean up
 kubectl delete SnapshotSchedule/minute
 kubectl delete volumesnapshots -l 'snapscheduler.backube/schedule=minute'
+kubectl delete pod/busybox
 kubectl delete pvc/pvc
