@@ -11,9 +11,48 @@ KUBE_VERSION="${1:-1.17.0}"
 # Determine the Kube minor version
 [[ "${KUBE_VERSION}" =~ ^[0-9]+\.([0-9]+) ]] && KUBE_MINOR="${BASH_REMATCH[1]}" || exit 1
 
+KIND_CONFIG=""
+KIND_CONFIG_FILE="$(mktemp --tmpdir kind-config-XXXXXX.yaml)"
+
+if [[ $KUBE_MINOR -lt 17 ]]; then
+  KIND_CONFIG="--config ${KIND_CONFIG_FILE}"
+  cat - > "${KIND_CONFIG_FILE}" <<KINDCONFIG
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+kubeadmConfigPatches:
+- |
+  kind: ClusterConfiguration
+  metadata:
+    name: config
+  apiServer:
+    extraArgs:
+      "feature-gates": "VolumeSnapshotDataSource=true"
+  scheduler:
+    extraArgs:
+      "feature-gates": "VolumeSnapshotDataSource=true"
+  controllerManager:
+    extraArgs:
+      "feature-gates": "VolumeSnapshotDataSource=true"
+- |
+  kind: InitConfiguration
+  metadata:
+    name: config
+  nodeRegistration:
+    kubeletExtraArgs:
+      "feature-gates": "VolumeSnapshotDataSource=true"
+- |
+  kind: KubeletConfiguration
+  featureGates:
+    VolumeSnapshotDataSource: true
+KINDCONFIG
+fi
+
 # Create the cluster
 kind delete cluster || true
-kind create cluster --image "kindest/node:v${KUBE_VERSION}"
+# shellcheck disable=SC2086
+kind create cluster ${KIND_CONFIG} --image "kindest/node:v${KUBE_VERSION}"
+
+rm -f "${KIND_CONFIG_FILE}"
 
 # Kube >= 1.17, we need to deploy the snapshot controller
 if [[ $KUBE_MINOR -ge 17 ]]; then
@@ -27,7 +66,7 @@ if [[ $KUBE_MINOR -ge 17 ]]; then
 fi
 
 # Install the hostpath CSI driver
-HP_BASE="$(mktemp -d)"
+HP_BASE="$(mktemp --tmpdir -d csi-driver-host-path-XXXXXX)"
 git clone --depth 1 https://github.com/kubernetes-csi/csi-driver-host-path.git "$HP_BASE"
 if [[ $KUBE_MINOR -eq 14 ]]; then
         cd "$HP_BASE"
@@ -65,6 +104,5 @@ kind: VolumeSnapshotClass
 metadata:
   name: csi-hostpath-snapclass
 snapshotter: hostpath.csi.k8s.io
-        kubectl create -f snapclass-v1alpha1.yaml
 SNAPALPHA
 fi
