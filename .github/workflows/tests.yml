@@ -11,7 +11,7 @@ on:  # yamllint disable-line rule:truthy
 env:
   GO_VERSION: "1.13"
   HELM_VERSION: "3.0.2"
-  KIND_VERSION: "0.6.1"
+  KIND_VERSION: "0.7.0"
   OPERATOR_SDK_VERSION: "0.15.1"
   GOLANGCI_VERSION: "1.23.1"
   GO111MODULE: "on"
