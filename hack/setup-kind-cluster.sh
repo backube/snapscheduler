@@ -14,9 +14,9 @@ KUBE_VERSION="${1:-1.17.0}"
 KIND_CONFIG=""
 KIND_CONFIG_FILE="$(mktemp --tmpdir kind-config-XXXXXX.yaml)"
 
-if [[ $KUBE_MINOR -lt 17 ]]; then
+if [[ $KUBE_MINOR -le 16 ]]; then
   KIND_CONFIG="--config ${KIND_CONFIG_FILE}"
-  cat - > "${KIND_CONFIG_FILE}" <<KINDCONFIG
+  cat - > "${KIND_CONFIG_FILE}" <<KINDCONFIG16
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 kubeadmConfigPatches:
@@ -44,7 +44,42 @@ kubeadmConfigPatches:
   kind: KubeletConfiguration
   featureGates:
     VolumeSnapshotDataSource: true
-KINDCONFIG
+KINDCONFIG16
+fi
+
+if [[ $KUBE_MINOR -le 13 ]]; then
+  KIND_CONFIG="--config ${KIND_CONFIG_FILE}"
+  cat - > "${KIND_CONFIG_FILE}" <<KINDCONFIG13
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+kubeadmConfigPatches:
+- |
+  kind: ClusterConfiguration
+  metadata:
+    name: config
+  apiServer:
+    extraArgs:
+      "feature-gates": "CSIDriverRegistry=true,CSINodeInfo=true,VolumeSnapshotDataSource=true"
+  scheduler:
+    extraArgs:
+      "feature-gates": "CSIDriverRegistry=true,CSINodeInfo=true,VolumeSnapshotDataSource=true"
+  controllerManager:
+    extraArgs:
+      "feature-gates": "CSIDriverRegistry=true,CSINodeInfo=true,VolumeSnapshotDataSource=true"
+- |
+  kind: InitConfiguration
+  metadata:
+    name: config
+  nodeRegistration:
+    kubeletExtraArgs:
+      "feature-gates": "CSIDriverRegistry=true,CSINodeInfo=true,VolumeSnapshotDataSource=true"
+- |
+  kind: KubeletConfiguration
+  featureGates:
+    CSIDriverRegistry: true
+    CSINodeInfo: true
+    VolumeSnapshotDataSource: true
+KINDCONFIG13
 fi
 
 # Create the cluster
@@ -65,6 +100,12 @@ if [[ $KUBE_MINOR -ge 17 ]]; then
         kubectl create -f "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${TAG}/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml"
 fi
 
+# Kube 1.13 requires CSIDriver & CSINodeInfo CRDs
+if [[ $KUBE_MINOR -eq 13 ]]; then
+        kubectl create -f https://raw.githubusercontent.com/kubernetes/csi-api/master/pkg/crd/manifests/csidriver.yaml
+        kubectl create -f https://raw.githubusercontent.com/kubernetes/csi-api/master/pkg/crd/manifests/csinodeinfo.yaml
+fi
+
 # Install the hostpath CSI driver
 HP_BASE="$(mktemp --tmpdir -d csi-driver-host-path-XXXXXX)"
 git clone --depth 1 https://github.com/kubernetes-csi/csi-driver-host-path.git "$HP_BASE"
@@ -81,12 +122,16 @@ fi
 "${HP_BASE}/deploy/kubernetes-1.$KUBE_MINOR"/deploy-hostpath.sh
 rm -rf "${HP_BASE}"
 
+CSI_DRIVER_NAME="hostpath.csi.k8s.io"
+if [[ $KUBE_MINOR -eq 13 ]]; then
+        CSI_DRIVER_NAME="csi-hostpath"
+fi
 kubectl apply -f - <<SC
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: csi-hostpath-sc
-provisioner: hostpath.csi.k8s.io
+provisioner: ${CSI_DRIVER_NAME}
 reclaimPolicy: Delete
 volumeBindingMode: Immediate
 allowVolumeExpansion: true
