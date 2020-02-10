@@ -13,7 +13,7 @@ env:
   HELM_VERSION: "3.0.2"
   KIND_VERSION: "0.7.0"
   OPERATOR_SDK_VERSION: "0.15.1"
-  GOLANGCI_VERSION: "1.23.1"
+  GOLANGCI_VERSION: "1.23.3"
   GO111MODULE: "on"
   IMAGE: "quay.io/backube/snapscheduler"
 
