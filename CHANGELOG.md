@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+## [1.1.0] - 2019-02-12
+
 ### Added
 
 - Support Kubernetes 1.17 and `snapshot.storage.k8s.io/v1beta1` snapshot version
@@ -19,5 +21,6 @@ This project follows [Semantic Versioning](https://semver.org/)
 - Label selectors to control which PVCs are selected for snapshotting
 - Retention policies based on snapshot age or count
 
-[unreleased]: https://github.com/backube/snapscheduler/compare/v1.0.0...HEAD
+[unreleased]: https://github.com/backube/snapscheduler/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/backube/snapscheduler/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/backube/snapscheduler/releases/tag/v1.0.0

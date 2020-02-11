@@ -13,6 +13,14 @@ storage
 drivers](https://kubernetes.io/blog/2019/01/15/container-storage-interface-ga/)
 that are capable of taking volume snapshots.
 
+Kubernetes version compatibility:
+
+| snapscheduler | Kubernetes    | `snapshot.storage.k8s.io` |
+|---------------|---------------|---------------------------|
+| 1.0           | 1.13 -- 1.16  | `v1alpha1`                |
+| 1.1           | 1.13 -- 1.17+ | `v1alpha1`, `v1beta1`     |
+| master        | 1.13 -- 1.17+ | `v1alpha1`, `v1beta1`     |
+
 ## Contents
 
 User documentation
