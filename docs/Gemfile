@@ -1,14 +1,9 @@
 source "https://rubygems.org"
 # Serve documentation locally with:
 #   bundle update
-#   bundle exec jekyll serve
+#   bundle exec jekyll serve -w -l
 
-#gem "minima"
 gem "github-pages", group: :jekyll_plugins
-#group :jekyll_plugins do
-#  gem "jekyll-feed"
-#  gem "jemoji"
-#end
 
 # Windows and JRuby does not include zoneinfo files, so bundle the tzinfo-data gem
 # and associated library.
