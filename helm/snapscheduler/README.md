@@ -16,7 +16,7 @@ for more information.
 
 ## Requirements
 
-- Kubernetes >= 1.12
+- Kubernetes >= 1.13
 - CSI-based storage driver that supports snapshots (i.e. has the
   `CREATE_DELETE_SNAPSHOT` capability)
 
