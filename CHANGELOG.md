@@ -7,6 +7,10 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix crash when snapshotTemplate is not defined in schedule
+
 ## [1.1.0] - 2019-02-13
 
 ### Added
