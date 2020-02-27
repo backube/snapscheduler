@@ -212,9 +212,13 @@ func handleSnapshotting(schedule *snapschedulerv1.SnapshotSchedule,
 		key := types.NamespacedName{Name: snapName, Namespace: pvc.Namespace}
 		if _, err := GetMVSnapshot(context.TODO(), c, key); err != nil {
 			if kerrors.IsNotFound(err) {
-				snap := newSnapForClaim(snapName, pvc, schedule.Name, snapTime,
-					schedule.Spec.SnapshotTemplate.Labels,
-					schedule.Spec.SnapshotTemplate.SnapshotClassName)
+				labels := make(map[string]string)
+				var snapshotClassName *string = nil
+				if schedule.Spec.SnapshotTemplate != nil {
+					labels = schedule.Spec.SnapshotTemplate.Labels
+					snapshotClassName = schedule.Spec.SnapshotTemplate.SnapshotClassName
+				}
+				snap := newSnapForClaim(snapName, pvc, schedule.Name, snapTime, labels, snapshotClassName)
 				if snap != nil {
 					logger.Info("creating a snapshot", "PVC", pvc.Name, "Snapshot", snapName)
 					if err = snap.Create(context.TODO(), c); err != nil {
