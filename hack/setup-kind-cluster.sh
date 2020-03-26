@@ -119,7 +119,13 @@ if [[ $KUBE_MINOR -lt 14 ]]; then
         git pull --unshallow && git pull
         git checkout "v1.1.0"
 fi
-"${HP_BASE}/deploy/kubernetes-1.$KUBE_MINOR"/deploy-hostpath.sh
+
+DEPLOY_PATH="${HP_BASE}/deploy/kubernetes-1.${KUBE_MINOR}/"
+if [[ $KUBE_MINOR -ge 17 ]]; then
+  # 1.17 & 1.18 use the same path
+  DEPLOY_PATH="${HP_BASE}/deploy/kubernetes-1.17/"
+fi
+"${DEPLOY_PATH}/deploy-hostpath.sh"
 rm -rf "${HP_BASE}"
 
 CSI_DRIVER_NAME="hostpath.csi.k8s.io"
