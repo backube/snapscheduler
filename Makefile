@@ -65,4 +65,4 @@ codecov: coverage.txt
 	curl -fL https://codecov.io/bash | bash -s
 
 coverage.txt: generate
-	go test -covermode=atomic -coverprofile=coverage.txt  ./...
+	go test -covermode=atomic -coverprofile=coverage.txt  $(shell go list ./... | grep -v /test/e2e)
