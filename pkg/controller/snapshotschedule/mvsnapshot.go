@@ -105,6 +105,16 @@ func (mvs *MultiversionSnapshot) SourcePvcName() *string {
 	return nil
 }
 
+// ReadyToUse returns a boolean indicating whether the snapshot is ready to be used
+func (mvs *MultiversionSnapshot) ReadyToUse() *bool {
+	if mvs.v1Beta1 != nil && mvs.v1Beta1.Status != nil {
+		return mvs.v1Beta1.Status.ReadyToUse
+	} else if mvs.v1Alpha1 != nil {
+		return &mvs.v1Alpha1.Status.ReadyToUse
+	}
+	return nil
+}
+
 // WrapSnapshotAlpha encapsulates a v1alpha1 VolumeSnapshot.
 func WrapSnapshotAlpha(snap *snapv1alpha1.VolumeSnapshot) *MultiversionSnapshot {
 	if snap == nil {
