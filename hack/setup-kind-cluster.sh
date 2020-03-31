@@ -156,3 +156,6 @@ metadata:
 snapshotter: hostpath.csi.k8s.io
 SNAPALPHA
 fi
+
+# Make VSC the cluster default
+kubectl annotate volumesnapshotclass/csi-hostpath-snapclass snapshot.storage.kubernetes.io/is-default-class="true"
