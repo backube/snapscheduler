@@ -105,6 +105,7 @@ func makePod(name string, namespace string, pvcName string) corev1.Pod {
 	}
 }
 
+//nolint:unparam
 func makePvc(name string, namespace string, mode corev1.PersistentVolumeAccessMode,
 	size string, storageClassName *string) corev1.PersistentVolumeClaim {
 	return corev1.PersistentVolumeClaim{
@@ -147,6 +148,7 @@ func waitForPodReady(name string, namespace string, retryInterval time.Duration,
 	return err
 }
 
+//nolint:unparam
 func waitForSnapshot(t *testing.T, client rclient.Reader, schedName string,
 	namespace string, retryInterval time.Duration, timeout time.Duration,
 	count int) ([]snapshotschedule.MultiversionSnapshot, error) {
@@ -304,6 +306,7 @@ func minimalTest(t *testing.T) {
 	t.Log("snapshot is ready")
 }
 
+//nolint:funlen
 func labelTest(t *testing.T) {
 	t.Parallel()
 	ctx := sdktest.NewTestCtx(t)
@@ -368,6 +371,7 @@ func labelTest(t *testing.T) {
 	}
 }
 
+//nolint:funlen
 func customClassTest(t *testing.T) {
 	t.Parallel()
 	ctx := sdktest.NewTestCtx(t)
@@ -428,6 +432,7 @@ func customClassTest(t *testing.T) {
 	}
 }
 
+//nolint:funlen
 func multiTest(t *testing.T) {
 	t.Parallel()
 	ctx := sdktest.NewTestCtx(t)
@@ -483,6 +488,7 @@ func multiTest(t *testing.T) {
 	}
 }
 
+//nolint:funlen
 func selectorTest(t *testing.T) {
 	t.Parallel()
 	ctx := sdktest.NewTestCtx(t)
