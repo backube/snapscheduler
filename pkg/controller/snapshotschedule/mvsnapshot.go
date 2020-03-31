@@ -115,6 +115,16 @@ func (mvs *MultiversionSnapshot) ReadyToUse() *bool {
 	return nil
 }
 
+// SnapshotClassName returns the name of the SnapshotClass for this VolumeSnapshot
+func (mvs *MultiversionSnapshot) SnapshotClassName() *string {
+	if mvs.v1Beta1 != nil {
+		return mvs.v1Beta1.Spec.VolumeSnapshotClassName
+	} else if mvs.v1Alpha1 != nil {
+		return mvs.v1Alpha1.Spec.VolumeSnapshotClassName
+	}
+	return nil
+}
+
 // WrapSnapshotAlpha encapsulates a v1alpha1 VolumeSnapshot.
 func WrapSnapshotAlpha(snap *snapv1alpha1.VolumeSnapshot) *MultiversionSnapshot {
 	if snap == nil {
