@@ -46,7 +46,7 @@ var testList = []struct {
 	Name string
 	Test func(t *testing.T)
 }{
-	{"Simple test", simpleTest},
+	{"Minimal schedule", minimalTest},
 	// {"Failure test", FailTest},
 }
 
@@ -144,8 +144,8 @@ func waitForPodReady(name string, namespace string, retryInterval time.Duration,
 }
 
 func waitForSnapshot(t *testing.T, client rclient.Reader, schedName string,
-	namespace string, retryInterval time.Duration, timeout time.Duration) (string, error) {
-	var snapName string
+	namespace string, retryInterval time.Duration, timeout time.Duration) ([]snapshotschedule.MultiversionSnapshot, error) {
+	var snaps []snapshotschedule.MultiversionSnapshot
 	err := wait.Poll(retryInterval, timeout, func() (bool, error) {
 		labelSelector := &metav1.LabelSelector{
 			MatchLabels: map[string]string{
@@ -164,18 +164,17 @@ func waitForSnapshot(t *testing.T, client rclient.Reader, schedName string,
 				Selector: selector,
 			},
 		}
-		snapList, err := snapshotschedule.ListMVSnapshot(goctx.TODO(), client, listOpts...)
+		snaps, err = snapshotschedule.ListMVSnapshot(goctx.TODO(), client, listOpts...)
 		if err != nil {
 			t.Errorf("unable to list snapshots: %v", err)
 			return false, err
 		}
-		if len(snapList) < 1 {
+		if len(snaps) < 1 {
 			return false, nil
 		}
-		snapName = snapList[0].ObjectMeta().GetName()
 		return true, nil
 	})
-	return snapName, err
+	return snaps, err
 }
 
 func waitForSnapshotReady(client rclient.Reader, snapName string, namespace string,
@@ -232,7 +231,7 @@ func TestSnapscheduler(t *testing.T) {
 }
 
 //nolint:funlen
-func simpleTest(t *testing.T) {
+func minimalTest(t *testing.T) {
 	t.Parallel()
 	ctx := sdktest.NewTestCtx(t)
 	defer ctx.Cleanup()
@@ -266,7 +265,7 @@ func simpleTest(t *testing.T) {
 	t.Logf("pod %v/%v is running", namespace, podName)
 
 	// Create a schedule
-	schedName := "minute"
+	schedName := "minimal"
 	sched := snapschedulerv1.SnapshotSchedule{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      schedName,
@@ -274,9 +273,6 @@ func simpleTest(t *testing.T) {
 		},
 		Spec: snapschedulerv1.SnapshotScheduleSpec{
 			Schedule: "* * * * *",
-			SnapshotTemplate: &snapschedulerv1.SnapshotTemplateSpec{
-				SnapshotClassName: &snapshotClassName,
-			},
 		},
 	}
 	if err = client.Create(goctx.TODO(), &sched, &cleanupOptions); err != nil {
@@ -285,12 +281,16 @@ func simpleTest(t *testing.T) {
 
 	// Wait for a snapshot to be created
 	t.Log("waiting for snapshot to be created")
-	snapName, err := waitForSnapshot(t, client, schedName, namespace, retryInterval, timeout)
+	snaps, err := waitForSnapshot(t, client, schedName, namespace, retryInterval, timeout)
 	if err != nil {
 		t.Fatalf("waiting for snapshot: %v", err)
 	}
+	if len(snaps) != 1 {
+		t.Fatalf("wrong number of snapshots. expected:1, got:%v", len(snaps))
+	}
 
 	// Wait for it to be ready
+	snapName := snaps[0].ObjectMeta().GetName()
 	t.Logf("found snapshot: %v/%v", namespace, snapName)
 	err = waitForSnapshotReady(client, snapName, namespace, retryInterval, timeout)
 	if err != nil {
