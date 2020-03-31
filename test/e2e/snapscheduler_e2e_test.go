@@ -20,6 +20,7 @@ package e2e
 import (
 	goctx "context"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -49,6 +50,8 @@ var testList = []struct {
 	{"Minimal schedule", minimalTest},
 	{"Snapshot labeling", labelTest},
 	{"Custom snapclass", customClassTest},
+	{"Multiple PVCs", multiTest},
+	{"PVC selector", selectorTest},
 }
 
 const (
@@ -145,7 +148,8 @@ func waitForPodReady(name string, namespace string, retryInterval time.Duration,
 }
 
 func waitForSnapshot(t *testing.T, client rclient.Reader, schedName string,
-	namespace string, retryInterval time.Duration, timeout time.Duration) ([]snapshotschedule.MultiversionSnapshot, error) {
+	namespace string, retryInterval time.Duration, timeout time.Duration,
+	count int) ([]snapshotschedule.MultiversionSnapshot, error) {
 	var snaps []snapshotschedule.MultiversionSnapshot
 	err := wait.Poll(retryInterval, timeout, func() (bool, error) {
 		labelSelector := &metav1.LabelSelector{
@@ -170,7 +174,7 @@ func waitForSnapshot(t *testing.T, client rclient.Reader, schedName string,
 			t.Errorf("unable to list snapshots: %v", err)
 			return false, err
 		}
-		if len(snaps) < 1 {
+		if len(snaps) < count {
 			return false, nil
 		}
 		return true, nil
@@ -282,7 +286,7 @@ func minimalTest(t *testing.T) {
 
 	// Wait for a snapshot to be created
 	t.Log("waiting for snapshot to be created")
-	snaps, err := waitForSnapshot(t, client, schedName, namespace, retryInterval, timeout)
+	snaps, err := waitForSnapshot(t, client, schedName, namespace, retryInterval, timeout, 1)
 	if err != nil {
 		t.Fatalf("waiting for snapshot: %v", err)
 	}
@@ -347,7 +351,7 @@ func labelTest(t *testing.T) {
 
 	// Wait for a snapshot to be created
 	t.Log("waiting for snapshot to be created")
-	snaps, err := waitForSnapshot(t, client, schedName, namespace, retryInterval, timeout)
+	snaps, err := waitForSnapshot(t, client, schedName, namespace, retryInterval, timeout, 1)
 	if err != nil {
 		t.Fatalf("waiting for snapshot: %v", err)
 	}
@@ -408,7 +412,7 @@ func customClassTest(t *testing.T) {
 
 	// Wait for a snapshot to be created
 	t.Log("waiting for snapshot to be created")
-	snaps, err := waitForSnapshot(t, client, schedName, namespace, retryInterval, timeout)
+	snaps, err := waitForSnapshot(t, client, schedName, namespace, retryInterval, timeout, 1)
 	if err != nil {
 		t.Fatalf("waiting for snapshot: %v", err)
 	}
@@ -421,5 +425,129 @@ func customClassTest(t *testing.T) {
 		t.Errorf("nil SnapshotClassName")
 	} else if wantCustomClass != *gotClass {
 		t.Errorf("wrong SnapshotClassName. want:%v got:%v", wantCustomClass, *gotClass)
+	}
+}
+
+func multiTest(t *testing.T) {
+	t.Parallel()
+	ctx := sdktest.NewTestCtx(t)
+	defer ctx.Cleanup()
+
+	cleanupOptions := sdktest.CleanupOptions{
+		TestContext:   ctx,
+		Timeout:       timeout,
+		RetryInterval: retryInterval,
+	}
+	client := sdktest.Global.Client
+	namespace, err := ctx.GetNamespace()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Set up a PVC
+	pvc := makePvc("first", namespace, corev1.ReadWriteOnce, "1Gi", &storageClassName)
+	if err = client.Create(goctx.TODO(), &pvc, &cleanupOptions); err != nil {
+		t.Fatalf("creating pvc: %v", err)
+	}
+
+	pvc2 := makePvc("second", namespace, corev1.ReadWriteOnce, "1Gi", &storageClassName)
+	if err = client.Create(goctx.TODO(), &pvc2, &cleanupOptions); err != nil {
+		t.Fatalf("creating pvc: %v", err)
+	}
+
+	expectedSnaps := 2
+
+	// Create a schedule
+	schedName := "multi"
+	sched := snapschedulerv1.SnapshotSchedule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      schedName,
+			Namespace: namespace,
+		},
+		Spec: snapschedulerv1.SnapshotScheduleSpec{
+			Schedule: "* * * * *",
+		},
+	}
+	if err = client.Create(goctx.TODO(), &sched, &cleanupOptions); err != nil {
+		t.Fatalf("creating snapshot schedule: %v", err)
+	}
+
+	// Wait for first snapshot to be created
+	t.Log("waiting for snapshot to be created")
+	snaps, err := waitForSnapshot(t, client, schedName, namespace, retryInterval, timeout, expectedSnaps)
+	if err != nil {
+		t.Fatalf("waiting for snapshot: %v", err)
+	}
+	if len(snaps) != expectedSnaps {
+		t.Fatalf("wrong number of snapshots. expected:%v, got:%v", expectedSnaps, len(snaps))
+	}
+}
+
+func selectorTest(t *testing.T) {
+	t.Parallel()
+	ctx := sdktest.NewTestCtx(t)
+	defer ctx.Cleanup()
+
+	cleanupOptions := sdktest.CleanupOptions{
+		TestContext:   ctx,
+		Timeout:       timeout,
+		RetryInterval: retryInterval,
+	}
+	client := sdktest.Global.Client
+	namespace, err := ctx.GetNamespace()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Set up a PVC
+	pvc := makePvc("pvc-yes", namespace, corev1.ReadWriteOnce, "1Gi", &storageClassName)
+	pvc.SetLabels(map[string]string{
+		"snap":     "yes",
+		"whatever": "zzz",
+	})
+	if err = client.Create(goctx.TODO(), &pvc, &cleanupOptions); err != nil {
+		t.Fatalf("creating pvc: %v", err)
+	}
+
+	pvc2 := makePvc("pvc-no", namespace, corev1.ReadWriteOnce, "1Gi", &storageClassName)
+	pvc2.SetLabels(map[string]string{
+		"snap":     "no",
+		"whatever": "zzz",
+	})
+	if err = client.Create(goctx.TODO(), &pvc2, &cleanupOptions); err != nil {
+		t.Fatalf("creating pvc: %v", err)
+	}
+
+	// Create a schedule
+	schedName := "select"
+	sched := snapschedulerv1.SnapshotSchedule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      schedName,
+			Namespace: namespace,
+		},
+		Spec: snapschedulerv1.SnapshotScheduleSpec{
+			Schedule: "* * * * *",
+			ClaimSelector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"snap": "yes",
+				},
+			},
+		},
+	}
+	if err = client.Create(goctx.TODO(), &sched, &cleanupOptions); err != nil {
+		t.Fatalf("creating snapshot schedule: %v", err)
+	}
+
+	// Wait for first snapshot to be created
+	t.Log("waiting for snapshot to be created")
+	snaps, err := waitForSnapshot(t, client, schedName, namespace, retryInterval, timeout, 1)
+	if err != nil {
+		t.Fatalf("waiting for snapshot: %v", err)
+	}
+	if len(snaps) != 1 {
+		t.Fatalf("wrong number of snapshots. expected:1, got:%v", len(snaps))
+	}
+	if !strings.Contains(snaps[0].ObjectMeta().GetName(), "pvc-yes") {
+		t.Errorf("unexpected snapshot: %v", snaps[0].ObjectMeta().GetName())
 	}
 }
