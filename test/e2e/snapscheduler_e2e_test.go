@@ -47,7 +47,8 @@ var testList = []struct {
 	Test func(t *testing.T)
 }{
 	{"Minimal schedule", minimalTest},
-	// {"Failure test", FailTest},
+	{"Snapshot labeling", labelTest},
+	{"Custom snapclass", customClassTest},
 }
 
 const (
@@ -297,4 +298,128 @@ func minimalTest(t *testing.T) {
 		t.Fatalf("waiting for snapshot to be ready: %v", err)
 	}
 	t.Log("snapshot is ready")
+}
+
+func labelTest(t *testing.T) {
+	t.Parallel()
+	ctx := sdktest.NewTestCtx(t)
+	defer ctx.Cleanup()
+
+	cleanupOptions := sdktest.CleanupOptions{
+		TestContext:   ctx,
+		Timeout:       timeout,
+		RetryInterval: retryInterval,
+	}
+	client := sdktest.Global.Client
+	namespace, err := ctx.GetNamespace()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Set up a PVC
+	pvc := makePvc("pvc", namespace, corev1.ReadWriteOnce, "1Gi", &storageClassName)
+	if err = client.Create(goctx.TODO(), &pvc, &cleanupOptions); err != nil {
+		t.Fatalf("creating pvc: %v", err)
+	}
+
+	wantLabels := map[string]string{
+		"mysnaplabel": "myval",
+		"label2":      "v2",
+	}
+
+	// Create a schedule
+	schedName := "withlabels"
+	sched := snapschedulerv1.SnapshotSchedule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      schedName,
+			Namespace: namespace,
+		},
+		Spec: snapschedulerv1.SnapshotScheduleSpec{
+			Schedule: "* * * * *",
+			SnapshotTemplate: &snapschedulerv1.SnapshotTemplateSpec{
+				Labels: wantLabels,
+			},
+		},
+	}
+	if err = client.Create(goctx.TODO(), &sched, &cleanupOptions); err != nil {
+		t.Fatalf("creating snapshot schedule: %v", err)
+	}
+
+	// Wait for a snapshot to be created
+	t.Log("waiting for snapshot to be created")
+	snaps, err := waitForSnapshot(t, client, schedName, namespace, retryInterval, timeout)
+	if err != nil {
+		t.Fatalf("waiting for snapshot: %v", err)
+	}
+	if len(snaps) != 1 {
+		t.Fatalf("wrong number of snapshots. expected:1, got:%v", len(snaps))
+	}
+
+	gotLabels := snaps[0].ObjectMeta().GetLabels()
+	for k, v := range wantLabels {
+		val, found := gotLabels[k]
+		if !found || v != val {
+			t.Errorf("unable to find label %v with value %v", k, v)
+		}
+	}
+}
+
+func customClassTest(t *testing.T) {
+	t.Parallel()
+	ctx := sdktest.NewTestCtx(t)
+	defer ctx.Cleanup()
+
+	cleanupOptions := sdktest.CleanupOptions{
+		TestContext:   ctx,
+		Timeout:       timeout,
+		RetryInterval: retryInterval,
+	}
+	client := sdktest.Global.Client
+	namespace, err := ctx.GetNamespace()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Set up a PVC
+	pvc := makePvc("pvc", namespace, corev1.ReadWriteOnce, "1Gi", &storageClassName)
+	if err = client.Create(goctx.TODO(), &pvc, &cleanupOptions); err != nil {
+		t.Fatalf("creating pvc: %v", err)
+	}
+
+	wantCustomClass := "my-custom-class"
+
+	// Create a schedule
+	schedName := "class"
+	sched := snapschedulerv1.SnapshotSchedule{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      schedName,
+			Namespace: namespace,
+		},
+		Spec: snapschedulerv1.SnapshotScheduleSpec{
+			Schedule: "* * * * *",
+			SnapshotTemplate: &snapschedulerv1.SnapshotTemplateSpec{
+				SnapshotClassName: &wantCustomClass,
+			},
+		},
+	}
+	if err = client.Create(goctx.TODO(), &sched, &cleanupOptions); err != nil {
+		t.Fatalf("creating snapshot schedule: %v", err)
+	}
+
+	// Wait for a snapshot to be created
+	t.Log("waiting for snapshot to be created")
+	snaps, err := waitForSnapshot(t, client, schedName, namespace, retryInterval, timeout)
+	if err != nil {
+		t.Fatalf("waiting for snapshot: %v", err)
+	}
+	if len(snaps) != 1 {
+		t.Fatalf("wrong number of snapshots. expected:1, got:%v", len(snaps))
+	}
+
+	gotClass := snaps[0].SnapshotClassName()
+	if gotClass == nil {
+		t.Errorf("nil SnapshotClassName")
+	} else if wantCustomClass != *gotClass {
+		t.Errorf("wrong SnapshotClassName. want:%v got:%v", wantCustomClass, *gotClass)
+	}
 }
