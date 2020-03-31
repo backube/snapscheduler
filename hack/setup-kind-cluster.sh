@@ -5,8 +5,7 @@ set -e -o pipefail
 # Possible versions:
 # https://hub.docker.com/r/kindest/node/tags?page=1&ordering=name
 # skopeo inspect docker://kindest/node:v1.17.0 | jq .RepoTags
-# 1.13.12, 1.14.10, 1.15.7, 1.16.4, 1.17.0
-KUBE_VERSION="${1:-1.17.0}"
+KUBE_VERSION="${1:-1.18.0}"
 
 # Determine the Kube minor version
 [[ "${KUBE_VERSION}" =~ ^[0-9]+\.([0-9]+) ]] && KUBE_MINOR="${BASH_REMATCH[1]}" || exit 1
@@ -157,3 +156,6 @@ metadata:
 snapshotter: hostpath.csi.k8s.io
 SNAPALPHA
 fi
+
+# Make VSC the cluster default
+kubectl annotate volumesnapshotclass/csi-hostpath-snapclass snapshot.storage.kubernetes.io/is-default-class="true"

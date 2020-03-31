@@ -162,8 +162,8 @@ jobs:
       - name: Verify snapscheduler is running
         run: kubectl -n backube-snapscheduler wait --for condition=Available --timeout 60s deploy/snapscheduler
 
-      - name: Verify snapshot scheduling
-        run: ./.ci-scripts/tests/test-simple-schedule.sh
+      - name: Run e2e tests
+        run: ./.ci-scripts/tests/test-sdk-e2e.sh
 
   push:
     name: Push container to registry
