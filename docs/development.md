@@ -18,6 +18,12 @@ Required:
     [Makefile](https://github.com/backube/snapscheduler/blob/master/Makefile)
     for the proper version to use
   - Can be installed by: `make install-golangci`
+- [kind](https://kind.sigs.k8s.io/)
+  - Recommended for running E2E tests in combination with the CSI hostpath
+    driver
+  - Check
+    [Makefile](https://github.com/backube/snapscheduler/blob/master/Makefile)
+    for the proper version to use
 
 Recommended:
 
@@ -70,4 +76,48 @@ $ make test
 ...
 $ make lint
 ...
+```
+
+## CI system & E2E testing
+
+The CI system (GitHub Actions) checks each PR by running both the linters + unit
+tests (mentioned above) and end-to-end tests. These tests are run across a
+number of kubernetes versions (see `KUBERNETES_VERSIONS` in
+[`.github/workflows/tests.yml`](https://github.com/backube/snapscheduler/blob/master/.github/workflows/tests.yml)).
+
+The e2e tests can be found in the
+[`tests/e2e`](https://github.com/backube/snapscheduler/blob/master/tests/e2e)
+directory and are based on the operator-sdk's e2e testing library.
+
+### Running E2E locally just like CI
+
+The same scripts that are used in CI can be used to test and develop locally:
+
+- The
+  [`hack/setup-kind-cluster.sh`](https://github.com/backube/snapscheduler/blob/master/hack/setup-kind-cluster.sh)
+  script will create a Kubernetes cluster and install the CSI hostpath driver.
+  The `KUBE_VERSION` environment variable can be used to change the Kubernetes
+  version. Note that this must be a specific version `X.Y.Z` that has a Kind
+  container.
+- The
+  [`hack/run-in-kind.sh`](https://github.com/backube/snapscheduler/blob/master/hack/run-in-kind.sh)
+  script will build the operator image, inject it into the Kind cluster, and use
+  the local helm chart to start it.
+
+After running the above two scripts, you should have a running cluster with a
+suitable CSI driver and the snapscheduler running, ready for testing.
+
+The E2E tests can then be executed via:
+
+```console
+$ ./.ci-scripts/tests/test-sdk-e2e.sh
+=== RUN   TestSnapscheduler
+=== RUN   TestSnapscheduler/Minimal_schedule
+=== PAUSE TestSnapscheduler/Minimal_schedule
+=== RUN   TestSnapscheduler/Snapshot_labeling
+=== PAUSE TestSnapscheduler/Snapshot_labeling
+=== RUN   TestSnapscheduler/Custom_snapclass
+...
+PASS
+ok    github.com/backube/snapscheduler/test/e2e 70.640s
 ```
