@@ -17,10 +17,7 @@ metadata:
             "retention": {
               "maxCount": 7
             },
-            "schedule": "@daily",
-            "snapshotTemplate": {
-              "snapshotClassName": "ebs-csi"
-            }
+            "schedule": "@daily"
           }
         }
       ]
