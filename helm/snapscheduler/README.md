@@ -3,13 +3,14 @@
 The SnapScheduler operator takes snapshots of Kubernetes CSI-based persistent
 volumes according to user-supplied schedules.
 
-## Introduction
+## About this operator
 
 The SnapScheduler operator takes snapshots of CSI-based PersistentVolumes
 according to a configurable
 [Cron-like](https://en.wikipedia.org/wiki/Cron#Overview) schedule. The schedules
 include configurable retention policies for snapshots as well as selectors to
 limit the volumes that are snapshotted. An example schedule could be:
+
 > *Snapshot **all volumes** in a namespace **daily at midnight**, retaining the
 > most recent **7** snapshots for each volume.*
 
