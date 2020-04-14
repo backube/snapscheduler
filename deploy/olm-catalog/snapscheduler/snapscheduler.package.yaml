@@ -1,0 +1,6 @@
+---
+channels:
+  - currentCSV: snapscheduler.v1.1.0
+    name: stable
+defaultChannel: stable
+packageName: snapscheduler

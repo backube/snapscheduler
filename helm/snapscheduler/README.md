@@ -1,15 +1,36 @@
-# snapscheduler
+# SnapScheduler
 
-The snapscheduler operator enables taking scheduled snapshots of Kubernetes
-persistent volumes.
+The SnapScheduler operator takes snapshots of Kubernetes CSI-based persistent
+volumes according to user-supplied schedules.
 
-## Introduction
+## About this operator
 
-The snapscheduler operator takes snapshots of CSI-based PersistentVolumes
-according to a configurable Cron-like schedule. These schedules also permit
-configuring the retention of the automated snapshots. The goal is to allow
-simple automated snapshotting policies like, "Retain 7 daily snapshots of the
-PVCs matching *(some selector)*."
+The SnapScheduler operator takes snapshots of CSI-based PersistentVolumes
+according to a configurable
+[Cron-like](https://en.wikipedia.org/wiki/Cron#Overview) schedule. The schedules
+include configurable retention policies for snapshots as well as selectors to
+limit the volumes that are snapshotted. An example schedule could be:
+
+> *Snapshot **all volumes** in a namespace **daily at midnight**, retaining the
+> most recent **7** snapshots for each volume.*
+
+Multiple schedules can be combined to provide more elaborate protection schemes.
+For example, a given volume (or collection of volumes) could be protected with:
+
+- 6 hourly snapshots
+- 7 daily snapshots
+- 4 weekly snapshots
+- 12 monthly snapshots
+
+### How it works
+
+The operator watches for `SnapshotSchedule` CRs in each namespace. When the
+current time matches the schedule's cronspec, the operator creates a
+`VolumeSnapshot` object for each `PersistentVolumeClaim` in the namespace (or
+subset thereof if a label selector is provided). The `VolumeSnapshot` objects
+are named according to the template: `<pvcname>-<schedulename>-<timestamp>`.
+After creating the new snapshots, the oldest snapshots are removed if necessary,
+according to the retention policy of the schedule.
 
 Please see the [full documentation](https://backube.github.io/snapscheduler/)
 for more information.
@@ -20,18 +41,16 @@ for more information.
 - CSI-based storage driver that supports snapshots (i.e. has the
   `CREATE_DELETE_SNAPSHOT` capability)
 
-## Usage
+## Installation
 
 The snapscheduler operator is a "cluster-level" operator. A single instance will
 watch `snapshotschedules` across all namespaces in the cluster. **Running more
 than one instance of the scheduler at a time is not supported.**
 
-### Installation
-
-It is recommended to install the operator into the `backube-snapscheduler`
-namespace, though any namespace may be used.
-
 ```console
+$ kubectl create ns backube-snapscheduler
+namespace/backube-snapscheduler created
+
 $ helm install --namespace backube-snapscheduler snapscheduler backube/snapscheduler
 NAME: snapscheduler
 LAST DEPLOYED: Mon Nov 25 17:38:26 2019
@@ -52,16 +71,14 @@ $ kubectl -n <mynampspace> get snapshotschedules
 ...
 ```
 
-### Examples
+## Examples
 
 The schedule for snapshotting is controlled by the
 `snapshotschedules.snapscheduler.backube` Custom Resource. This is a namespaced
-resource that applies only to the PersistentVolumeClaims in its namespace. Below
-is a simple example. See the [usage
-documentation](https://backube.github.io/snapscheduler/usage.html) for full
-details.
+resource that applies only to the PersistentVolumeClaims in its namespace.
 
-Keep 7 daily snapshots of all PVCs in a given namespace:
+Below is a simple example that keeps 7 daily (taken at midnight) snapshots of
+all PVCs in a given namespace:
 
 ```yaml
 ---
@@ -72,16 +89,22 @@ metadata:
 spec:
   retention:
     maxCount: 7
-  schedule: "@daily"
-  snapshotTemplate:
-    snapshotClassName: csi-ebs
+  schedule: "0 0 * * *"
 ```
+
+See the [usage
+documentation](https://backube.github.io/snapscheduler/usage.html) for full
+details, including how to:
+
+- add label selectors to restrict which PVCs this schedule applies to
+- set the VolumeSnapshotClass used by the schedule
+- apply custom labels to the automatically created VolumeSnapshot objects
 
 ## Configuration
 
 The following optional parameters in the chart can be configured, either by
 using `--set` on the command line or via a `values.yaml` file. In the general
-case, the defaults should be sufficient.
+case, the defaults, shown below, should be sufficient.
 
 - `replicaCount`: `2`
   - The number of replicas of the operator to run. Only one is active at a time

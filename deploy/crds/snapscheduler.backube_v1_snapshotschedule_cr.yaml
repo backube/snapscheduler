@@ -9,5 +9,3 @@ spec:
   # schedule fields: min hr dom mo dow
   # also supports @shortcuts
   schedule: "@daily"
-  snapshotTemplate:
-    snapshotClassName: ebs-csi
