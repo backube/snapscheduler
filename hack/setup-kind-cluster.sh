@@ -90,46 +90,54 @@ rm -f "${KIND_CONFIG_FILE}"
 
 # Kube >= 1.17, we need to deploy the snapshot controller
 if [[ $KUBE_MINOR -ge 17 ]]; then
-        TAG="v2.0.1"
-        kubectl create -f "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${TAG}/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml"
-        kubectl create -f "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${TAG}/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml"
-        kubectl create -f "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${TAG}/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml"
+  TAG="v2.0.1"
+  kubectl create -f "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${TAG}/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml"
+  kubectl create -f "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${TAG}/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml"
+  kubectl create -f "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${TAG}/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml"
 
-        kubectl create -f "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${TAG}/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml"
-        kubectl create -f "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${TAG}/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml"
+  kubectl create -f "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${TAG}/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml"
+  kubectl create -f "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${TAG}/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml"
 fi
 
 # Kube 1.13 requires CSIDriver & CSINodeInfo CRDs
 if [[ $KUBE_MINOR -eq 13 ]]; then
-        kubectl create -f https://raw.githubusercontent.com/kubernetes/csi-api/master/pkg/crd/manifests/csidriver.yaml
-        kubectl create -f https://raw.githubusercontent.com/kubernetes/csi-api/master/pkg/crd/manifests/csinodeinfo.yaml
+  kubectl create -f https://raw.githubusercontent.com/kubernetes/csi-api/master/pkg/crd/manifests/csidriver.yaml
+  kubectl create -f https://raw.githubusercontent.com/kubernetes/csi-api/master/pkg/crd/manifests/csinodeinfo.yaml
 fi
 
 # Install the hostpath CSI driver
 HP_BASE="$(mktemp --tmpdir -d csi-driver-host-path-XXXXXX)"
-git clone --depth 1 https://github.com/kubernetes-csi/csi-driver-host-path.git "$HP_BASE"
-if [[ $KUBE_MINOR -eq 14 ]]; then
-        cd "$HP_BASE"
-        git pull --unshallow && git pull
-        git checkout "v1.2.0"
-fi
-if [[ $KUBE_MINOR -lt 14 ]]; then
-        cd "$HP_BASE"
-        git pull --unshallow && git pull
-        git checkout "v1.1.0"
-fi
+case "$KUBE_MINOR" in
+  13)
+    HOSTPATH_BRANCH="v1.1.0"
+    DEPLOY_SCRIPT="deploy-hostpath.sh"
+    ;;
+  14)
+    HOSTPATH_BRANCH="v1.2.0"
+    DEPLOY_SCRIPT="deploy-hostpath.sh"
+    ;;
+  15|16|17)
+    HOSTPATH_BRANCH="v1.3.0"
+    DEPLOY_SCRIPT="deploy-hostpath.sh"
+    ;;
+  *)
+    HOSTPATH_BRANCH="master"
+    DEPLOY_SCRIPT="deploy.sh"
+    ;;
+esac
+git clone --depth 1 -b "$HOSTPATH_BRANCH" https://github.com/kubernetes-csi/csi-driver-host-path.git "$HP_BASE"
 
 DEPLOY_PATH="${HP_BASE}/deploy/kubernetes-1.${KUBE_MINOR}/"
-if [[ $KUBE_MINOR -ge 17 ]]; then
-  # 1.17 & 1.18 use the same path
-  DEPLOY_PATH="${HP_BASE}/deploy/kubernetes-1.17/"
+# For versions not yet supported, use the latest
+if [[ ! -d "${DEPLOY_PATH}" ]]; then
+  DEPLOY_PATH="${HP_BASE}/deploy/kubernetes-latest/"
 fi
-"${DEPLOY_PATH}/deploy-hostpath.sh"
+"${DEPLOY_PATH}/${DEPLOY_SCRIPT}"
 rm -rf "${HP_BASE}"
 
 CSI_DRIVER_NAME="hostpath.csi.k8s.io"
 if [[ $KUBE_MINOR -eq 13 ]]; then
-        CSI_DRIVER_NAME="csi-hostpath"
+  CSI_DRIVER_NAME="csi-hostpath"
 fi
 kubectl apply -f - <<SC
 apiVersion: storage.k8s.io/v1
@@ -148,7 +156,7 @@ kubectl annotate sc/csi-hostpath-sc storageclass.kubernetes.io/is-default-class=
 
 # For some versions we need to create the snapclass ourselves
 if [[ $KUBE_MINOR -eq 15 || $KUBE_MINOR -eq 16 ]]; then
-        kubectl create -f - <<SNAPALPHA
+  kubectl create -f - <<SNAPALPHA
 apiVersion: snapshot.storage.k8s.io/v1alpha1
 kind: VolumeSnapshotClass
 metadata:
