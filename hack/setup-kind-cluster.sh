@@ -90,7 +90,7 @@ rm -f "${KIND_CONFIG_FILE}"
 
 # Kube >= 1.17, we need to deploy the snapshot controller
 if [[ $KUBE_MINOR -ge 17 ]]; then
-  TAG="v2.0.1"
+  TAG="v2.1.0"
   kubectl create -f "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${TAG}/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml"
   kubectl create -f "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${TAG}/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml"
   kubectl create -f "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${TAG}/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml"
