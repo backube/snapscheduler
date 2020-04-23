@@ -38,10 +38,31 @@ spec:
               value: "snapscheduler"
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+  {{- /*
+  The horrible-ness below related to nodeSelector is because the node labels
+  removed the beta prefix in 1.14.
+  We want to have a default that ensures amd64/linux by default, but users must
+  be able to override that, including removing all selectors. If we didn't have
+  to determine at render-time the proper label name, the default labels should
+  be in the values.yaml and the template would look just like affinity, below.
+  The values.yaml file would set the labels like it does for resources.
+  When support for 1.13 is dropped, please fix this!
+  */ -}}
+  {{- if quote .Values.nodeSelector | ne "" }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+  {{- else }}
+      nodeSelector:
+      {{- if semverCompare ">=1.14" .Capabilities.KubeVersion.Version }}
+        kubernetes.io/arch: amd64
+        kubernetes.io/os: linux
+      {{- else }}
+        beta.kubernetes.io/arch: amd64
+        beta.kubernetes.io/os: linux
+      {{- end }}
+  {{- end }}
     {{- with .Values.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
