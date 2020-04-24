@@ -38,7 +38,8 @@ spec:
     # The maximum number of snapshots per PVC to keep
     maxCount: 10  # optional
   # The cronspec (https://en.wikipedia.org/wiki/Cron#Overview)
-  # that defines the schedule. The following pre-defined
+  # that defines the schedule. It is interpreted with
+  # respect to the UTC timezone. The following pre-defined
   # shortcuts are also supported: @hourly, @daily, @weekly,
   # @monthly, and @yearly
   schedule: "0 * * * *"
@@ -52,6 +53,26 @@ spec:
     # be used.
     snapshotClassName: ebs-csi  # optional
 ```
+
+### Schedule cronspec
+
+The `spec.schedule` defines when snapshots are to be taken. This field follows
+the standard 5-tuple [cronspec
+format](https://en.wikipedia.org/wiki/Cron#Overview). While the schedule
+shortcuts of `@hourly`, `@daily`, `@weekly`, `@monthly`, and `@yearly` are
+supported, they are not recommended due to the potential for many snapshots to
+be triggered simultaneously. A better approach would be to choose a unique time
+within the range to trigger the schedule. For example, `@hourly` is equivalent
+to `0 * * * *`. This means that all schedules using `@hourly` would trigger at
+the same time, potentially causing excessive load on the cluster or storage
+system. A better approach would be to take snapshots at a randomly chosen time
+with the same frequency, such as 17 minutes after the hour: `17 * * * *`. By
+choosing different offsets for schedules, the load can be spread throughout the
+hour frequency.
+
+Dates and times specified in the cronspec are relative to the UTC timezone
+(i.e., a schedule of `"0 5 * * *"` will create a snapshot once per day at 5:00
+AM UTC).
 
 ### Snapshot retention
 

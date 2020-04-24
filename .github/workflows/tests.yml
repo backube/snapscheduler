@@ -10,10 +10,10 @@ on:  # yamllint disable-line rule:truthy
 
 env:
   GO_VERSION: "1.13"
-  HELM_VERSION: "3.0.2"
+  HELM_VERSION: "3.2.0"
   KIND_VERSION: "0.7.0"
   OPERATOR_SDK_VERSION: "0.15.1"
-  GOLANGCI_VERSION: "1.23.3"
+  GOLANGCI_VERSION: "1.25.0"
   GO111MODULE: "on"
   IMAGE: "quay.io/backube/snapscheduler"
 
@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Install prereqs
         run: |
@@ -43,7 +43,7 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Install Go
         uses: actions/setup-go@v1
@@ -106,7 +106,7 @@ jobs:
       matrix:
         # There must be kindest/node images for these versions
         # See: https://hub.docker.com/r/kindest/node/tags?page=1&ordering=name
-        KUBERNETES_VERSIONS: ["1.13.12", "1.14.10", "1.15.7", "1.16.4", "1.17.0"]
+        KUBERNETES_VERSIONS: ["1.13.12", "1.14.10", "1.15.7", "1.16.4", "1.17.0", "1.18.0"]
 
     env:
       KUBECONFIG: /tmp/kubeconfig
@@ -114,7 +114,7 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Install Helm
         run: |
@@ -162,8 +162,8 @@ jobs:
       - name: Verify snapscheduler is running
         run: kubectl -n backube-snapscheduler wait --for condition=Available --timeout 60s deploy/snapscheduler
 
-      - name: Verify snapshot scheduling
-        run: ./.ci-scripts/tests/test-simple-schedule.sh
+      - name: Run e2e tests
+        run: ./.ci-scripts/tests/test-sdk-e2e.sh
 
   push:
     name: Push container to registry

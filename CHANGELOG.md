@@ -7,7 +7,13 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
-## [1.1.0] - 2019-02-13
+## [1.1.1] - 2020-04-24
+
+### Fixed
+
+- Fix crash when snapshotTemplate is not defined in schedule
+
+## [1.1.0] - 2020-02-13
 
 ### Added
 
@@ -21,6 +27,7 @@ This project follows [Semantic Versioning](https://semver.org/)
 - Label selectors to control which PVCs are selected for snapshotting
 - Retention policies based on snapshot age or count
 
-[unreleased]: https://github.com/backube/snapscheduler/compare/v1.1.0...HEAD
+[unreleased]: https://github.com/backube/snapscheduler/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/backube/snapscheduler/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/backube/snapscheduler/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/backube/snapscheduler/releases/tag/v1.0.0
