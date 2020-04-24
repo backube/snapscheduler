@@ -8,7 +8,7 @@ rules:
   document-start:
     ignore: |
       deploy/crds/snapscheduler.backube_snapshotschedules_crd.yaml
-      deploy/olm-catalog/snapscheduler/1.1.0/snapshotschedules.snapscheduler.backube.crd.yaml
+      deploy/olm-catalog/snapscheduler/1.1.1/snapshotschedules.snapscheduler.backube.crd.yaml
       helm/snapscheduler/crds/snapscheduler.backube_snapshotschedules_crd.yaml
   indentation:
     indent-sequences: consistent
@@ -16,5 +16,5 @@ rules:
     allow-non-breakable-inline-mappings: true
     ignore: |
       deploy/crds/snapscheduler.backube_snapshotschedules_crd.yaml
-      deploy/olm-catalog/snapscheduler/1.1.0/snapshotschedules.snapscheduler.backube.crd.yaml
+      deploy/olm-catalog/snapscheduler/1.1.1/snapshotschedules.snapscheduler.backube.crd.yaml
       helm/snapscheduler/crds/snapscheduler.backube_snapshotschedules_crd.yaml
