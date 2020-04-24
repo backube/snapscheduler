@@ -1,6 +1,9 @@
-Thank you for installing snapscheduler!
+Thank you for installing SnapScheduler!
 
-The snapscheduler operator is now installed in the {{ .Release.Namespace }}
+Chart version: {{ .Chart.Version }}
+SnapScheduler version: {{ default .Chart.AppVersion .Values.image.tagOverride }}
+
+The SnapScheduler operator is now installed in the {{ .Release.Namespace }}
 namespace, and snapshotschedules should be enabled cluster-wide.
 
 See https://backube.github.io/snapscheduler/usage.html to get started.

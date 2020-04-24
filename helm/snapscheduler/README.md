@@ -129,7 +129,7 @@ case, the defaults, shown below, should be sufficient.
   - Allows setting the operator container's security context
 - `resources`: requests for 10m CPU and 100Mi memory; no limits
   - Allows overriding the resource requests/limits for the operator pod
-- `nodeSelector`: none
+- `nodeSelector`: `kubernetes.io/arch: amd64`, `kubernetes.io/os: linux`
   - Allows applying a node selector to the operator pod
 - `tolerations`: none
   - Allows applying tolerations to the operator pod
