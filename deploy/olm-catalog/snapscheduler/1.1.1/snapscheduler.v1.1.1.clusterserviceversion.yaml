@@ -2,7 +2,7 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
-  name: snapscheduler.v1.1.0
+  name: snapscheduler.v1.1.1
   namespace: placeholder
   annotations:
     alm-examples: |-
@@ -23,12 +23,12 @@ metadata:
       ]
     categories: Storage
     certified: 'false'
-    createdAt: ''
+    createdAt: 'Fri Apr 24, 2020'
     description: >-
       The SnapScheduler operator takes snapshots of Kubernetes CSI-based
       persistent volumes according to user-supplied schedules.
-    containerImage: 'quay.io/backube/snapscheduler:1.1.0'
-    support: ''
+    containerImage: 'quay.io/backube/snapscheduler:1.1.1'
+    support: 'https://gitter.im/backube/snapscheduler'
     capabilities: Full Lifecycle
     repository: 'https://github.com/backube/snapscheduler'
 spec:
@@ -106,7 +106,7 @@ spec:
     - set the VolumeSnapshotClass used by the schedule
     - apply custom labels to the automatically created VolumeSnapshot objects
   maturity: stable
-  version: 1.1.0
+  version: 1.1.1
   # replaces: snapscheduler.v0.0.0
   minKubeVersion: 1.17.0
   keywords:
@@ -291,13 +291,16 @@ spec:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: snapscheduler
-                    image: quay.io/backube/snapscheduler:1.1.0
+                    image: quay.io/backube/snapscheduler:1.1.1
                     imagePullPolicy: IfNotPresent
                     name: snapscheduler
                     resources:
                       requests:
                         cpu: 10m
                         memory: 100Mi
+                nodeSelector:
+                  kubernetes.io/arch: amd64
+                  kubernetes.io/os: linux
                 serviceAccountName: snapscheduler
     strategy: deployment
   installModes:

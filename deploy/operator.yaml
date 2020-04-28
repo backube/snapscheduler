@@ -35,3 +35,6 @@ spec:
             requests:
               cpu: 10m
               memory: 100Mi
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        kubernetes.io/os: linux
