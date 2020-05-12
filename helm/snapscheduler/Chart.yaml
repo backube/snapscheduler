@@ -6,9 +6,9 @@ version: "1.2.0"
 description: >-
     An operator to take scheduled snapshots of Kubernetes persistent volumes
 type: application
-# Adding "-0" at the end of the version string permits pre-release kube versions
-# to match. See https://github.com/helm/helm/issues/6190
-kubeVersion: "^1.13.0-0"
+# Adding "-r0" at the end of the version string permits pre-release and cloud
+# kube versions to match. See https://github.com/helm/helm/issues/3810
+kubeVersion: "^1.13.0-r0"
 keywords:
   - csi
   - scheduler
