@@ -135,3 +135,29 @@ case, the defaults, shown below, should be sufficient.
   - Allows applying tolerations to the operator pod
 - `affinity`: none
   - Allows setting the operator pod's affinity
+
+## Chart changelog
+
+- Chart v1.2.1
+  - Fixed:
+    - Minimum kube version will now match against pre-release Kubernetes
+      versions, too (x.y.z-*something*)
+- Chart v1.2.0:
+  - Changed:
+    - `nodeSelector` now has a default value to only run the operator on
+      amd64/linux nodes
+    - Rewrite of this README
+    - Update SnapScheduler operator to v1.1.1
+- Chart v1.1.0:
+  - Changed:
+    - Min Kubernetes version increased to 1.13
+    - Update SnapScheduler operator to v1.1.0
+- Chart v1.0.2:
+  - Fixed:
+    - Add `watch` permission for v1.PersistentVolumeClaim
+- Chart v1.0.1:
+  - Fixed:
+    - Fix chart icon
+- Chart v1.0.0:
+  - Added:
+    - Initial release!
