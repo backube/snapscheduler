@@ -37,6 +37,46 @@ jobs:
       - name: Run linters
         run: ./.ci-scripts/pre-commit.sh --require-all
 
+  codescan:
+    name: CodeQL scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          # We must fetch at least the immediate parents so that if this is
+          # a pull request then we can checkout the head.
+          fetch-depth: 2
+
+      - name: Checkout PR head
+        if: ${{ github.event_name == 'pull_request' }}
+        run: git checkout HEAD^2
+
+      - name: Install Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Install operator-sdk
+        run: |
+          curl -fL -o /tmp/operator-sdk "https://github.com/operator-framework/operator-sdk/releases/download/v${OPERATOR_SDK_VERSION}/operator-sdk-v${OPERATOR_SDK_VERSION}-x86_64-linux-gnu"
+          sudo install /tmp/operator-sdk /usr/local/bin && rm -f /tmp/operator-sdk
+          operator-sdk version
+          operator-sdk version | grep -q "${OPERATOR_SDK_VERSION}"
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v1
+
+      - name: Download modules
+        run: go mod download
+
+      - name: Build operator container
+        run: make image
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v1
+
   build:
     name: Build
     runs-on: ubuntu-latest
