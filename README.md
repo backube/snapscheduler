@@ -5,11 +5,66 @@ Status](https://github.com/backube/snapscheduler/workflows/Tests/badge.svg)](htt
 [![Go Report
 Card](https://goreportcard.com/badge/github.com/backube/snapscheduler)](https://goreportcard.com/report/github.com/backube/snapscheduler)
 [![codecov](https://codecov.io/gh/backube/snapscheduler/branch/master/graph/badge.svg)](https://codecov.io/gh/backube/snapscheduler)
+[![Gitter
+chat](https://badges.gitter.im/backube/snapscheduler.png)](https://gitter.im/backube/snapscheduler)
 
-SnapScheduler provides scheduled snapshotting capabilities for Kubernetes
-CSI-based volumes.
+SnapScheduler provides scheduled snapshots for Kubernetes CSI-based volumes.
 
-## Installation
+## Quickstart
+
+Install:
+
+```console
+$ helm repo add backube https://backube.github.io/helm-charts/
+"backube" has been added to your repositories
+
+$ kubectl create namespace backube-snapscheduler
+namespace/backube-snapscheduler created
+
+$ helm install -n backube-snapscheduler snapscheduler backube/snapscheduler
+NAME: snapscheduler
+LAST DEPLOYED: Mon Jul  6 15:16:41 2020
+NAMESPACE: backube-snapscheduler
+STATUS: deployed
+...
+```
+
+Keep 6 hourly snapshots of all PVCs in `mynamespace`:
+
+```console
+$ kubectl -n mynamespace apply -f - <<EOF
+apiVersion: snapscheduler.backube/v1
+kind: SnapshotSchedule
+metadata:
+  name: hourly
+spec:
+  retention:
+    maxCount: 6
+  schedule: "0 * * * *"
+EOF
+
+snapshotschedule.snapscheduler.backube/hourly created
+```
+
+In this example, there is 1 PVC in the namespace, named `data`:
+
+```console
+$ kubectl -n mynamespace get pvc
+NAME   STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS      AGE
+data   Bound    pvc-c2e044ab-1b24-496a-9569-85f009892ccf   1Gi        RWO            csi-hostpath-sc   9s
+```
+
+At the top of each hour, a snapshot of that volume will be automatically
+created:
+
+```console
+$ kubectl -n mynamespace get volumesnapshots
+NAME                       AGE
+data-hourly-202007061600   82m
+data-hourly-202007061700   22m
+```
+
+## More information
 
 Interested in giving it a try? [Check out the
 docs.](https://backube.github.io/snapscheduler/)
@@ -21,10 +76,7 @@ The operator can be installed from:
 - [Helm Hub](https://hub.helm.sh/charts/backube/snapscheduler)
 - [OperatorHub.io](https://operatorhub.io/operator/snapscheduler)
 
-Have feedback? Got questions? Having trouble? [![Gitter
-chat](https://badges.gitter.im/backube/snapscheduler.png)](https://gitter.im/backube/snapscheduler)
-
-## Helpful links
+Other helpful links:
 
 - [SnapScheduler Changelog](CHANGELOG.md)
 - [Contributing guidelines](https://github.com/backube/.github/blob/master/CONTRIBUTING.md)
