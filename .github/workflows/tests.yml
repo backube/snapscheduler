@@ -4,7 +4,15 @@
 name: Tests
 on:  # yamllint disable-line rule:truthy
   push:
+    branches:
+      - master
+      - release*
+    tags:
+      - "*"
   pull_request:
+    branches:
+      - master
+      - release*
   schedule:
     - cron: "15 6 * * 1"  # 6:15 every Monday
 
@@ -135,7 +143,6 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: coverage.txt
-          yml: .codecov.yml
 
   e2e:
     name: End-to-end
