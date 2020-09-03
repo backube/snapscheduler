@@ -135,7 +135,6 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: coverage.txt
-          yml: .codecov.yml
 
   e2e:
     name: End-to-end
