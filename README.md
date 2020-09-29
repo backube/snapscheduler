@@ -5,8 +5,6 @@ Status](https://github.com/backube/snapscheduler/workflows/Tests/badge.svg)](htt
 [![Go Report
 Card](https://goreportcard.com/badge/github.com/backube/snapscheduler)](https://goreportcard.com/report/github.com/backube/snapscheduler)
 [![codecov](https://codecov.io/gh/backube/snapscheduler/branch/master/graph/badge.svg)](https://codecov.io/gh/backube/snapscheduler)
-[![Gitter
-chat](https://badges.gitter.im/backube/snapscheduler.png)](https://gitter.im/backube/snapscheduler)
 
 SnapScheduler provides scheduled snapshots for Kubernetes CSI-based volumes.
 
@@ -85,9 +83,9 @@ Other helpful links:
 ## Licensing
 
 This project is licensed under the [GNU AGPL 3.0 License](LICENSE) with the following
-exception:
+exceptions:
 
-- The files within the `pkg/apis/*` directories are additionally licensed under
+- The files within the `api/*` directories are additionally licensed under
   Apache License 2.0. This is to permit SnapScheduler's CustomResource types to
   be used by a wider range of software.
 - Documentation is made available under the [Creative Commons

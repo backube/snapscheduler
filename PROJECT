@@ -1,0 +1,11 @@
+domain: backube
+layout: go.kubebuilder.io/v2
+projectName: snap1
+repo: github.com/backube/snapscheduler
+resources:
+- group: snapscheduler
+  kind: SnapshotSchedule
+  version: v1
+version: 3-alpha
+plugins:
+  go.sdk.operatorframework.io/v2-alpha: {}

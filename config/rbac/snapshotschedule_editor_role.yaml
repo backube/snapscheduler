@@ -1,0 +1,24 @@
+# permissions for end users to edit snapshotschedules.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: snapshotschedule-editor-role
+rules:
+- apiGroups:
+  - snapscheduler.backube
+  resources:
+  - snapshotschedules
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - snapscheduler.backube
+  resources:
+  - snapshotschedules/status
+  verbs:
+  - get
