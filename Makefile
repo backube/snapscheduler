@@ -13,6 +13,7 @@ ifneq ($(origin DEFAULT_CHANNEL), undefined)
 BUNDLE_DEFAULT_CHANNEL := --default-channel=$(DEFAULT_CHANNEL)
 endif
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
+export SHELL := /bin/bash
 
 # Image URL to use all building/pushing image targets
 IMAGE := quay.io/backube/snapscheduler
@@ -25,6 +26,8 @@ GOBIN=$(shell go env GOPATH)/bin
 else
 GOBIN=$(shell go env GOBIN)
 endif
+# Ensure gobin is in path to prevent re-install of tools
+export PATH := $(PATH):$(GOBIN)
 
 .PHONY: all
 all: manager
@@ -153,9 +156,6 @@ docs:
 lint: generate golangci-lint
 	helm lint helm/snapscheduler
 	$(GOLANGCILINT) run ./...
-
-coverage.txt: generate
-	go test -covermode=atomic -coverprofile=coverage.txt  $(shell go list ./... | grep -v /test/e2e)
 
 .PHONY: golangci-lint
 GOLANGCI_URL := https://install.goreleaser.com/github.com/golangci/golangci-lint.sh

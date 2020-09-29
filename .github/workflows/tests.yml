@@ -17,11 +17,9 @@ on:  # yamllint disable-line rule:truthy
     - cron: "15 6 * * 1"  # 6:15 every Monday
 
 env:
-  GO_VERSION: "1.13"
+  GO_VERSION: "1.15"
   HELM_VERSION: "3.2.0"
   KIND_VERSION: "0.9.0"
-  OPERATOR_SDK_VERSION: "0.15.1"
-  GOLANGCI_VERSION: "1.25.0"
   GO111MODULE: "on"
   IMAGE: "quay.io/backube/snapscheduler"
 
@@ -67,11 +65,7 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
 
       - name: Install operator-sdk
-        run: |
-          curl -fL -o /tmp/operator-sdk "https://github.com/operator-framework/operator-sdk/releases/download/v${OPERATOR_SDK_VERSION}/operator-sdk-v${OPERATOR_SDK_VERSION}-x86_64-linux-gnu"
-          sudo install /tmp/operator-sdk /usr/local/bin && rm -f /tmp/operator-sdk
-          operator-sdk version
-          operator-sdk version | grep -q "${OPERATOR_SDK_VERSION}"
+        run: make operator-sdk
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v1
@@ -79,8 +73,8 @@ jobs:
       - name: Download modules
         run: go mod download
 
-      - name: Build operator container
-        run: make image
+      - name: Build operator
+        run: make manager
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v1
@@ -105,17 +99,10 @@ jobs:
           helm version | grep -q "${HELM_VERSION}"
 
       - name: Install GolangCI-Lint
-        run: |
-          curl -fL 'https://install.goreleaser.com/github.com/golangci/golangci-lint.sh' | sudo sh -s -- -b /usr/local/bin "v${GOLANGCI_VERSION}"
-          golangci-lint version
-          golangci-lint version |& grep -q "${GOLANGCI_VERSION}"
+        run: make golangci-lint
 
       - name: Install operator-sdk
-        run: |
-          curl -fL -o /tmp/operator-sdk "https://github.com/operator-framework/operator-sdk/releases/download/v${OPERATOR_SDK_VERSION}/operator-sdk-v${OPERATOR_SDK_VERSION}-x86_64-linux-gnu"
-          sudo install /tmp/operator-sdk /usr/local/bin && rm -f /tmp/operator-sdk
-          operator-sdk version
-          operator-sdk version | grep -q "${OPERATOR_SDK_VERSION}"
+        run: make operator-sdk
 
       - name: Download modules
         run: go mod download
@@ -124,7 +111,7 @@ jobs:
         run: make lint
 
       - name: Build operator container
-        run: make image
+        run: make docker-build IMAGE=${IMAGE}
 
       - name: Export container image
         run: docker save -o /tmp/image.tar ${IMAGE}
@@ -136,13 +123,13 @@ jobs:
           path: /tmp/image.tar
 
       - name: Calculate test coverage
-        run: make coverage.txt
+        run: make test
 
       - name: Upload coverage
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: coverage.txt
+          file: cover.out
 
   e2e:
     name: End-to-end
@@ -210,7 +197,7 @@ jobs:
         run: kubectl -n backube-snapscheduler wait --for condition=Available --timeout 60s deploy/snapscheduler
 
       - name: Run e2e tests
-        run: ./.ci-scripts/tests/test-sdk-e2e.sh
+        run: make e2e
 
   push:
     name: Push container to registry
