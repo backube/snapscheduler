@@ -37,7 +37,7 @@ all: manager
 # Run tests
 .PHONY: test
 ENVTEST_ASSETS_DIR := $(shell pwd)/testbin
-test: generate fmt vet manifests lint
+test: generate manifests lint
 	mkdir -p ${ENVTEST_ASSETS_DIR}
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/master/hack/setup-envtest.sh
 	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test -coverprofile cover.out $(shell go list ./... | grep -v /test/e2e)
@@ -48,12 +48,12 @@ e2e: generate ginkgo
 
 # Build manager binary
 .PHONY: manager
-manager: generate fmt vet
+manager: generate
 	go build -o bin/manager -ldflags -X=main.SnapschedulerVersion=$(VERSION) main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 .PHONY: run
-run: generate fmt vet manifests
+run: generate manifests
 	go run ./main.go
 
 # Install CRDs into a cluster
@@ -77,16 +77,6 @@ deploy: manifests kustomize
 manifests: controller-gen
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
-# Run go fmt against code
-.PHONY: fmt
-fmt:
-	go fmt ./...
-
-# Run go vet against code
-.PHONY: vet
-vet:
-	go vet ./...
-
 # Generate code
 .PHONY: generate
 generate: controller-gen
@@ -94,7 +84,7 @@ generate: controller-gen
 
 # Build the docker image
 .PHONY: docker-build
-docker-build: test
+docker-build:
 	docker build . -t ${IMAGE} --build-arg builddate=$(BUILDDATE) --build-arg version=$(VERSION)
 
 # Push the docker image
