@@ -1,8 +1,10 @@
 # Current Operator version
 VERSION := $(shell git describe --tags --dirty --match 'v*' 2> /dev/null || git describe --always --dirty)
 BUILDDATE := $(shell date -u '+%Y-%m-%dT%H:%M:%S.%NZ')
-GOLANGCI_VERSION := v1.25.0
-OPERATOR_SDK_VERSION := v1.0.0
+# https://github.com/golangci/golangci-lint/releases
+GOLANGCI_VERSION := v1.31.0
+# https://github.com/operator-framework/operator-sdk/releases
+OPERATOR_SDK_VERSION := v1.0.1
 # Default bundle image tag
 BUNDLE_IMG ?= controller-bundle:$(VERSION)
 # Options for 'bundle-build'
@@ -137,10 +139,10 @@ endif
 # Generate bundle manifests and metadata, then validate generated files.
 .PHONY: bundle
 bundle: manifests
-	operator-sdk generate kustomize manifests -q
+	$(OPERATOR_SDK) generate kustomize manifests -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMAGE)
-	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
-	operator-sdk bundle validate ./bundle
+	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
+	$(OPERATOR_SDK) bundle validate ./bundle
 
 # Build the bundle image.
 .PHONY: bundle-build
