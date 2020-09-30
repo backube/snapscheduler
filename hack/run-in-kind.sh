@@ -2,7 +2,7 @@
 
 set -e -o pipefail
 
-make image
+make docker-build
 
 kind load docker-image "quay.io/backube/snapscheduler"
 

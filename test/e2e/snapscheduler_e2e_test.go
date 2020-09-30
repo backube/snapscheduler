@@ -19,15 +19,10 @@ package e2e
 
 import (
 	goctx "context"
-	"os"
-	"strings"
-	"testing"
 	"time"
 
-	tlogr "github.com/go-logr/logr/testing"
-	snapv1alpha1 "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
-	snapv1beta1 "github.com/kubernetes-csi/external-snapshotter/v2/pkg/apis/volumesnapshot/v1beta1"
-	sdktest "github.com/operator-framework/operator-sdk/pkg/test"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -36,11 +31,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	rclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/backube/snapscheduler/pkg/apis"
-	snapschedulerv1 "github.com/backube/snapscheduler/pkg/apis/snapscheduler/v1"
-	"github.com/backube/snapscheduler/pkg/controller/snapshotschedule"
+	snapschedulerv1 "github.com/backube/snapscheduler/api/v1"
+	sscontroller "github.com/backube/snapscheduler/controllers"
 )
 
+/*
 // The list of tests to run. This could probably be automated via some sort of
 // reflect magic.
 var testList = []struct {
@@ -53,13 +48,13 @@ var testList = []struct {
 	{"Multiple PVCs", multiTest},
 	{"PVC selector", selectorTest},
 }
-
+*/
 const (
 	retryInterval = 5 * time.Second
 	// Must be long enough for:
 	// * snaps to be created via test schedule(s)
 	// * snaps to become ready
-	timeout         = 2 * time.Minute
+	timeout         = 120 // seconds
 	EnvStorageClass = "STORAGE_CLASS_NAME"
 	EnvSnapClass    = "SNAPSHOT_CLASS_NAME"
 )
@@ -127,12 +122,11 @@ func makePvc(name string, namespace string, mode corev1.PersistentVolumeAccessMo
 	}
 }
 
-func waitForPodReady(name string, namespace string, retryInterval time.Duration,
-	timeout time.Duration) error {
-	client := sdktest.Global.Client
+func waitForPodReady(name string, namespace string) error {
+	timeout := 5 * time.Minute
 	err := wait.Poll(retryInterval, timeout, func() (bool, error) {
 		pod := &corev1.Pod{}
-		err := client.Get(goctx.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, pod)
+		err := k8sClient.Get(goctx.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, pod)
 		if err != nil {
 			if kerrors.IsNotFound(err) {
 				return false, nil
@@ -149,21 +143,18 @@ func waitForPodReady(name string, namespace string, retryInterval time.Duration,
 }
 
 //nolint:unparam
-func waitForSnapshot(t *testing.T, client rclient.Reader, schedName string,
-	namespace string, retryInterval time.Duration, timeout time.Duration,
-	count int) ([]snapshotschedule.MultiversionSnapshot, error) {
-	var snaps []snapshotschedule.MultiversionSnapshot
+func waitForSnapshot(client rclient.Reader, schedName string,
+	namespace string, count int) ([]sscontroller.MultiversionSnapshot, error) {
+	var snaps []sscontroller.MultiversionSnapshot
+	timeout := 2 * time.Minute
 	err := wait.Poll(retryInterval, timeout, func() (bool, error) {
 		labelSelector := &metav1.LabelSelector{
 			MatchLabels: map[string]string{
-				snapshotschedule.ScheduleKey: schedName,
+				sscontroller.ScheduleKey: schedName,
 			},
 		}
 		selector, err := metav1.LabelSelectorAsSelector(labelSelector)
-		if err != nil {
-			t.Errorf("unable to create label selector for snapshot: %v", err)
-			return false, err
-		}
+		Expect(err).NotTo(HaveOccurred())
 
 		listOpts := []rclient.ListOption{
 			rclient.InNamespace(namespace),
@@ -171,11 +162,8 @@ func waitForSnapshot(t *testing.T, client rclient.Reader, schedName string,
 				Selector: selector,
 			},
 		}
-		snaps, err = snapshotschedule.ListMVSnapshot(goctx.TODO(), client, listOpts...)
-		if err != nil {
-			t.Errorf("unable to list snapshots: %v", err)
-			return false, err
-		}
+		snaps, err = sscontroller.ListMVSnapshot(goctx.TODO(), client, listOpts...)
+		Expect(err).NotTo(HaveOccurred())
 		if len(snaps) < count {
 			return false, nil
 		}
@@ -184,10 +172,10 @@ func waitForSnapshot(t *testing.T, client rclient.Reader, schedName string,
 	return snaps, err
 }
 
-func waitForSnapshotReady(client rclient.Reader, snapName string, namespace string,
-	retryInterval time.Duration, timeout time.Duration) error {
+func waitForSnapshotReady(client rclient.Reader, snapName string, namespace string) error {
+	timeout := 2 * time.Minute
 	err := wait.Poll(retryInterval, timeout, func() (bool, error) {
-		snap, err := snapshotschedule.GetMVSnapshot(goctx.TODO(), client,
+		snap, err := sscontroller.GetMVSnapshot(goctx.TODO(), client,
 			types.NamespacedName{Name: snapName, Namespace: namespace})
 		if err != nil {
 			return false, err
@@ -202,23 +190,15 @@ func waitForSnapshotReady(client rclient.Reader, snapName string, namespace stri
 	return err
 }
 
+/*
 func TestSnapscheduler(t *testing.T) {
-	scheduleList := &snapschedulerv1.SnapshotScheduleList{}
-	if err := sdktest.AddToFrameworkScheme(apis.AddToScheme, scheduleList); err != nil {
-		t.Fatalf("unable to add scheme: %v", err)
-	}
-	_ = sdktest.AddToFrameworkScheme(snapv1alpha1.AddToScheme, &snapv1alpha1.VolumeSnapshotList{})
-	_ = sdktest.AddToFrameworkScheme(snapv1beta1.AddToScheme, &snapv1beta1.VolumeSnapshotList{})
-
 	// Initialize MVSnapshot so we can work w/ both alpha and beta snaps
-	if err := snapshotschedule.VersionChecker.SetConfig(sdktest.Global.KubeConfig); err != nil {
+	if err := sscontroller.VersionChecker.SetConfig(cfg); err != nil {
 		t.Fatalf("error setting version checker config: %v", err)
 	}
-	if err := snapshotschedule.VersionChecker.Refresh(tlogr.NullLogger{}); err != nil {
+	if err := sscontroller.VersionChecker.Refresh(tlogr.NullLogger{}); err != nil {
 		t.Fatalf("initializing version checker: %v", err)
 	}
-
-	// Note, we don't set up the operator or wait for it to be ready.
 
 	// Allow override of StorageClass and SnapshotClass names via environment
 	// variables
@@ -236,324 +216,206 @@ func TestSnapscheduler(t *testing.T) {
 		t.Run(item.Name, item.Test)
 	}
 }
+*/
+var _ = Describe("E2E tests", func() {
+	var (
+		namespace *corev1.Namespace
+		pvc       corev1.PersistentVolumeClaim
+	)
 
-//nolint:funlen
-func minimalTest(t *testing.T) {
-	t.Parallel()
-	ctx := sdktest.NewTestCtx(t)
-	defer ctx.Cleanup()
-
-	cleanupOptions := sdktest.CleanupOptions{
-		TestContext:   ctx,
-		Timeout:       timeout,
-		RetryInterval: retryInterval,
-	}
-	client := sdktest.Global.Client
-	namespace, err := ctx.GetNamespace()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Set up a PVC & pod to snapshot
-	pvc := makePvc("pvc", namespace, corev1.ReadWriteOnce, "1Gi", &storageClassName)
-	if err = client.Create(goctx.TODO(), &pvc, &cleanupOptions); err != nil {
-		t.Fatalf("creating pvc: %v", err)
-	}
-	podName := "busybox"
-	pod := makePod(podName, namespace, pvc.GetName())
-	if err = client.Create(goctx.TODO(), &pod, &cleanupOptions); err != nil {
-		t.Fatalf("creating pod: %v", err)
-	}
-	t.Logf("waiting for pod %v/%v to be ready", namespace, podName)
-	err = waitForPodReady(podName, namespace, retryInterval, timeout)
-	if err != nil {
-		t.Fatalf("pod failed to become ready: %v", err)
-	}
-	t.Logf("pod %v/%v is running", namespace, podName)
-
-	// Create a schedule
-	schedName := "minimal"
-	sched := snapschedulerv1.SnapshotSchedule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      schedName,
-			Namespace: namespace,
-		},
-		Spec: snapschedulerv1.SnapshotScheduleSpec{
-			Schedule: "* * * * *",
-		},
-	}
-	if err = client.Create(goctx.TODO(), &sched, &cleanupOptions); err != nil {
-		t.Fatalf("creating snapshot schedule: %v", err)
-	}
-
-	// Wait for a snapshot to be created
-	t.Log("waiting for snapshot to be created")
-	snaps, err := waitForSnapshot(t, client, schedName, namespace, retryInterval, timeout, 1)
-	if err != nil {
-		t.Fatalf("waiting for snapshot: %v", err)
-	}
-	if len(snaps) != 1 {
-		t.Fatalf("wrong number of snapshots. expected:1, got:%v", len(snaps))
-	}
-
-	// Wait for it to be ready
-	snapName := snaps[0].ObjectMeta().GetName()
-	t.Logf("found snapshot: %v/%v", namespace, snapName)
-	err = waitForSnapshotReady(client, snapName, namespace, retryInterval, timeout)
-	if err != nil {
-		t.Fatalf("waiting for snapshot to be ready: %v", err)
-	}
-	t.Log("snapshot is ready")
-}
-
-//nolint:funlen
-func labelTest(t *testing.T) {
-	t.Parallel()
-	ctx := sdktest.NewTestCtx(t)
-	defer ctx.Cleanup()
-
-	cleanupOptions := sdktest.CleanupOptions{
-		TestContext:   ctx,
-		Timeout:       timeout,
-		RetryInterval: retryInterval,
-	}
-	client := sdktest.Global.Client
-	namespace, err := ctx.GetNamespace()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Set up a PVC
-	pvc := makePvc("pvc", namespace, corev1.ReadWriteOnce, "1Gi", &storageClassName)
-	if err = client.Create(goctx.TODO(), &pvc, &cleanupOptions); err != nil {
-		t.Fatalf("creating pvc: %v", err)
-	}
-
-	wantLabels := map[string]string{
-		"mysnaplabel": "myval",
-		"label2":      "v2",
-	}
-
-	// Create a schedule
-	schedName := "withlabels"
-	sched := snapschedulerv1.SnapshotSchedule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      schedName,
-			Namespace: namespace,
-		},
-		Spec: snapschedulerv1.SnapshotScheduleSpec{
-			Schedule: "* * * * *",
-			SnapshotTemplate: &snapschedulerv1.SnapshotTemplateSpec{
-				Labels: wantLabels,
+	BeforeEach(func() {
+		namespace = &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "e2e-snapscheduler-",
 			},
-		},
-	}
-	if err = client.Create(goctx.TODO(), &sched, &cleanupOptions); err != nil {
-		t.Fatalf("creating snapshot schedule: %v", err)
-	}
-
-	// Wait for a snapshot to be created
-	t.Log("waiting for snapshot to be created")
-	snaps, err := waitForSnapshot(t, client, schedName, namespace, retryInterval, timeout, 1)
-	if err != nil {
-		t.Fatalf("waiting for snapshot: %v", err)
-	}
-	if len(snaps) != 1 {
-		t.Fatalf("wrong number of snapshots. expected:1, got:%v", len(snaps))
-	}
-
-	gotLabels := snaps[0].ObjectMeta().GetLabels()
-	for k, v := range wantLabels {
-		val, found := gotLabels[k]
-		if !found || v != val {
-			t.Errorf("unable to find label %v with value %v", k, v)
 		}
-	}
-}
+		Expect(k8sClient.Create(goctx.TODO(), namespace)).To(Succeed())
+		Expect(namespace.Name).ShouldNot(Equal(""))
 
-//nolint:funlen
-func customClassTest(t *testing.T) {
-	t.Parallel()
-	ctx := sdktest.NewTestCtx(t)
-	defer ctx.Cleanup()
-
-	cleanupOptions := sdktest.CleanupOptions{
-		TestContext:   ctx,
-		Timeout:       timeout,
-		RetryInterval: retryInterval,
-	}
-	client := sdktest.Global.Client
-	namespace, err := ctx.GetNamespace()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Set up a PVC
-	pvc := makePvc("pvc", namespace, corev1.ReadWriteOnce, "1Gi", &storageClassName)
-	if err = client.Create(goctx.TODO(), &pvc, &cleanupOptions); err != nil {
-		t.Fatalf("creating pvc: %v", err)
-	}
-
-	wantCustomClass := "my-custom-class"
-
-	// Create a schedule
-	schedName := "class"
-	sched := snapschedulerv1.SnapshotSchedule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      schedName,
-			Namespace: namespace,
-		},
-		Spec: snapschedulerv1.SnapshotScheduleSpec{
-			Schedule: "* * * * *",
-			SnapshotTemplate: &snapschedulerv1.SnapshotTemplateSpec{
-				SnapshotClassName: &wantCustomClass,
-			},
-		},
-	}
-	if err = client.Create(goctx.TODO(), &sched, &cleanupOptions); err != nil {
-		t.Fatalf("creating snapshot schedule: %v", err)
-	}
-
-	// Wait for a snapshot to be created
-	t.Log("waiting for snapshot to be created")
-	snaps, err := waitForSnapshot(t, client, schedName, namespace, retryInterval, timeout, 1)
-	if err != nil {
-		t.Fatalf("waiting for snapshot: %v", err)
-	}
-	if len(snaps) != 1 {
-		t.Fatalf("wrong number of snapshots. expected:1, got:%v", len(snaps))
-	}
-
-	gotClass := snaps[0].SnapshotClassName()
-	if gotClass == nil {
-		t.Errorf("nil SnapshotClassName")
-	} else if wantCustomClass != *gotClass {
-		t.Errorf("wrong SnapshotClassName. want:%v got:%v", wantCustomClass, *gotClass)
-	}
-}
-
-//nolint:funlen
-func multiTest(t *testing.T) {
-	t.Parallel()
-	ctx := sdktest.NewTestCtx(t)
-	defer ctx.Cleanup()
-
-	cleanupOptions := sdktest.CleanupOptions{
-		TestContext:   ctx,
-		Timeout:       timeout,
-		RetryInterval: retryInterval,
-	}
-	client := sdktest.Global.Client
-	namespace, err := ctx.GetNamespace()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Set up a PVC
-	pvc := makePvc("first", namespace, corev1.ReadWriteOnce, "1Gi", &storageClassName)
-	if err = client.Create(goctx.TODO(), &pvc, &cleanupOptions); err != nil {
-		t.Fatalf("creating pvc: %v", err)
-	}
-
-	pvc2 := makePvc("second", namespace, corev1.ReadWriteOnce, "1Gi", &storageClassName)
-	if err = client.Create(goctx.TODO(), &pvc2, &cleanupOptions); err != nil {
-		t.Fatalf("creating pvc: %v", err)
-	}
-
-	expectedSnaps := 2
-
-	// Create a schedule
-	schedName := "multi"
-	sched := snapschedulerv1.SnapshotSchedule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      schedName,
-			Namespace: namespace,
-		},
-		Spec: snapschedulerv1.SnapshotScheduleSpec{
-			Schedule: "* * * * *",
-		},
-	}
-	if err = client.Create(goctx.TODO(), &sched, &cleanupOptions); err != nil {
-		t.Fatalf("creating snapshot schedule: %v", err)
-	}
-
-	// Wait for first snapshot to be created
-	t.Log("waiting for snapshot to be created")
-	snaps, err := waitForSnapshot(t, client, schedName, namespace, retryInterval, timeout, expectedSnaps)
-	if err != nil {
-		t.Fatalf("waiting for snapshot: %v", err)
-	}
-	if len(snaps) != expectedSnaps {
-		t.Fatalf("wrong number of snapshots. expected:%v, got:%v", expectedSnaps, len(snaps))
-	}
-}
-
-//nolint:funlen
-func selectorTest(t *testing.T) {
-	t.Parallel()
-	ctx := sdktest.NewTestCtx(t)
-	defer ctx.Cleanup()
-
-	cleanupOptions := sdktest.CleanupOptions{
-		TestContext:   ctx,
-		Timeout:       timeout,
-		RetryInterval: retryInterval,
-	}
-	client := sdktest.Global.Client
-	namespace, err := ctx.GetNamespace()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Set up a PVC
-	pvc := makePvc("pvc-yes", namespace, corev1.ReadWriteOnce, "1Gi", &storageClassName)
-	pvc.SetLabels(map[string]string{
-		"snap":     "yes",
-		"whatever": "zzz",
+		pvc = makePvc("pvc", namespace.Name, corev1.ReadWriteOnce, "1Gi", &storageClassName)
+		Expect(k8sClient.Create(goctx.TODO(), &pvc)).To(Succeed())
 	})
-	if err = client.Create(goctx.TODO(), &pvc, &cleanupOptions); err != nil {
-		t.Fatalf("creating pvc: %v", err)
-	}
 
-	pvc2 := makePvc("pvc-no", namespace, corev1.ReadWriteOnce, "1Gi", &storageClassName)
-	pvc2.SetLabels(map[string]string{
-		"snap":     "no",
-		"whatever": "zzz",
+	AfterEach(func() {
+		err := k8sClient.Delete(goctx.TODO(), namespace)
+		Expect(err).NotTo(HaveOccurred())
 	})
-	if err = client.Create(goctx.TODO(), &pvc2, &cleanupOptions); err != nil {
-		t.Fatalf("creating pvc: %v", err)
-	}
 
-	// Create a schedule
-	schedName := "select"
-	sched := snapschedulerv1.SnapshotSchedule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      schedName,
-			Namespace: namespace,
-		},
-		Spec: snapschedulerv1.SnapshotScheduleSpec{
-			Schedule: "* * * * *",
-			ClaimSelector: metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"snap": "yes",
+	Context("When using a minimal schedule", func() {
+		It("should generate a snapshot", func(done Done) {
+			// Set up a PVC & pod to snapshot
+			By("creating a pod")
+			podName := "busybox"
+			pod := makePod(podName, namespace.Name, pvc.GetName())
+			Expect(k8sClient.Create(goctx.TODO(), &pod)).To(Succeed())
+
+			By("waiting for pod to be running")
+			Expect(waitForPodReady(podName, namespace.Name)).To(Succeed())
+
+			By("creating a snapshot schedule")
+			// Create a schedule
+			schedName := "minimal"
+			sched := snapschedulerv1.SnapshotSchedule{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      schedName,
+					Namespace: namespace.Name,
 				},
-			},
-		},
-	}
-	if err = client.Create(goctx.TODO(), &sched, &cleanupOptions); err != nil {
-		t.Fatalf("creating snapshot schedule: %v", err)
-	}
+				Spec: snapschedulerv1.SnapshotScheduleSpec{
+					Schedule: "* * * * *",
+				},
+			}
+			Expect(k8sClient.Create(goctx.TODO(), &sched)).To(Succeed())
 
-	// Wait for first snapshot to be created
-	t.Log("waiting for snapshot to be created")
-	snaps, err := waitForSnapshot(t, client, schedName, namespace, retryInterval, timeout, 1)
-	if err != nil {
-		t.Fatalf("waiting for snapshot: %v", err)
-	}
-	if len(snaps) != 1 {
-		t.Fatalf("wrong number of snapshots. expected:1, got:%v", len(snaps))
-	}
-	if !strings.Contains(snaps[0].ObjectMeta().GetName(), "pvc-yes") {
-		t.Errorf("unexpected snapshot: %v", snaps[0].ObjectMeta().GetName())
-	}
-}
+			By("waiting for a snapshot")
+			snaps, err := waitForSnapshot(k8sClient, schedName, namespace.Name, 1)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(snaps)).To(Equal(1))
+
+			By("waiting for the snapshot to be ready")
+			snapName := snaps[0].ObjectMeta().GetName()
+			Expect(waitForSnapshotReady(k8sClient, snapName, namespace.Name)).To(Succeed())
+
+			close(done)
+		}, timeout)
+	})
+
+	Context("when setting labels in the template", func() {
+		It("should set labels on the resulting snapshot", func(done Done) {
+			By("creating a snapshot schedule w/ labels in the template")
+			wantLabels := map[string]string{
+				"mysnaplabel": "myval",
+				"label2":      "v2",
+			}
+			schedName := "withlabels"
+			sched := snapschedulerv1.SnapshotSchedule{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      schedName,
+					Namespace: namespace.Name,
+				},
+				Spec: snapschedulerv1.SnapshotScheduleSpec{
+					Schedule: "* * * * *",
+					SnapshotTemplate: &snapschedulerv1.SnapshotTemplateSpec{
+						Labels: wantLabels,
+					},
+				},
+			}
+			Expect(k8sClient.Create(goctx.TODO(), &sched)).To(Succeed())
+
+			// Wait for a snapshot to be created
+			By("waiting for snapshot to be created")
+			snaps, err := waitForSnapshot(k8sClient, schedName, namespace.Name, 1)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(snaps).To(HaveLen(1))
+
+			gotLabels := snaps[0].ObjectMeta().GetLabels()
+			for k, v := range wantLabels {
+				Expect(gotLabels).To(HaveKeyWithValue(k, v))
+			}
+
+			close(done)
+		}, timeout)
+	})
+
+	Context("when specifying a custom snapshotclass in the template", func() {
+		It("should use that class in the resulting snapshot", func(done Done) {
+			wantCustomClass := "my-custom-class"
+			schedName := "class"
+			sched := snapschedulerv1.SnapshotSchedule{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      schedName,
+					Namespace: namespace.Name,
+				},
+				Spec: snapschedulerv1.SnapshotScheduleSpec{
+					Schedule: "* * * * *",
+					SnapshotTemplate: &snapschedulerv1.SnapshotTemplateSpec{
+						SnapshotClassName: &wantCustomClass,
+					},
+				},
+			}
+			Expect(k8sClient.Create(goctx.TODO(), &sched)).To(Succeed())
+
+			By("waiting for snapshot to be created")
+			snaps, err := waitForSnapshot(k8sClient, schedName, namespace.Name, 1)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(snaps).To(HaveLen(1))
+
+			Expect(snaps[0].SnapshotClassName()).ToNot(BeNil())
+			Expect(*snaps[0].SnapshotClassName()).To(Equal(wantCustomClass))
+
+			close(done)
+		}, timeout)
+	})
+
+	Context("when there are multiple PVCs", func() {
+		It("should create multiple snapshots", func(done Done) {
+			pvc2 := makePvc("second", namespace.Name, corev1.ReadWriteOnce, "1Gi", &storageClassName)
+			Expect(k8sClient.Create(goctx.TODO(), &pvc2)).To(Succeed())
+
+			schedName := "multi"
+			sched := snapschedulerv1.SnapshotSchedule{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      schedName,
+					Namespace: namespace.Name,
+				},
+				Spec: snapschedulerv1.SnapshotScheduleSpec{
+					Schedule: "* * * * *",
+				},
+			}
+			Expect(k8sClient.Create(goctx.TODO(), &sched)).To(Succeed())
+
+			expectedSnaps := 2
+
+			By("waiting for snapshots to be created")
+			snaps, err := waitForSnapshot(k8sClient, schedName, namespace.Name, expectedSnaps)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(snaps).To(HaveLen(expectedSnaps))
+
+			close(done)
+		}, timeout)
+	})
+
+	Context("when there are label selectors", func() {
+		It("should only snapshot matching PVCs", func(done Done) {
+			pvc := makePvc("pvc-yes", namespace.Name, corev1.ReadWriteOnce, "1Gi", &storageClassName)
+			pvc.SetLabels(map[string]string{
+				"snap":     "yes",
+				"whatever": "zzz",
+			})
+			Expect(k8sClient.Create(goctx.TODO(), &pvc)).To(Succeed())
+
+			pvc2 := makePvc("pvc-no", namespace.Name, corev1.ReadWriteOnce, "1Gi", &storageClassName)
+			pvc2.SetLabels(map[string]string{
+				"snap":     "no",
+				"whatever": "zzz",
+			})
+			Expect(k8sClient.Create(goctx.TODO(), &pvc2)).To(Succeed())
+
+			// Create a schedule
+			schedName := "select"
+			sched := snapschedulerv1.SnapshotSchedule{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      schedName,
+					Namespace: namespace.Name,
+				},
+				Spec: snapschedulerv1.SnapshotScheduleSpec{
+					Schedule: "* * * * *",
+					ClaimSelector: metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"snap": "yes",
+						},
+					},
+				},
+			}
+			Expect(k8sClient.Create(goctx.TODO(), &sched)).To(Succeed())
+
+			// Wait for first snapshot to be created
+			By("waiting for snapshot to be created")
+			snaps, err := waitForSnapshot(k8sClient, schedName, namespace.Name, 1)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(snaps).To(HaveLen(1))
+			Expect(snaps[0].ObjectMeta().GetName()).To(HavePrefix("pvc-yes"))
+
+			close(done)
+		}, timeout)
+	})
+})

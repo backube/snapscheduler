@@ -23,19 +23,12 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: {{ .Chart.Name }}
+          command: ["/manager"]
+          args: ["--enable-leader-election"]
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tagOverride }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          env:
-            - name: WATCH_NAMESPACE
-              value: ""
-            - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: OPERATOR_NAME
-              value: "snapscheduler"
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
   {{- /*
@@ -71,3 +64,18 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
     {{- end }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "snapscheduler.fullname" . }}-metrics
+  labels:
+    {{- include "snapscheduler.labels" . | nindent 4 }}
+spec:
+  ports:
+  - name: https
+    port: 8443
+    targetPort: https
+  selector:
+    {{- include "snapscheduler.selectorLabels" . | nindent 4 }}
