@@ -140,7 +140,7 @@ jobs:
       matrix:
         # There must be kindest/node images for these versions
         # See: https://hub.docker.com/r/kindest/node/tags?page=1&ordering=name
-        KUBERNETES_VERSIONS: ["1.13.12", "1.14.10", "1.15.7", "1.16.9", "1.17.5", "1.18.8", "1.19.0"]
+        KUBERNETES_VERSIONS: ["1.13.12", "1.14.10", "1.15.12", "1.16.15", "1.17.11", "1.18.8", "1.19.4", "1.20.0"]
 
     env:
       KUBECONFIG: /tmp/kubeconfig
@@ -199,9 +199,23 @@ jobs:
       - name: Run e2e tests
         run: make e2e
 
+  # This is a dummy job that can be used to determine success of CI:
+  # - by Mergify instead of having to list a bunch of other jobs
+  # - by the push jobs to ensure all pre-reqs pass before ANY containers are
+  #   pushed.
+  # - by branch protection so it doesn't need to be updated each time the kube
+  #   versions in the matrix change
+  e2e-success:
+    name: Successful e2e tests
+    needs: [build, e2e, lint]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Success
+        run: echo "Previous steps were successful"
+
   push:
     name: Push container to registry
-    needs: [build, e2e]
+    needs: [e2e-success]
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
