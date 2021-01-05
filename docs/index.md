@@ -18,8 +18,8 @@ Kubernetes version compatibility:
 | snapscheduler | Kubernetes    | `snapshot.storage.k8s.io` |
 |---------------|---------------|---------------------------|
 | 1.0           | 1.13 -- 1.16  | `v1alpha1`                |
-| 1.1           | 1.13 -- 1.19+ | `v1alpha1`, `v1beta1`     |
-| master        | 1.13 -- 1.19+ | `v1alpha1`, `v1beta1`     |
+| 1.1           | 1.13 -- 1.20+ | `v1alpha1`, `v1beta1`     |
+| master        | 1.13 -- 1.20+ | `v1alpha1`, `v1beta1`     |
 
 ## Contents
 
