@@ -29,6 +29,9 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tagOverride }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
   {{- /*
@@ -74,8 +77,8 @@ metadata:
     {{- include "snapscheduler.labels" . | nindent 4 }}
 spec:
   ports:
-  - name: https
-    port: 8443
-    targetPort: https
+  - name: http
+    port: 8080
+    targetPort: http
   selector:
     {{- include "snapscheduler.selectorLabels" . | nindent 4 }}
