@@ -1,0 +1,5 @@
+.git
+.venv
+bin
+docs
+testbin
