@@ -15,7 +15,8 @@ COPY api/ api/
 COPY controllers/ controllers/
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
+ARG version="(unknown)"
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager -ldflags -X=main.snapschedulerVersion=${version} main.go
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
@@ -28,7 +29,6 @@ ENTRYPOINT ["/manager"]
 
 ARG builddate="(unknown)"
 ARG description="Operator to manage scheduled PV snapshots"
-ARG version="(unknown)"
 
 LABEL build-date="${builddate}"
 LABEL description="${description}"
