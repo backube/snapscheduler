@@ -138,6 +138,12 @@ case, the defaults, shown below, should be sufficient.
 
 ## Chart changelog
 
+- Chart v1.3.0
+  - Changed:
+    - Update snapscheduler to 1.2.0
+    - Switched operator base container to distroless
+  - Fixed:
+    - Update metrics Service port to properly expose metrics
 - Chart v1.2.1
   - Fixed:
     - Minimum kube version will now match against pre-release Kubernetes
