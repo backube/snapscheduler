@@ -2,7 +2,7 @@
 apiVersion: v2
 name: snapscheduler
 # Chart version: Incremented during chart, template, or appVersion changes.
-version: "1.2.1"
+version: "1.3.0"
 description: >-
     An operator to take scheduled snapshots of Kubernetes persistent volumes
 type: application
@@ -23,4 +23,20 @@ maintainers:
     url: https://github.com/JohnStrunk
 icon: https://raw.githubusercontent.com/backube/snapscheduler/master/docs/media/snapscheduler.svg?sanitize=true
 # This is the version number of the application being deployed.
-appVersion: "1.1.1"
+appVersion: "1.2.0"
+annotations:
+  # Changelog for current chart & app version
+  # Prefix w/ Added/Changed/Deprecated/Fixed/Removed/Security
+  artifacthub.io/changes: |
+    - Changed - Update snapscheduler to 1.2.0
+    - Changed - Switched operator base container to distroless
+    - Fixed - Update metrics Service port to properly expose metrics
+  artifacthub.io/crds: |
+    - kind: SnapshotSchedule
+      version: v1
+      name: snapshotschedule.snapscheduler.backube
+      displayName: Snapshot schedule
+      description: Defines a schedule for automated volume snapshots
+  artifacthub.io/license: AGPL-3.0-or-later
+  artifacthub.io/operator: "true"
+  artifacthub.io/operatorCapabilities: Seamless Upgrades

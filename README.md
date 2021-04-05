@@ -71,7 +71,6 @@ The operator can be installed from:
 
 - [Artifact
   Hub](https://artifacthub.io/package/chart/backube-helm-charts/snapscheduler)
-- [Helm Hub](https://hub.helm.sh/charts/backube/snapscheduler)
 - [OperatorHub.io](https://operatorhub.io/operator/snapscheduler)
 
 Other helpful links:
