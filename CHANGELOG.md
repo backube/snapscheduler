@@ -7,6 +7,18 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+TBD
+
+## [1.2.0] - 2021-04-05
+
+### Changed
+
+- Switched the operator base container to distroless
+
+### Fixed
+
+- Metrics weren't accessible from the snapsheduler-metrics Service
+
 ## [1.1.1] - 2020-04-24
 
 ### Fixed
@@ -27,7 +39,8 @@ This project follows [Semantic Versioning](https://semver.org/)
 - Label selectors to control which PVCs are selected for snapshotting
 - Retention policies based on snapshot age or count
 
-[unreleased]: https://github.com/backube/snapscheduler/compare/v1.1.1...HEAD
+[unreleased]: https://github.com/backube/snapscheduler/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/backube/snapscheduler/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/backube/snapscheduler/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/backube/snapscheduler/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/backube/snapscheduler/releases/tag/v1.0.0
