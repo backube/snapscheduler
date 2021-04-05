@@ -49,7 +49,7 @@ e2e: generate ginkgo
 # Build manager binary
 .PHONY: manager
 manager: generate
-	go build -o bin/manager -ldflags -X=main.SnapschedulerVersion=$(VERSION) main.go
+	go build -o bin/manager -ldflags -X=main.snapschedulerVersion=$(VERSION) main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 .PHONY: run
