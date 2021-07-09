@@ -75,7 +75,7 @@ var _ = BeforeSuite(func(done Done) {
 	// Initialize MVSnapshot so we can work w/ both alpha and beta snaps
 	err = sscontroller.VersionChecker.SetConfig(cfg)
 	Expect(err).NotTo(HaveOccurred())
-	err = sscontroller.VersionChecker.Refresh(logf.Log.Logger)
+	err = sscontroller.VersionChecker.Refresh(logf.Log)
 	Expect(err).NotTo(HaveOccurred())
 
 	// Allow override of StorageClass and SnapshotClass names via environment
