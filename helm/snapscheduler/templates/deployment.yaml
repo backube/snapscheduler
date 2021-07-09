@@ -24,7 +24,7 @@ spec:
       containers:
         - name: {{ .Chart.Name }}
           command: ["/manager"]
-          args: ["--enable-leader-election"]
+          args: ["--leader-elect"]
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tagOverride }}"

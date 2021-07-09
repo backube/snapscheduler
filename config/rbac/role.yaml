@@ -29,6 +29,12 @@ rules:
 - apiGroups:
   - snapscheduler.backube
   resources:
+  - snapshotschedules/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - snapscheduler.backube
+  resources:
   - snapshotschedules/status
   verbs:
   - get

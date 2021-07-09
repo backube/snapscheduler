@@ -1,20 +1,17 @@
 module github.com/backube/snapscheduler
 
-go 1.13
+go 1.16
 
 require (
-	github.com/go-logr/logr v0.1.0
+	github.com/go-logr/logr v0.3.0
 	github.com/kubernetes-csi/external-snapshotter v1.2.2
-	github.com/kubernetes-csi/external-snapshotter/v2 v2.1.1
+	github.com/kubernetes-csi/external-snapshotter/v2 v2.1.5
 	github.com/onsi/ginkgo v1.14.1
-	github.com/onsi/gomega v1.10.1
-	github.com/openshift/custom-resource-status v0.0.0-20200602122900-c002fd1547ca
-	github.com/pkg/errors v0.9.1 // indirect
+	github.com/onsi/gomega v1.10.2
+	github.com/openshift/custom-resource-status v1.1.0
 	github.com/robfig/cron/v3 v3.0.1
-	github.com/stretchr/testify v1.5.1 // indirect
-	golang.org/x/sys v0.0.0-20200814200057-3d37ad5750ed // indirect
-	k8s.io/api v0.18.6
-	k8s.io/apimachinery v0.18.8
-	k8s.io/client-go v0.18.6
-	sigs.k8s.io/controller-runtime v0.6.2
+	k8s.io/api v0.20.2
+	k8s.io/apimachinery v0.20.2
+	k8s.io/client-go v0.20.2
+	sigs.k8s.io/controller-runtime v0.8.3
 )
