@@ -149,7 +149,7 @@ func doReconcile(schedule *snapschedulerv1.SnapshotSchedule,
 		return ctrl.Result{}, err
 	}
 
-	if err := expireByTime(schedule, logger, c); err != nil {
+	if err := expireByTime(schedule, time.Now(), logger, c); err != nil {
 		logger.Error(err, "expireByTime")
 		return ctrl.Result{}, err
 	}

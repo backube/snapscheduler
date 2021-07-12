@@ -19,206 +19,141 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package controllers
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
 
-	snapschedulerv1 "github.com/backube/snapscheduler/api/v1"
-
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	snapschedulerv1 "github.com/backube/snapscheduler/api/v1"
 )
 
 const (
 	timeFormat = time.RFC3339
 )
 
-func TestGetNextSnapTime(t *testing.T) {
-	var tests = []struct {
-		inCronspec string
-		inTime     string
-		wantTime   string
-		wantErr    bool
-	}{
-		{"@hourly", "2013-02-01T11:04:05Z", "2013-02-01T12:00:00Z", false},
-		{"2 1 23 7 *", "2010-01-01T00:00:00Z", "2010-07-23T01:02:00Z", false},
-		{"invalid_spec", "2013-02-01T11:04:05Z", "unused", true},
-	}
-
-	for _, test := range tests {
-		inTime, _ := time.Parse(timeFormat, test.inTime)
-		gotTime, err := getNextSnapTime(test.inCronspec, inTime)
-		if err != nil {
-			if !test.wantErr {
-				t.Errorf("unexpected error: %v", err)
-			}
-			continue
+var _ = DescribeTable("Determining the next snapshot time",
+	func(cronspec string, current string, next string, expectErr bool) {
+		ctime, _ := time.Parse(timeFormat, current)
+		got, err := getNextSnapTime(cronspec, ctime)
+		if expectErr {
+			Expect(err).To(HaveOccurred())
+		} else {
+			want, _ := time.Parse(timeFormat, next)
+			Expect(got).To(Equal(want))
 		}
-		if test.wantErr {
-			t.Errorf("expected an error, but didn't get it")
-			continue
+	},
+	Entry("@hourly shortcut", "@hourly", "2013-02-01T11:04:05Z", "2013-02-01T12:00:00Z", false),
+	Entry("01:02 on July 23 every year", "2 1 23 7 *", "2010-01-01T00:00:00Z", "2010-07-23T01:02:00Z", false),
+	Entry("invalid spec", "invalid_spec", "2013-02-01T11:04:05Z", "unused", true),
+)
+
+var _ = Describe("newSnapForClaim", func() {
+	It("creates a snapshot object based on a pvc, schedule, snapclass", func() {
+		pvc := corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "mypvc",
+				Namespace: "mynamespace",
+			},
 		}
-		wantTime, _ := time.Parse(timeFormat, test.wantTime)
-		if gotTime != wantTime {
-			t.Errorf("expected: %v -- got: %v", wantTime, gotTime)
+		snapname := "mysnap"
+		snapClass := "snapclass"
+		scheduleName := "mysched"
+		schedTime, _ := time.Parse(timeFormat, "2010-07-23T01:02:00Z")
+		VersionChecker.v1Beta1 = true
+		VersionChecker.v1Alpha1 = false
+		snap := newSnapForClaim(snapname, pvc, scheduleName, schedTime, nil, &snapClass)
+
+		snapMeta := snap.ObjectMeta()
+		// Some tests depend on knowing the internals :(
+		betaSnap := snap.v1Beta1
+
+		Expect(snapMeta.Name).To(Equal(snapname))
+		Expect(snapMeta.Namespace).To(Equal(pvc.Namespace))
+		Expect(*betaSnap.Spec.Source.PersistentVolumeClaimName).To(Equal(pvc.Name))
+		Expect(betaSnap.Spec.VolumeSnapshotClassName).NotTo(BeNil())
+		Expect(*betaSnap.Spec.VolumeSnapshotClassName).To(Equal(snapClass))
+		Expect(snapMeta.Labels).To(HaveKeyWithValue(ScheduleKey, scheduleName))
+	})
+	It("allows providing addl labels", func() {
+		pvc := corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "mypvc",
+				Namespace: "mynamespace",
+			},
 		}
-	}
-}
+		snapname := "mysnap"
+		scheduleName := "mysched"
+		schedTime, _ := time.Parse(timeFormat, "2010-07-23T01:02:00Z")
+		VersionChecker.v1Beta1 = true
+		VersionChecker.v1Alpha1 = false
+		labels := make(map[string]string, 2)
+		labels["one"] = "two"
+		labels["three"] = "four"
+		snap := newSnapForClaim(snapname, pvc, scheduleName, schedTime, labels, nil)
+		// Some tests depend on knowing the internals :(
+		betaSnap := snap.v1Beta1
+		Expect(betaSnap.Spec.VolumeSnapshotClassName).To(BeNil())
+		snapMeta := snap.ObjectMeta()
+		Expect(snapMeta.Labels).NotTo(BeNil())
+		Expect(snapMeta.Labels).To(HaveKeyWithValue(ScheduleKey, scheduleName))
+		Expect(snapMeta.Labels).To(HaveKeyWithValue(WhenKey, schedTime.Format(timeYYYYMMDDHHMMSS)))
+		Expect(snapMeta.Labels).To(HaveKeyWithValue("three", "four"))
+		Expect(len(snapMeta.Labels)).To(Equal(4))
+	})
+})
 
-func TestNewSnapForClaimV1beta1(t *testing.T) {
-	pvc := corev1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "mypvc",
-			Namespace: "mynamespace",
-		},
-	}
-	snapname := "mysnap"
-	snapClass := "snapclass"
-	scheduleName := "mysched"
-	schedTime, _ := time.Parse(timeFormat, "2010-07-23T01:02:00Z")
-	VersionChecker.v1Beta1 = true
-	VersionChecker.v1Alpha1 = false
-	snap := newSnapForClaim(snapname, pvc, scheduleName, schedTime, nil, &snapClass)
+var _ = Describe("UpdateNextSnapTime", func() {
+	It("A nil schedule should generate an error", func() {
+		Expect(updateNextSnapTime(nil, time.Now())).NotTo(Succeed())
+	})
+	It("An empty cronspec should generate an error", func() {
+		s := &snapschedulerv1.SnapshotSchedule{}
+		Expect(updateNextSnapTime(s, time.Now())).NotTo(Succeed())
+	})
+	It("should generate the correct next time", func() {
+		s := &snapschedulerv1.SnapshotSchedule{}
+		s.Spec.Schedule = "2 1 23 7 *"
+		cTime, _ := time.Parse(timeFormat, "2010-01-01T00:00:00Z")
+		Expect(updateNextSnapTime(s, cTime)).To(Succeed())
+		expected, _ := time.Parse(timeFormat, "2010-07-23T01:02:00Z")
+		Expect(s.Status.NextSnapshotTime.Time).To(Equal(expected))
+	})
+})
 
-	snapMeta := snap.ObjectMeta()
-	// Some tests depend on knowing the internals :(
-	betaSnap := snap.v1Beta1
+var _ = DescribeTable("Snapshot name generation",
+	func(pvcName string, schedName string) {
+		// https://github.com/kubernetes/community/blob/master/contributors/design-proposals/architecture/identifiers.md
+		const maxAllowedNameLength = 253
 
-	if snapname != snapMeta.Name {
-		t.Errorf("invalid snapshot name. expected: %v -- got: %v", snapname, snapMeta.Name)
-	}
-	if pvc.Namespace != snapMeta.Namespace {
-		t.Errorf("invalid snapshot namespace. expected: %v -- got: %v", pvc.Namespace, snapMeta.Namespace)
-	}
-	if pvc.Name != *betaSnap.Spec.Source.PersistentVolumeClaimName {
-		t.Errorf("invalid pvc name. expected: %v -- got: %v", pvc.Name, betaSnap.Spec.Source.PersistentVolumeClaimName)
-	}
-	if nil == betaSnap.Spec.VolumeSnapshotClassName || snapClass != *betaSnap.Spec.VolumeSnapshotClassName {
-		t.Errorf("invalid snap class. expected: %v -- got: %v", snapClass, betaSnap.Spec.VolumeSnapshotClassName)
-	}
-	if snapMeta.Labels == nil || scheduleName != snapMeta.Labels[ScheduleKey] {
-		t.Errorf("SchedulerKey not found in snapshot labels")
-	}
+		sName := snapshotName(pvcName, schedName, time.Now())
+		Expect(len(sName)).To(BeNumerically("<=", maxAllowedNameLength))
 
-	labels := make(map[string]string, 2)
-	labels["one"] = "two"
-	labels["three"] = "four"
-	snap = newSnapForClaim(snapname, pvc, scheduleName, schedTime, labels, nil)
-	// Some tests depend on knowing the internals :(
-	betaSnap = snap.v1Beta1
-	if nil != betaSnap.Spec.VolumeSnapshotClassName {
-		t.Errorf("expected nil snap class -- got: %v", betaSnap.Spec.VolumeSnapshotClassName)
-	}
-	snapMeta = snap.ObjectMeta()
-	if snapMeta.Labels == nil {
-		t.Errorf("unexpected nil set of labels")
-	} else {
-		if scheduleName != snapMeta.Labels[ScheduleKey] {
-			t.Errorf("Wrong SchedulerKey in snapshot labels. expected: %v -- got: %v", scheduleName, snapMeta.Labels[ScheduleKey])
+		plen := len(pvcName)
+		if plen > 10 {
+			plen = 10
 		}
-		if schedTime.Format(timeYYYYMMDDHHMMSS) != snapMeta.Labels[WhenKey] {
-			t.Errorf("Wrong WhenKey in snapshot labels. expected: %v -- got: %v",
-				schedTime.Format(timeYYYYMMDDHHMMSS), snapMeta.Labels[WhenKey])
-		}
-		if "four" != snapMeta.Labels["three"] {
-			t.Errorf("labels are not properly passed through")
-		}
-		numLabels := len(snapMeta.Labels)
-		if numLabels != 4 {
-			t.Errorf("unexpected number of labels. expected: 4 -- got: %v", numLabels)
-		}
-	}
-}
+		Expect(sName).To(ContainSubstring(pvcName[0:plen]))
 
-func TestNewSnapForClaimV1alpha1(t *testing.T) {
-	pvc := corev1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "mypvc",
-			Namespace: "mynamespace",
-		},
-	}
-	snapname := "mysnap"
-	snapClass := "snapclass"
-	scheduleName := "mysched"
-	schedTime, _ := time.Parse(timeFormat, "2010-07-23T01:02:00Z")
-	VersionChecker.v1Beta1 = false
-	VersionChecker.v1Alpha1 = true
-	snap := newSnapForClaim(snapname, pvc, scheduleName, schedTime, nil, &snapClass)
-
-	snapMeta := snap.ObjectMeta()
-	// Some tests depend on knowing the internals :(
-	alphaSnap := snap.v1Alpha1
-
-	if snapname != snapMeta.Name {
-		t.Errorf("invalid snapshot name. expected: %v -- got: %v", snapname, snapMeta.Name)
-	}
-	if pvc.Namespace != snapMeta.Namespace {
-		t.Errorf("invalid snapshot namespace. expected: %v -- got: %v", pvc.Namespace, snapMeta.Namespace)
-	}
-	if pvc.Name != alphaSnap.Spec.Source.Name {
-		t.Errorf("invalid pvc name. expected: %v -- got: %v", pvc.Name, alphaSnap.Spec.Source.Name)
-	}
-	if nil == alphaSnap.Spec.VolumeSnapshotClassName || snapClass != *alphaSnap.Spec.VolumeSnapshotClassName {
-		t.Errorf("invalid snap class. expected: %v -- got: %v", snapClass, alphaSnap.Spec.VolumeSnapshotClassName)
-	}
-	if snapMeta.Labels == nil || scheduleName != snapMeta.Labels[ScheduleKey] {
-		t.Errorf("SchedulerKey not found in snapshot labels")
-	}
-
-	labels := make(map[string]string, 2)
-	labels["one"] = "two"
-	labels["three"] = "four"
-	snap = newSnapForClaim(snapname, pvc, scheduleName, schedTime, labels, nil)
-	// Some tests depend on knowing the internals :(
-	alphaSnap = snap.v1Alpha1
-	if nil != alphaSnap.Spec.VolumeSnapshotClassName {
-		t.Errorf("expected nil snap class -- got: %v", alphaSnap.Spec.VolumeSnapshotClassName)
-	}
-	snapMeta = snap.ObjectMeta()
-	if snapMeta.Labels == nil {
-		t.Errorf("unexpected nil set of labels")
-	} else {
-		if scheduleName != snapMeta.Labels[ScheduleKey] {
-			t.Errorf("Wrong SchedulerKey in snapshot labels. expected: %v -- got: %v", scheduleName, snapMeta.Labels[ScheduleKey])
+		slen := len(schedName)
+		if slen > 10 {
+			slen = 10
 		}
-		if schedTime.Format(timeYYYYMMDDHHMMSS) != snapMeta.Labels[WhenKey] {
-			t.Errorf("Wrong WhenKey in snapshot labels. expected: %v -- got: %v",
-				schedTime.Format(timeYYYYMMDDHHMMSS), snapMeta.Labels[WhenKey])
-		}
-		if "four" != snapMeta.Labels["three"] {
-			t.Errorf("labels are not properly passed through")
-		}
-		numLabels := len(snapMeta.Labels)
-		if numLabels != 4 {
-			t.Errorf("unexpected number of labels. expected: 4 -- got: %v", numLabels)
-		}
-	}
-}
-
-func TestUpdateNextSnapTime(t *testing.T) {
-	err := updateNextSnapTime(nil, time.Now())
-	if err == nil {
-		t.Error("nil schedule should generate an error")
-	}
-
-	s := &snapschedulerv1.SnapshotSchedule{}
-	err = updateNextSnapTime(s, time.Now())
-	if err == nil {
-		t.Error("empty cronspec should generate an error")
-	}
-
-	s.Spec.Schedule = "2 1 23 7 *"
-	cTime, _ := time.Parse(timeFormat, "2010-01-01T00:00:00Z")
-	err = updateNextSnapTime(s, cTime)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	expected, _ := time.Parse(timeFormat, "2010-07-23T01:02:00Z")
-	if s.Status.NextSnapshotTime.Time != expected {
-		t.Errorf("incorrect next snap time. expected: %v -- got: %v", expected, s.Status.NextSnapshotTime)
-	}
-}
+		Expect(sName).To(ContainSubstring(schedName[0:slen]))
+	},
+	Entry("both names are short", "foo", "bar"),
+	Entry("PVC name is long", strings.Repeat("x", 250), "blah"),
+	Entry("Schedule name is long", "blah", strings.Repeat("y", 250)),
+	Entry("both names are long", strings.Repeat("x", 250), strings.Repeat("y", 250)),
+)
 
 func TestSnapshotName(t *testing.T) {
 	data := []struct {
@@ -260,75 +195,124 @@ func TestSnapshotName(t *testing.T) {
 	}
 }
 
-func TestListPVCSelector(t *testing.T) {
-	objects := []runtime.Object{
-		&corev1.PersistentVolumeClaim{
+var _ = Describe("Listing PVCs by selector", func() {
+	var objects []corev1.PersistentVolumeClaim
+	var ns *v1.Namespace
+	BeforeEach(func() {
+		VersionChecker.v1Alpha1 = false
+		VersionChecker.v1Beta1 = true
+		ns = &v1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name-foo",
-				Namespace: "mynamespace",
-				Labels: map[string]string{
-					"mylabel": "foo",
-				},
+				GenerateName: "test-",
 			},
-		},
-		&corev1.PersistentVolumeClaim{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name-bar",
-				Namespace: "mynamespace",
-				Labels: map[string]string{
-					"mylabel": "bar",
-				},
-			},
-		},
-		&corev1.PersistentVolumeClaim{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "name-whatever",
-				Namespace: "mynamespace",
-				Labels: map[string]string{
-					"some": "label",
-					"or":   "another",
-				},
-			},
-		},
-	}
-	c := fakeClient(objects)
-	mlFoo := &metav1.LabelSelector{
-		MatchLabels: map[string]string{
-			"mylabel": "foo",
-		},
-	}
-	pvcList, err := listPVCsMatchingSelector(nullLogger, c, "mynamespace", mlFoo)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	if len(pvcList.Items) != 1 || pvcList.Items[0].Name != "name-foo" {
-		t.Errorf("failed to find correct PVCs using matchlabels. expected: name-foo -- got: %v", pvcList.Items)
-	}
+		}
+		Expect(k8sClient.Create(context.TODO(), ns)).To(Succeed())
+		Expect(ns.Name).NotTo(BeEmpty())
 
-	meBar := &metav1.LabelSelector{
-		MatchExpressions: []metav1.LabelSelectorRequirement{
-			metav1.LabelSelectorRequirement{
-				Key:      "mylabel",
-				Operator: metav1.LabelSelectorOpIn,
-				Values: []string{
-					"bar",
+		objects = []corev1.PersistentVolumeClaim{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "name-foo",
+					Namespace: ns.Name,
+					Labels: map[string]string{
+						"mylabel": "foo",
+					},
+				},
+				Spec: corev1.PersistentVolumeClaimSpec{
+					AccessModes: []corev1.PersistentVolumeAccessMode{
+						corev1.ReadWriteOnce,
+					},
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							"storage": resource.MustParse("1Gi"),
+						},
+					},
 				},
 			},
-		},
-	}
-	pvcList, err = listPVCsMatchingSelector(nullLogger, c, "mynamespace", meBar)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	if len(pvcList.Items) != 1 || pvcList.Items[0].Name != "name-bar" {
-		t.Errorf("failed to find correct PVCs using matchexpressions. expected: name-bar -- got: %v", pvcList.Items)
-	}
-
-	pvcList, err = listPVCsMatchingSelector(nullLogger, c, "mynamespace", &metav1.LabelSelector{})
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-	if len(pvcList.Items) != len(objects) {
-		t.Errorf("empty selector should have returned all items. expected:%v -- got: %v", len(objects), len(pvcList.Items))
-	}
-}
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "name-bar",
+					Namespace: ns.Name,
+					Labels: map[string]string{
+						"mylabel": "bar",
+					},
+				},
+				Spec: corev1.PersistentVolumeClaimSpec{
+					AccessModes: []corev1.PersistentVolumeAccessMode{
+						corev1.ReadWriteOnce,
+					},
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							"storage": resource.MustParse("1Gi"),
+						},
+					},
+				},
+			},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "name-whatever",
+					Namespace: ns.Name,
+					Labels: map[string]string{
+						"some": "label",
+						"or":   "another",
+					},
+				},
+				Spec: corev1.PersistentVolumeClaimSpec{
+					AccessModes: []corev1.PersistentVolumeAccessMode{
+						corev1.ReadWriteOnce,
+					},
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							"storage": resource.MustParse("1Gi"),
+						},
+					},
+				},
+			},
+		}
+	})
+	AfterEach(func() {
+		Expect(k8sClient.Delete(context.TODO(), ns)).To(Succeed())
+	})
+	JustBeforeEach(func() {
+		for _, o := range objects {
+			Expect(k8sClient.Create(context.TODO(), &o)).To(Succeed())
+			obj := corev1.PersistentVolumeClaim{}
+			Eventually(func() error {
+				return k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(&o), &obj)
+			}).Should(Succeed())
+		}
+	})
+	It("can find PVCs by label selector", func() {
+		mlFoo := &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"mylabel": "foo",
+			},
+		}
+		pvcList, err := listPVCsMatchingSelector(logger, k8sClient, ns.Name, mlFoo)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(pvcList.Items)).To(Equal(1))
+		Expect(pvcList.Items[0].Name).To(Equal("name-foo"))
+	})
+	It("can find PVCs by match expression", func() {
+		meBar := &metav1.LabelSelector{
+			MatchExpressions: []metav1.LabelSelectorRequirement{
+				{
+					Key:      "mylabel",
+					Operator: metav1.LabelSelectorOpIn,
+					Values: []string{
+						"bar",
+					},
+				},
+			},
+		}
+		pvcList, err := listPVCsMatchingSelector(logger, k8sClient, ns.Name, meBar)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(pvcList.Items)).To(Equal(1))
+		Expect(pvcList.Items[0].Name).To(Equal("name-bar"))
+	})
+	It("returns everything w/ an empty selector", func() {
+		pvcList, err := listPVCsMatchingSelector(logger, k8sClient, ns.Name, &metav1.LabelSelector{})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(pvcList.Items)).To(Equal(len(objects)))
+	})
+})

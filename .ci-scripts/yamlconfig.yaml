@@ -3,6 +3,7 @@
 
 extends: default
 ignore: |
+  hack/crds/*
   helm/snapscheduler/templates/*
   helm/snapscheduler/crds/*
   config/**
