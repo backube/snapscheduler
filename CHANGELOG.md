@@ -7,7 +7,17 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
-TBD
+### Changed
+
+- Updated project scaffolding to operator-sdk 1.9
+- Moved CRD to `apiextensions.k8s.io/v1`
+
+### Removed
+
+- Removed support for Kubernetes versions < 1.17
+- Removed support for `snapshot.storage.k8s.io/v1alpha1` snapshot version
+- Removed node selector labels targeting `beta.kubernetes.io/arch` and
+  `beta.kubernetes.io/os`
 
 ## [1.2.0] - 2021-04-05
 
