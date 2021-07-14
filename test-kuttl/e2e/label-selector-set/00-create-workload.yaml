@@ -1,0 +1,54 @@
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: datavol
+  labels:
+    snap: nope
+    whatever: zzz
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: voldata
+  labels:
+    snap: me
+    whatever: zzz
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: workload
+spec:
+  containers:
+    - name: busybox
+      image: busybox
+      command: ["/bin/sh", "-c"]
+      args: ["echo 'data' > /mnt/datafile; sleep 99999"]
+      volumeMounts:
+        - name: data
+          mountPath: "/mnt"
+        - name: data2
+          mountPath: "/mnt2"
+  terminationGracePeriodSeconds: 2
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: datavol
+    - name: data2
+      persistentVolumeClaim:
+        claimName: voldata

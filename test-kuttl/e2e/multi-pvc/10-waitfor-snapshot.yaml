@@ -1,0 +1,18 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - timeout: 90
+    script: |
+      set -e -o pipefail
+
+      echo "Waiting for 2 snapshots"
+      while [[ $(kubectl -n "$NAMESPACE" get volumesnapshots -oname | wc -l) != 2 ]]; do
+        sleep 1
+      done
+
+      sname=$(kubectl -n "$NAMESPACE" get volumesnapshots -oname)
+
+      echo "Verifying snapshot names"
+      echo "$sname" | grep -q "datavol"
+      echo "$sname" | grep -q "voldata"

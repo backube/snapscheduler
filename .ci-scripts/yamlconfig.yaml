@@ -17,3 +17,4 @@ rules:
     allow-non-breakable-inline-mappings: true
     ignore: |
       deploy/olm-catalog/snapscheduler/1.1.1/snapshotschedules.snapscheduler.backube.crd.yaml
+      test-kuttl/e2e/**
