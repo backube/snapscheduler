@@ -1,11 +1,19 @@
 domain: backube
-layout: go.kubebuilder.io/v2
-projectName: snap1
+layout:
+- go.kubebuilder.io/v3
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: snapscheduler
 repo: github.com/backube/snapscheduler
 resources:
-- group: snapscheduler
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: backube
+  group: snapscheduler
   kind: SnapshotSchedule
+  path: github.com/backube/snapscheduler/api/v1
   version: v1
-version: 3-alpha
-plugins:
-  go.sdk.operatorframework.io/v2-alpha: {}
+version: "3"

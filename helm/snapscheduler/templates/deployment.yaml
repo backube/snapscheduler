@@ -22,43 +22,45 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}
-          command: ["/manager"]
-          args: ["--enable-leader-election"]
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
+        - args:
+          - --secure-listen-address=0.0.0.0:8443
+          - --upstream=http://127.0.0.1:8080/
+          - --logtostderr=true
+          - --v=10
+          image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
+          name: kube-rbac-proxy
+          ports:
+          - containerPort: 8443
+            name: https
+        - args:
+          - --health-probe-bind-address=:8081
+          - --metrics-bind-address=127.0.0.1:8080
+          - --leader-elect
+          command:
+          - /manager
           image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tagOverride }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - containerPort: 8080
-              name: http
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          name: manager
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-  {{- /*
-  The horrible-ness below related to nodeSelector is because the node labels
-  removed the beta prefix in 1.14.
-  We want to have a default that ensures amd64/linux by default, but users must
-  be able to override that, including removing all selectors. If we didn't have
-  to determine at render-time the proper label name, the default labels should
-  be in the values.yaml and the template would look just like affinity, below.
-  The values.yaml file would set the labels like it does for resources.
-  When support for 1.13 is dropped, please fix this!
-  */ -}}
-  {{- if quote .Values.nodeSelector | ne "" }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-  {{- else }}
-      nodeSelector:
-      {{- if semverCompare ">=1.14" .Capabilities.KubeVersion.Version }}
-        kubernetes.io/arch: amd64
-        kubernetes.io/os: linux
-      {{- else }}
-        beta.kubernetes.io/arch: amd64
-        beta.kubernetes.io/os: linux
-      {{- end }}
-  {{- end }}
     {{- with .Values.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
@@ -67,18 +69,4 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
     {{- end }}
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "snapscheduler.fullname" . }}-metrics
-  labels:
-    {{- include "snapscheduler.labels" . | nindent 4 }}
-spec:
-  ports:
-  - name: http
-    port: 8080
-    targetPort: http
-  selector:
-    {{- include "snapscheduler.selectorLabels" . | nindent 4 }}
+      terminationGracePeriodSeconds: 10

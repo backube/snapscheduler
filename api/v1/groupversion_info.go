@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2019  The snapscheduler authors
+Copyright 2021 The snapscheduler authors.
 
 This file may be used, at your option, according to either the GNU AGPL 3.0 or
 the Apache V2 license.
@@ -32,8 +32,8 @@ limitations under the License.
 */
 
 // Package v1 contains API Schema definitions for the snapscheduler v1 API group
-// +kubebuilder:object:generate=true
-// +groupName=snapscheduler.backube
+//+kubebuilder:object:generate=true
+//+groupName=snapscheduler.backube
 package v1
 
 import (

@@ -21,376 +21,521 @@ package controllers
 import (
 	"context"
 	"strings"
-	"testing"
 	"time"
 
-	snapschedulerv1 "github.com/backube/snapscheduler/api/v1"
-	tlogr "github.com/go-logr/logr/testing"
-	snapv1alpha1 "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
 	snapv1beta1 "github.com/kubernetes-csi/external-snapshotter/v2/pkg/apis/volumesnapshot/v1beta1"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+
+	snapschedulerv1 "github.com/backube/snapscheduler/api/v1"
 )
 
-var nullLogger = tlogr.NullLogger{}
+const (
+	timeout  = "30s"
+	interval = "100ms"
+)
 
-func fakeClient(initialObjects []runtime.Object) client.Client {
-	scheme := runtime.NewScheme()
-	_ = snapschedulerv1.SchemeBuilder.AddToScheme(scheme)
-	_ = snapv1alpha1.AddToScheme(scheme)
-	_ = snapv1beta1.AddToScheme(scheme)
-	_ = v1.AddToScheme(scheme)
-	return fake.NewFakeClientWithScheme(scheme, initialObjects...)
-}
+var logger = logf.Log
 
-func TestGetExpirationTime(t *testing.T) {
-	s := &snapschedulerv1.SnapshotSchedule{}
-
-	// No retention time set
-	expiration, err := getExpirationTime(s, time.Now(), nullLogger)
-	if expiration != nil || err != nil {
-		t.Errorf("empty spec.retention.expires. expected: nil,nil -- got: %v,%v", expiration, err)
-	}
-
-	// Unparsable retention time
-	s.Spec.Retention.Expires = "garbage"
-	_, err = getExpirationTime(s, time.Now(), nullLogger)
-	if err == nil {
-		t.Errorf("invalid spec.retention.expires. expected: error -- got: nil")
-	}
-
-	// Negative retention time
-	s.Spec.Retention.Expires = "-10s"
-	_, err = getExpirationTime(s, time.Now(), nullLogger)
-	if err == nil {
-		t.Errorf("negative spec.retention.expires. expected: error -- got: nil")
-	}
-
-	s.Spec.Retention.Expires = "1h"
-	theTime, _ := time.Parse(timeFormat, "2013-02-01T11:04:05Z")
-	expected := theTime.Add(-1 * time.Hour)
-	expiration, err = getExpirationTime(s, theTime, nullLogger)
-	if err != nil {
-		t.Errorf("unexpected error return. expected: nil -- got: %v", err)
-	}
-	if expiration == nil || expected != *expiration {
-		t.Errorf("incorrect expiration time. expected: %v -- got: %v", expected, expiration)
-	}
-}
-
-func TestFilterExpiredSnapsAlpha(t *testing.T) {
-	threshold, _ := time.Parse(timeFormat, "2000-01-01T00:00:00Z")
-	times := []string{
-		"1990-01-01T00:00:00Z", // expired
-		"2010-02-10T10:30:05Z",
-		"1999-12-31T23:59:00Z", // expired
-		"2001-01-01T00:00:00Z",
-		"2005-01-01T00:00:00Z",
-	}
-	expired := 2
-
-	VersionChecker.v1Alpha1 = true
-	VersionChecker.v1Alpha1 = false
-
-	inList := []MultiversionSnapshot{}
-	for _, i := range times {
-		theTime, _ := time.Parse(timeFormat, i)
-		mvs := WrapSnapshotAlpha(&snapv1alpha1.VolumeSnapshot{
-			ObjectMeta: metav1.ObjectMeta{
-				CreationTimestamp: metav1.Time{
-					Time: theTime,
-				},
-			},
+var _ = Describe("Snapshot expiration time is parsed correctly", func() {
+	When("no retention time is set", func() {
+		It("returns a nil expiration time", func() {
+			s := &snapschedulerv1.SnapshotSchedule{}
+			expiration, err := getExpirationTime(s, time.Now(), logger)
+			Expect(expiration).To(BeNil())
+			Expect(err).NotTo(HaveOccurred())
 		})
-		inList = append(inList, *mvs)
-	}
+	})
+	When("the retention time is unparsable", func() {
+		It("returns an error", func() {
+			s := &snapschedulerv1.SnapshotSchedule{}
+			s.Spec.Retention.Expires = "garbage"
+			_, err := getExpirationTime(s, time.Now(), logger)
+			Expect(err).To(HaveOccurred())
+		})
+	})
+	When("the retention time is negative", func() {
+		It("returns an error", func() {
+			s := &snapschedulerv1.SnapshotSchedule{}
+			s.Spec.Retention.Expires = "-10s"
+			_, err := getExpirationTime(s, time.Now(), logger)
+			Expect(err).To(HaveOccurred())
+		})
+	})
+	When("the retention time is valid", func() {
+		It("calculates the expiration time correctly", func() {
+			s := &snapschedulerv1.SnapshotSchedule{}
+			s.Spec.Retention.Expires = "1h"
+			theTime, _ := time.Parse(timeFormat, "2013-02-01T11:04:05Z")
+			expected := theTime.Add(-1 * time.Hour)
+			expiration, err := getExpirationTime(s, theTime, logger)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(*expiration).To(Equal(expected))
+		})
+	})
+})
 
-	outList := filterExpiredSnaps(inList, threshold)
-	if outList == nil {
-		t.Error("unexpected nil output")
-	}
-	if len(outList) != expired {
-		t.Errorf("incorrect snapshots filtered. expected: %v -- got: %v", expired, len(outList))
-	}
-}
-
-func TestSnapshotsFromSchedule(t *testing.T) {
-	VersionChecker.v1Alpha1 = true
-	objects := []runtime.Object{
-		&snapv1alpha1.VolumeSnapshot{
+var _ = Describe("Finding snapshots created by a schedule", func() {
+	var objects []client.Object
+	var ns *v1.Namespace
+	BeforeEach(func() {
+		VersionChecker.v1Alpha1 = false
+		VersionChecker.v1Beta1 = true
+		ns = &v1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo",
-				Namespace: "default",
-				Labels: map[string]string{
-					"foo":       "bar",
-					ScheduleKey: "s1",
-				},
+				GenerateName: "test-",
 			},
-		},
-		&snapv1alpha1.VolumeSnapshot{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "bar",
-				Namespace: "default",
-				Labels: map[string]string{
-					"foo":       "bar",
-					ScheduleKey: "s1",
-				},
-			},
-		},
-		&snapv1alpha1.VolumeSnapshot{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "baz",
-				Namespace: "default",
-				Labels: map[string]string{
-					"foo":       "bar",
-					ScheduleKey: "s2",
-				},
-			},
-		},
-	}
-	c := fakeClient(objects)
-	s := &snapschedulerv1.SnapshotSchedule{}
-
-	s.Name = "%%!! Invalid !!%%"
-	_, err := snapshotsFromSchedule(s, nullLogger, c)
-	if err == nil {
-		t.Errorf("invalid schedule name should have produced an error")
-	}
-
-	s.Name = "s1"
-	snapList, err := snapshotsFromSchedule(s, nullLogger, c)
-	if err != nil {
-		t.Errorf("unexpected error. got: %v", err)
-	}
-	if len(snapList) != 2 {
-		t.Errorf("matched wrong number of snapshots. expected: 2 -- got: %v", len(snapList))
-	}
-	for _, snap := range snapList {
-		if snap.ObjectMeta().Name != "foo" && snap.ObjectMeta().Name != "bar" {
-			t.Errorf("matched wrong snapshots. found: %v", snap.ObjectMeta().Name)
 		}
-	}
-}
+		Expect(k8sClient.Create(context.TODO(), ns)).To(Succeed())
+		Expect(ns.Name).NotTo(BeEmpty())
 
-func TestExpireByTime(t *testing.T) {
-	s := &snapschedulerv1.SnapshotSchedule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "schedule",
-			Namespace: "same",
-		},
-	}
-	s.Spec.Retention.Expires = "24h"
-
-	noexpire := &snapschedulerv1.SnapshotSchedule{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "schedule",
-			Namespace: "same",
-		},
-	}
-
-	now := time.Now()
-
-	data := []struct {
-		namespace   string
-		created     time.Time
-		schedule    string
-		wantExpired bool
-	}{
-		{"same", now.Add(-1 * time.Hour), "schedule", false},
-		{"different", now.Add(-1 * time.Hour), "schedule", false},
-		{"same", now.Add(-48 * time.Hour), "schedule", true},
-		{"different", now.Add(-48 * time.Hour), "schedule", false},
-		{"same", now.Add(-1 * time.Hour), "different", false},
-		{"different", now.Add(-1 * time.Hour), "different", false},
-		{"same", now.Add(-48 * time.Hour), "different", false},
-		{"different", now.Add(-48 * time.Hour), "different", false},
-	}
-	var objects []runtime.Object
-	for _, d := range data {
-		objects = append(objects, &snapv1alpha1.VolumeSnapshot{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:              d.namespace + "-" + d.schedule + "-" + d.created.Format("200601021504"),
-				Namespace:         d.namespace,
-				CreationTimestamp: metav1.Time{Time: d.created},
-				Labels: map[string]string{
-					"foo":       "bar",
-					ScheduleKey: d.schedule,
+		objects = []client.Object{
+			&snapv1beta1.VolumeSnapshot{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: ns.Name,
+					Labels: map[string]string{
+						"foo":       "bar",
+						ScheduleKey: "s1",
+					},
 				},
 			},
+			&snapv1beta1.VolumeSnapshot{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "bar",
+					Namespace: ns.Name,
+					Labels: map[string]string{
+						"foo":       "bar",
+						ScheduleKey: "s1",
+					},
+				},
+			},
+			&snapv1beta1.VolumeSnapshot{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "baz",
+					Namespace: ns.Name,
+					Labels: map[string]string{
+						"foo":       "bar",
+						ScheduleKey: "s2",
+					},
+				},
+			},
+		}
+	})
+	AfterEach(func() {
+		Expect(k8sClient.Delete(context.TODO(), ns)).To(Succeed())
+	})
+	JustBeforeEach(func() {
+		for _, o := range objects {
+			Expect(k8sClient.Create(context.TODO(), o)).To(Succeed())
+			snap := &snapv1beta1.VolumeSnapshot{}
+			Eventually(func() error {
+				return k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(o), snap)
+			}).Should(Succeed())
+		}
+	})
+	When("an invalid schedule name is used", func() {
+		It("should return an error", func() {
+			s := &snapschedulerv1.SnapshotSchedule{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "%%!! Invalid !!%%",
+					Namespace: ns.Name,
+				},
+			}
+			_, err := snapshotsFromSchedule(s, logger, k8sClient)
+			Expect(err).To(HaveOccurred())
 		})
-	}
-
-	c := fakeClient(objects)
-
-	err := expireByTime(noexpire, nullLogger, c)
-	if err != nil {
-		t.Errorf("unexpected error. got: %v", err)
-	}
-	snapList := &snapv1alpha1.VolumeSnapshotList{}
-	listOpts := []client.ListOption{}
-	_ = c.List(context.TODO(), snapList, listOpts...)
-	if len(snapList.Items) != len(data) {
-		t.Errorf("wrong number of snapshots remain. expected: %v -- got: %v", len(data), len(snapList.Items))
-	}
-
-	err = expireByTime(s, nullLogger, c)
-	if err != nil {
-		t.Errorf("unexpected error. got: %v", err)
-	}
-	snapList = &snapv1alpha1.VolumeSnapshotList{}
-	listOpts = []client.ListOption{}
-	_ = c.List(context.TODO(), snapList, listOpts...)
-	if len(snapList.Items) != len(data)-1 {
-		t.Errorf("wrong number of snapshots remain. expected: %v -- got: %v", len(data)-1, len(snapList.Items))
-	}
-}
-
-func TestGroupSnapsByPVC(t *testing.T) {
-	data := []struct {
-		snapName string
-		pvcName  string
-	}{
-		// testdata: s/^pvc/snap/ to get start of snap name
-		{"snap1-1", "pvc1"},
-		{"snap2-1", "pvc2"},
-		{"snap1-2", "pvc1"},
-		{"snap2-2", "pvc2"},
-		{"snap3-blah", "pvc3"},
-	}
-	snapList := []MultiversionSnapshot{}
-	for _, d := range data {
-		snapList = append(snapList, *WrapSnapshotAlpha(&snapv1alpha1.VolumeSnapshot{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: d.snapName,
-			},
-			Spec: snapv1alpha1.VolumeSnapshotSpec{
-				Source: &v1.TypedLocalObjectReference{
-					Name: d.pvcName,
+	})
+	Context("lookup", func() {
+		It("should succeed", func() {
+			s := &snapschedulerv1.SnapshotSchedule{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "s1",
+					Namespace: ns.Name,
 				},
+			}
+			snapList, err := snapshotsFromSchedule(s, logger, k8sClient)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(snapList)).To(Equal(2))
+			for _, snap := range snapList {
+				Expect(snap.ObjectMeta().Name).To(Or(Equal("foo"), Equal("bar")))
+			}
+		})
+	})
+})
+
+var _ = Describe("Expiring snapshots by time", func() {
+	var ns1, ns2 *v1.Namespace
+	var data []struct {
+		namespace string
+		schedule  string
+	}
+	BeforeEach(func() {
+		VersionChecker.v1Alpha1 = false
+		VersionChecker.v1Beta1 = true
+		ns1 = &v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "test-",
+			},
+		}
+		Expect(k8sClient.Create(context.TODO(), ns1)).To(Succeed())
+		Expect(ns1.Name).NotTo(BeEmpty())
+		ns2 = &v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "test-",
+			},
+		}
+		Expect(k8sClient.Create(context.TODO(), ns2)).To(Succeed())
+		Expect(ns2.Name).NotTo(BeEmpty())
+
+		data = []struct {
+			namespace string
+			schedule  string
+		}{
+			{ns1.Name, "schedule"},
+			{ns2.Name, "schedule"},
+			{ns1.Name, "different"},
+			{ns2.Name, "different"},
+		}
+		for _, d := range data {
+			snap := snapv1beta1.VolumeSnapshot{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      d.namespace + "-" + d.schedule,
+					Namespace: d.namespace,
+					Labels: map[string]string{
+						"foo":       "bar",
+						ScheduleKey: d.schedule,
+					},
+				},
+			}
+			Expect(k8sClient.Create(context.TODO(), &snap)).To(Succeed())
+		}
+	})
+	AfterEach(func() {
+		Expect(k8sClient.Delete(context.TODO(), ns1)).To(Succeed())
+		Expect(k8sClient.Delete(context.TODO(), ns2)).To(Succeed())
+	})
+	When("a schedule doesn't have an expiration", func() {
+		It("doesn't remove any snapshots", func() {
+			noexpire := &snapschedulerv1.SnapshotSchedule{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "schedule",
+					Namespace: ns1.Name,
+				},
+			}
+			Expect(expireByTime(noexpire, time.Now(), logger, k8sClient)).To(Succeed())
+
+			Eventually(func() int {
+				snapList := &snapv1beta1.VolumeSnapshotList{}
+				Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns1.Name))).To(Succeed())
+				count := len(snapList.Items)
+				Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns2.Name))).To(Succeed())
+				count += len(snapList.Items)
+				return count
+			}, timeout, interval).Should(Equal(len(data)))
+		})
+	})
+	When("a schedule has an expiration time", func() {
+		It("should remove expired snapshots", func() {
+			s := &snapschedulerv1.SnapshotSchedule{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "schedule",
+					Namespace: ns1.Name,
+				},
+			}
+			s.Spec.Retention.Expires = "24h"
+
+			Expect(expireByTime(s, time.Now(), logger, k8sClient)).To(Succeed())
+			Eventually(func() int {
+				snapList := &snapv1beta1.VolumeSnapshotList{}
+				Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns1.Name))).To(Succeed())
+				count := len(snapList.Items)
+				Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns2.Name))).To(Succeed())
+				count += len(snapList.Items)
+				return count
+			}, timeout, interval).Should(Equal(len(data)))
+
+			Expect(expireByTime(s, time.Now().Add(48*time.Hour), logger, k8sClient)).To(Succeed())
+			Eventually(func() int {
+				snapList := &snapv1beta1.VolumeSnapshotList{}
+				Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns1.Name))).To(Succeed())
+				count := len(snapList.Items)
+				Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns2.Name))).To(Succeed())
+				count += len(snapList.Items)
+				return count
+			}, timeout, interval).Should(Equal(len(data) - 1))
+		})
+	})
+})
+
+var _ = Describe("Grouping snapshots by PVC", func() {
+	BeforeEach(func() {
+		VersionChecker.v1Alpha1 = false
+		VersionChecker.v1Beta1 = true
+	})
+	It("can group snapshots based on the PVC they were created from", func() {
+		data := []struct {
+			snapName string
+			pvcName  string
+		}{
+			// testdata: s/^pvc/snap/ to get start of snap name
+			{"snap1-1", "pvc1"},
+			{"snap2-1", "pvc2"},
+			{"snap1-2", "pvc1"},
+			{"snap2-2", "pvc2"},
+			{"snap3-blah", "pvc3"},
+		}
+		snapList := []MultiversionSnapshot{}
+		for _, d := range data {
+			pvcName := d.pvcName
+			snapList = append(snapList, *WrapSnapshotBeta(&snapv1beta1.VolumeSnapshot{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: d.snapName,
+				},
+				Spec: snapv1beta1.VolumeSnapshotSpec{
+					Source: snapv1beta1.VolumeSnapshotSource{
+						PersistentVolumeClaimName: &pvcName,
+					},
+				},
+			}))
+		}
+		// add one w/ nil Source
+		snapList = append(snapList, *WrapSnapshotBeta(&snapv1beta1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "i-have-nil-source",
 			},
 		}))
-	}
-	// add one w/ nil Source
-	snapList = append(snapList, *WrapSnapshotAlpha(&snapv1alpha1.VolumeSnapshot{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "i-have-nil-source",
-		},
-	}))
 
-	groupedSnaps := groupSnapsByPVC(snapList)
-	wantSnaps := len(data)
-	foundSnaps := 0
-	for pvcName, list := range groupedSnaps {
-		wantPrefix := strings.Replace(pvcName, "pvc", "snap", -1)
-		for _, snap := range list {
-			foundSnaps++
-			if !strings.HasPrefix(snap.ObjectMeta().Name, wantPrefix) {
-				t.Errorf("Improper snapshot grouping. PVC name: %v -- snap name: %v", pvcName, snap.ObjectMeta().Name)
+		groupedSnaps := groupSnapsByPVC(snapList)
+		wantSnaps := len(data)
+		foundSnaps := 0
+		for pvcName, list := range groupedSnaps {
+			wantPrefix := strings.Replace(pvcName, "pvc", "snap", -1)
+			for _, snap := range list {
+				foundSnaps++
+				Expect(snap.ObjectMeta().Name).To(HavePrefix(wantPrefix))
 			}
 		}
-	}
-	if wantSnaps != foundSnaps {
-		t.Errorf("Total number of grouped snaps is wrong. expected: %v -- got: %v", wantSnaps, foundSnaps)
-	}
-}
+		Expect(wantSnaps).To(Equal(foundSnaps))
+	})
+})
 
-func TestSortSnapsByTime(t *testing.T) {
-	now := time.Now()
-	inSnapList := []MultiversionSnapshot{
-		*WrapSnapshotAlpha(&snapv1alpha1.VolumeSnapshot{
-			ObjectMeta: metav1.ObjectMeta{
-				CreationTimestamp: metav1.Time{Time: now.Add(1 * time.Hour)},
-			},
-		}),
-		*WrapSnapshotAlpha(&snapv1alpha1.VolumeSnapshot{
-			ObjectMeta: metav1.ObjectMeta{
-				CreationTimestamp: metav1.Time{Time: now.Add(-1 * time.Hour)},
-			},
-		}),
-		*WrapSnapshotAlpha(&snapv1alpha1.VolumeSnapshot{
-			ObjectMeta: metav1.ObjectMeta{
-				CreationTimestamp: metav1.Time{Time: now},
-			},
-		}),
-	}
-	outSnapList := sortSnapsByTime(inSnapList)
-	if len(outSnapList) != len(inSnapList) {
-		t.Errorf("wrong number of snaps. expected: %v -- got: %v", len(inSnapList), len(outSnapList))
-	} else {
-		if outSnapList[0].ObjectMeta().CreationTimestamp.After(outSnapList[1].ObjectMeta().CreationTimestamp.Time) ||
-			outSnapList[1].ObjectMeta().CreationTimestamp.After(outSnapList[2].ObjectMeta().CreationTimestamp.Time) {
-			t.Error("snapshots were not properly sorted.")
+var _ = Describe("Sorting snapshots", func() {
+	BeforeEach(func() {
+		VersionChecker.v1Alpha1 = false
+		VersionChecker.v1Beta1 = true
+	})
+	It("can sort snapshots by time", func() {
+		now := time.Now()
+		inSnapList := []MultiversionSnapshot{
+			*WrapSnapshotBeta(&snapv1beta1.VolumeSnapshot{
+				ObjectMeta: metav1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: now.Add(1 * time.Hour)},
+				},
+			}),
+			*WrapSnapshotBeta(&snapv1beta1.VolumeSnapshot{
+				ObjectMeta: metav1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: now.Add(-1 * time.Hour)},
+				},
+			}),
+			*WrapSnapshotBeta(&snapv1beta1.VolumeSnapshot{
+				ObjectMeta: metav1.ObjectMeta{
+					CreationTimestamp: metav1.Time{Time: now},
+				},
+			}),
 		}
-	}
+		outSnapList := sortSnapsByTime(inSnapList)
+		Expect(len(outSnapList)).To(Equal(len(inSnapList)))
+		Expect(outSnapList[0].ObjectMeta().CreationTimestamp.Before(&outSnapList[1].ObjectMeta().CreationTimestamp)).To(BeTrue())
+		Expect(outSnapList[1].ObjectMeta().CreationTimestamp.Before(&outSnapList[2].ObjectMeta().CreationTimestamp)).To(BeTrue())
 
-	if sortSnapsByTime(nil) != nil {
-		t.Error("expected nil")
-	}
-}
+		Expect(sortSnapsByTime(nil)).To(BeNil())
+	})
+})
 
-func TestDeleteSnapshots(t *testing.T) {
-	snaps := []*snapv1alpha1.VolumeSnapshot{
-		&snapv1alpha1.VolumeSnapshot{
+var _ = Describe("Deleting snapshots", func() {
+	var ns1 *v1.Namespace
+	var ns2 *v1.Namespace
+	BeforeEach(func() {
+		VersionChecker.v1Alpha1 = false
+		VersionChecker.v1Beta1 = true
+		ns1 = &v1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "test-",
+			},
+		}
+		Expect(k8sClient.Create(context.TODO(), ns1)).To(Succeed())
+		Expect(ns1.Name).NotTo(BeEmpty())
+		ns2 = &v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "test-",
+			},
+		}
+		Expect(k8sClient.Create(context.TODO(), ns2)).To(Succeed())
+		Expect(ns2.Name).NotTo(BeEmpty())
+	})
+	AfterEach(func() {
+		Expect(k8sClient.Delete(context.TODO(), ns1)).To(Succeed())
+		Expect(k8sClient.Delete(context.TODO(), ns2)).To(Succeed())
+	})
+	It("deletes snapshots in the provided list", func() {
+		snaps := []*snapv1beta1.VolumeSnapshot{
+			{ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
-				Namespace: "default",
-			},
-		},
-		&snapv1alpha1.VolumeSnapshot{
-			ObjectMeta: metav1.ObjectMeta{
+				Namespace: ns1.Name,
+			}},
+			{ObjectMeta: metav1.ObjectMeta{
 				Name:      "bar",
-				Namespace: "default",
-			},
-		},
-		&snapv1alpha1.VolumeSnapshot{
-			ObjectMeta: metav1.ObjectMeta{
+				Namespace: ns1.Name,
+			}},
+			{ObjectMeta: metav1.ObjectMeta{
 				Name:      "baz",
-				Namespace: "whatever",
-			},
-		},
-		&snapv1alpha1.VolumeSnapshot{
-			ObjectMeta: metav1.ObjectMeta{
+				Namespace: ns2.Name,
+			}},
+			{ObjectMeta: metav1.ObjectMeta{
 				Name:      "splat",
-				Namespace: "whatever",
+				Namespace: ns2.Name,
+			}},
+		}
+		snapList := []MultiversionSnapshot{}
+		snapList = append(snapList, *WrapSnapshotBeta(snaps[1]))
+		snapList = append(snapList, *WrapSnapshotBeta(snaps[2]))
+
+		for _, o := range snaps {
+			Expect(k8sClient.Create(context.TODO(), o)).To(Succeed())
+		}
+
+		Expect(deleteSnapshots(snapList, logger, k8sClient)).To(Succeed())
+
+		snap := &snapv1beta1.VolumeSnapshot{}
+		Eventually(func() bool {
+			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: "bar", Namespace: ns1.Name}, snap)
+			return err != nil && kerrors.IsNotFound(err)
+		}, timeout, interval).Should(BeTrue())
+
+		Eventually(func() error {
+			return k8sClient.Get(context.TODO(), client.ObjectKey{Name: "splat", Namespace: ns2.Name}, snap)
+		}, timeout, interval).Should(Succeed())
+
+		Expect(deleteSnapshots(nil, logger, k8sClient)).To(Succeed())
+	})
+})
+
+var _ = Describe("Expiring snapshots by count", func() {
+	var ns1 *v1.Namespace
+	var ns2 *v1.Namespace
+	var data []struct {
+		namespace string
+		schedule  string
+		pvcName   string
+	}
+	BeforeEach(func() {
+		VersionChecker.v1Alpha1 = false
+		VersionChecker.v1Beta1 = true
+		ns1 = &v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "test-",
 			},
-		},
-	}
+		}
+		Expect(k8sClient.Create(context.TODO(), ns1)).To(Succeed())
+		Expect(ns1.Name).NotTo(BeEmpty())
+		ns2 = &v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "test-",
+			},
+		}
+		Expect(k8sClient.Create(context.TODO(), ns2)).To(Succeed())
+		Expect(ns2.Name).NotTo(BeEmpty())
 
-	snapList := []MultiversionSnapshot{}
-	snapList = append(snapList, *WrapSnapshotAlpha(snaps[1]))
-	snapList = append(snapList, *WrapSnapshotAlpha(snaps[2]))
+		data = []struct {
+			namespace string
+			schedule  string
+			pvcName   string
+		}{
+			{ns1.Name, "schedule", "pvc1"}, // this one will be deleted
+			{ns1.Name, "schedule", "pvc1"},
+			{ns1.Name, "schedule", "pvc1"},
+			{ns1.Name, "schedule", "pvc1"},
+			{ns2.Name, "schedule", "pvc1"},      // diff namespace, no match
+			{ns1.Name, "schedule", "different"}, // diff pvc, only 1 of these
+			{ns1.Name, "different", "pvc1"},     // diff schedule, no match
+		}
+		for _, d := range data {
+			pvcName := d.pvcName
+			snap := snapv1beta1.VolumeSnapshot{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      d.namespace + "-" + d.schedule + "-" + time.Now().Format("20060102150405"),
+					Namespace: d.namespace,
+					Labels: map[string]string{
+						"foo":       "bar",
+						ScheduleKey: d.schedule,
+					},
+				},
+				Spec: snapv1beta1.VolumeSnapshotSpec{
+					Source: snapv1beta1.VolumeSnapshotSource{
+						PersistentVolumeClaimName: &pvcName,
+					},
+				},
+			}
+			Expect(k8sClient.Create(context.TODO(), &snap)).To(Succeed())
+			time.Sleep(time.Second)
+			Eventually(func() error {
+				s := snapv1beta1.VolumeSnapshot{}
+				return k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(&snap), &s)
+			}, timeout, interval).Should(Succeed())
+		}
+	})
+	AfterEach(func() {
+		Expect(k8sClient.Delete(context.TODO(), ns1)).To(Succeed())
+		Expect(k8sClient.Delete(context.TODO(), ns2)).To(Succeed())
+	})
 
-	var objects []runtime.Object
-	for _, o := range snaps {
-		objects = append(objects, o)
-	}
-	c := fakeClient(objects)
+	It("doesn't delete any when there's no max", func() {
+		noexpire := &snapschedulerv1.SnapshotSchedule{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "schedule",
+				Namespace: ns1.Name,
+			},
+		}
+		// no maxCount, none should be pruned
+		Expect(expireByCount(noexpire, logger, k8sClient)).To(Succeed())
+		Eventually(func() int {
+			snapList := &snapv1beta1.VolumeSnapshotList{}
+			Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns1.Name))).To(Succeed())
+			count := len(snapList.Items)
+			Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns2.Name))).To(Succeed())
+			count += len(snapList.Items)
+			return count
+		}, timeout, interval).Should(Equal(len(data)))
+	})
+	It("removes the oldest when there are too many", func() {
+		s := &snapschedulerv1.SnapshotSchedule{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "schedule",
+				Namespace: ns1.Name,
+			},
+		}
+		maxCount := int32(3)
+		s.Spec.Retention.MaxCount = &maxCount
 
-	err := deleteSnapshots(snapList, nullLogger, c)
-	if err != nil {
-		t.Errorf("unexpected error. err: %v", err)
-	}
+		Expect(expireByCount(s, logger, k8sClient)).To(Succeed())
+		Eventually(func() int {
+			snapList := &snapv1beta1.VolumeSnapshotList{}
+			Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns1.Name))).To(Succeed())
+			count := len(snapList.Items)
+			Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns2.Name))).To(Succeed())
+			count += len(snapList.Items)
+			return count
+		}, timeout, interval).Should(Equal(len(data) - 1))
+	})
+})
 
-	snap := &snapv1alpha1.VolumeSnapshot{}
-	err = c.Get(context.TODO(), types.NamespacedName{Name: "bar", Namespace: "default"}, snap)
-	if err == nil || !kerrors.IsNotFound(err) {
-		t.Errorf("failed looking for deleted snap. expected NotFound -- got: %v", err)
-	}
-	err = c.Get(context.TODO(), types.NamespacedName{Name: "splat", Namespace: "whatever"}, snap)
-	if err != nil {
-		t.Errorf("unexpected error looking for snapshot -- got: %v", err)
-	}
-
-	err = deleteSnapshots(nil, nullLogger, c)
-	if err != nil {
-		t.Errorf("unexpected error -- got: %v", err)
-	}
-}
+/*
 
 func TestExpireByCount(t *testing.T) {
 	s := &snapschedulerv1.SnapshotSchedule{
@@ -471,3 +616,4 @@ func TestExpireByCount(t *testing.T) {
 		t.Errorf("wrong number of snapshots remain. expected: %v -- got: %v", len(data)-1, len(snapList.Items))
 	}
 }
+*/

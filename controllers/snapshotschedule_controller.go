@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2019  The snapscheduler authors
+Copyright 2021 The snapscheduler authors.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published
@@ -22,10 +22,9 @@ import (
 	"fmt"
 	"time"
 
-	snapschedulerv1 "github.com/backube/snapscheduler/api/v1"
 	"github.com/go-logr/logr"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
-	cron "github.com/robfig/cron/v3"
+	"github.com/robfig/cron/v3"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,6 +33,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	snapschedulerv1 "github.com/backube/snapscheduler/api/v1"
 )
 
 const (
@@ -52,19 +54,18 @@ const (
 // SnapshotScheduleReconciler reconciles a SnapshotSchedule object
 type SnapshotScheduleReconciler struct {
 	client.Client
-	Log    logr.Logger
 	Scheme *runtime.Scheme
 }
 
 //nolint:lll
 //+kubebuilder:rbac:groups=snapscheduler.backube,resources=snapshotschedules,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=snapscheduler.backube,resources=snapshotschedules/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=snapscheduler.backube,resources=snapshotschedules/finalizers,verbs=update
 //+kubebuilder:rbac:groups=snapshot.storage.k8s.io,resources=volumesnapshots,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch
 
-func (r *SnapshotScheduleReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	ctx := context.Background()
-	reqLogger := r.Log.WithValues("snapshotschedule", req.NamespacedName)
+func (r *SnapshotScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	reqLogger := log.FromContext(ctx).WithValues("snapshotschedule", req.NamespacedName)
 	reqLogger.Info("Reconciling SnapshotSchedule")
 
 	// Fetch the SnapshotSchedule instance
@@ -107,6 +108,7 @@ func (r *SnapshotScheduleReconciler) Reconcile(req ctrl.Request) (ctrl.Result, e
 	return result, err
 }
 
+// SetupWithManager sets up the controller with the Manager.
 func (r *SnapshotScheduleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&snapschedulerv1.SnapshotSchedule{}).
@@ -147,7 +149,7 @@ func doReconcile(schedule *snapschedulerv1.SnapshotSchedule,
 		return ctrl.Result{}, err
 	}
 
-	if err := expireByTime(schedule, logger, c); err != nil {
+	if err := expireByTime(schedule, time.Now(), logger, c); err != nil {
 		logger.Error(err, "expireByTime")
 		return ctrl.Result{}, err
 	}
@@ -183,7 +185,7 @@ func handleSnapshotting(schedule *snapschedulerv1.SnapshotSchedule,
 		if _, err := GetMVSnapshot(context.TODO(), c, key); err != nil {
 			if kerrors.IsNotFound(err) {
 				labels := make(map[string]string)
-				var snapshotClassName *string = nil
+				var snapshotClassName *string
 				if schedule.Spec.SnapshotTemplate != nil {
 					labels = schedule.Spec.SnapshotTemplate.Labels
 					snapshotClassName = schedule.Spec.SnapshotTemplate.SnapshotClassName

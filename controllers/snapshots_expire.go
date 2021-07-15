@@ -64,9 +64,9 @@ func expireByCount(schedule *snapschedulerv1.SnapshotSchedule,
 // expireByTime deletes snapshots that are older than the retention time in the
 // specified schedule. It only affects snapshots that were created by the provided schedule.
 // This function is the entry point for the time-based expiration of snapshots
-func expireByTime(schedule *snapschedulerv1.SnapshotSchedule,
+func expireByTime(schedule *snapschedulerv1.SnapshotSchedule, now time.Time,
 	logger logr.Logger, c client.Client) error {
-	expiration, err := getExpirationTime(schedule, time.Now(), logger)
+	expiration, err := getExpirationTime(schedule, now, logger)
 	if err != nil {
 		logger.Error(err, "unable to determine snapshot expiration time")
 		return err

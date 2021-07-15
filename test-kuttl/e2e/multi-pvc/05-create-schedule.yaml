@@ -1,0 +1,7 @@
+---
+apiVersion: snapscheduler.backube/v1
+kind: SnapshotSchedule
+metadata:
+  name: multi
+spec:
+  schedule: "* * * * *"

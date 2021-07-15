@@ -1,0 +1,18 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - timeout: 90
+    script: |
+      set -e -o pipefail
+
+      echo "Waiting for snapshot"
+      while [[ $(kubectl -n "$NAMESPACE" get volumesnapshots -oname) == '' ]]; do
+        sleep 1
+      done
+
+      sname=$(kubectl -n "$NAMESPACE" get volumesnapshots -oname)
+
+      echo "Verifying presence of labels on snapshot"
+      kubectl -n "$NAMESPACE" get $sname -otemplate='{{.metadata.labels}}' | grep -q 'mysnaplabel:myval'
+      kubectl -n "$NAMESPACE" get $sname -otemplate='{{.metadata.labels}}' | grep -q 'label2:v2'

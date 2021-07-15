@@ -1,0 +1,9 @@
+---
+apiVersion: snapscheduler.backube/v1
+kind: SnapshotSchedule
+metadata:
+  name: withclass
+spec:
+  schedule: "* * * * *"
+  snapshotTemplate:
+    snapshotClassName: my-custom-class

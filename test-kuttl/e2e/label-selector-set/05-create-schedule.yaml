@@ -1,0 +1,13 @@
+---
+apiVersion: snapscheduler.backube/v1
+kind: SnapshotSchedule
+metadata:
+  name: selector
+spec:
+  schedule: "* * * * *"
+  claimSelector:
+    matchExpressions:
+      - key: snap
+        operator: In
+        values:
+          - me

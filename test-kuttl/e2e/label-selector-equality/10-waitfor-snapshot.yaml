@@ -1,0 +1,20 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - timeout: 90
+    script: |
+      set -e -o pipefail
+
+      echo "Waiting for snapshot"
+      while [[ $(kubectl -n "$NAMESPACE" get volumesnapshots -oname | wc -l) == 0 ]]; do
+        sleep 1
+      done
+
+      sname=$(kubectl -n "$NAMESPACE" get volumesnapshots -oname)
+
+      echo "Verifying correct PVC was snapshotted"
+      echo "$sname" | grep -q "voldata"
+      echo "Verifying there is only 1 snapshot"
+      echo "$sname"
+      [[ $(echo "$sname" | wc -l) == 1 ]]

@@ -2,13 +2,13 @@
 apiVersion: v2
 name: snapscheduler
 # Chart version: Incremented during chart, template, or appVersion changes.
-version: "1.3.0"
+version: "2.0.0"
 description: >-
     An operator to take scheduled snapshots of Kubernetes persistent volumes
 type: application
 # Adding "-0" at the end of the version string permits pre-release kube versions
 # to match. See https://github.com/helm/helm/issues/6190
-kubeVersion: "^1.13.0-0"
+kubeVersion: "^1.17.0-0"
 keywords:
   - csi
   - scheduler
@@ -23,20 +23,41 @@ maintainers:
     url: https://github.com/JohnStrunk
 icon: https://raw.githubusercontent.com/backube/snapscheduler/master/docs/media/snapscheduler.svg?sanitize=true
 # This is the version number of the application being deployed.
-appVersion: "1.2.0"
+appVersion: "2.0.0"
 annotations:
+  # https://artifacthub.io/docs/topics/annotations/helm/
   # Changelog for current chart & app version
-  # Prefix w/ Added/Changed/Deprecated/Fixed/Removed/Security
+  # Supported kinds: added, changed, deprecated, removed, fixed, security
   artifacthub.io/changes: |
-    - Changed - Update snapscheduler to 1.2.0
-    - Changed - Switched operator base container to distroless
-    - Fixed - Update metrics Service port to properly expose metrics
+    - kind: changed
+      description: Moved operator to operator-sdk 1.9
+    - kind: changed
+      description: Updated Helm deployment manifests to more closely follow operator-sdk scaffolding
+    - kind: removed
+      description: Removed support for Kubernetes < 1.17
   artifacthub.io/crds: |
     - kind: SnapshotSchedule
       version: v1
       name: snapshotschedule.snapscheduler.backube
       displayName: Snapshot schedule
       description: Defines a schedule for automated volume snapshots
+  artifacthub.io/crdsExamples: |
+    - apiVersion: v1
+      kind: SnapshotSchedule
+      metadata:
+        name: daily
+      spec:
+        retention:
+          maxCount: 7
+        schedule: "0 0 * * *"
+    - apiVersion: v1
+      kind: SnapshotSchedule
+      metadata:
+        name: weekly
+      spec:
+        retention:
+          maxCount: 4
+        schedule: "0 0 * * 0"
   artifacthub.io/license: AGPL-3.0-or-later
   artifacthub.io/operator: "true"
   artifacthub.io/operatorCapabilities: Seamless Upgrades

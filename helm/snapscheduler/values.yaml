@@ -18,22 +18,20 @@ serviceAccount:
   # name is generated using the fullname template
   name:
 
-podSecurityContext: {}
+podSecurityContext:
+  runAsNonRoot: true
 
-securityContext: {}
+securityContext:
+  allowPrivilegeEscalation: false
 
 resources:
   requests:
     cpu: 10m
     memory: 100Mi
 
-# nodeSelector specifies the set of nodes where the operator can run. By
-# default, the operator is restricted to amd64/linux nodes. If a value is
-# provided here, it overrides that default. Also, by specifying {} for the
-# value, the default can be cleared entirely. The default isn't shown here since
-# the proper node labels must be determined dynamically due to differences
-# between kube 1.13 and later.
 nodeSelector:
+  kubernetes.io/arch: amd64
+  kubernetes.io/os: linux
 
 tolerations: []
 

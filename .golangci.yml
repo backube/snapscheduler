@@ -5,24 +5,32 @@ run:
   timeout: 30m
   skip-files:
     - pkg/apis/snapscheduler/v1/zz_generated.openapi.go
+output:
+  sort-results: true
 linters:
   disable-all: true
   enable:
+    - asciicheck
     - deadcode
     - dupl
     - errcheck
+    - errorlint
+    - exhaustive
+    - exportloopref
+    - forcetypeassert
     - funlen
     - goconst
     - gocyclo
-    - goimports
+    - goimports  # Supersedes gofmt
     - gosec
     - gosimple
     - govet
     - ineffassign
     - lll
-    - maligned
+    - makezero
     - misspell
     - nakedret
+    - revive
     - staticcheck
     - structcheck
     - typecheck
