@@ -12,12 +12,7 @@ Required:
   - Check
     [Makefile](https://github.com/backube/snapscheduler/blob/master/Makefile)
     for the proper version to use
-  - Can be installed by: `make install-operator-sdk`
-- [golangci-lint](https://github.com/golangci/golangci-lint)
-  - Check
-    [Makefile](https://github.com/backube/snapscheduler/blob/master/Makefile)
-    for the proper version to use
-  - Can be installed by: `make install-golangci`
+  - Can be installed by: `make operator-sdk`
 - [kind](https://kind.sigs.k8s.io/)
   - Recommended for running E2E tests in combination with the CSI hostpath
     driver
@@ -33,48 +28,38 @@ Recommended:
 
 ## Building the code
 
-Since the operator is based on the operator-sdk, the SDK's commands are used for
-much of the build/run process. A Makefile is provided to wrap those commands and
-ensure proper flags are provided.
+It is possible to run the operator locally against a running cluster. This
+enables quick turnaround during development. With a running cluster (and
+properly configured kubeconfig):
 
-To build the operator's binary and container, use the `image` target:
+Install the CRDs:
 
 ```console
-$ make image
-operator-sdk build quay.io/backube/snapscheduler \
-  --go-build-args "-ldflags -X=github.com/backube/snapscheduler/version.Version=291d1fd-dirty" \
-  --image-build-args "--build-arg builddate=2019-11-10T02:56:55.314848329Z \
-  --build-arg version=291d1fd-dirty"
-INFO[0030] Building OCI image quay.io/backube/snapscheduler
-...
-Successfully built 688dcc82bd71
-Successfully tagged quay.io/backube/snapscheduler:latest
-INFO[0041] Operator build complete.
+$ make install
+/home/jstrunk/src/backube/snapscheduler/bin/controller-gen "crd:trivialVersions=true,preserveUnknownFields=false" rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+cp config/crd/bases/* helm/snapscheduler/crds
+/home/jstrunk/src/backube/snapscheduler/bin/kustomize build config/crd | kubectl apply -f -
+customresourcedefinition.apiextensions.k8s.io/snapshotschedules.snapscheduler.backube created
 ```
 
-The above can then be pushed to a custom repository and tested in-cluster.
-
-However, during development, it's much quicker to run the operator locally. For
-that, just use the SDK from the top-level directory:
+Run the operator locally:
 
 ```console
-$ operator-sdk up local --kubeconfig=/path/to/kubeconfig --namespace ""
-...
-```
-
-## Modifying the code
-
-When changing the code, if the `types.go` file is modified, the deepcopy and
-openapi files need to be regenerated. Use `make generate` for that prior to
-running the operator.
-
-After making modifications, and before committing code, please ensure both the
-tests and linters pass or the PR will be rejected by the CI system:
-
-```console
-$ make test
-...
-$ make lint
+$ make run
+/home/jstrunk/src/backube/snapscheduler/bin/controller-gen "crd:trivialVersions=true,preserveUnknownFields=false" rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+cp config/crd/bases/* helm/snapscheduler/crds
+/home/jstrunk/src/backube/snapscheduler/bin/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
+/home/jstrunk/src/backube/snapscheduler/bin/golangci-lint run ./...
+go run -ldflags -X=main.snapschedulerVersion=v1.1.0-105-g53576a0-dirty ./main.go
+2021-07-20T13:18:58.059-0400    INFO    setup    Operator Version: v1.1.0-105-g53576a0-dirty
+2021-07-20T13:18:58.059-0400    INFO    setup    Go Version: go1.16.4
+2021-07-20T13:18:58.059-0400    INFO    setup    Go OS/Arch: linux/amd64
+2021-07-20T13:18:58.969-0400    INFO    controller-runtime.metrics    metrics server is starting to listen    {"addr": ":8080"}
+2021-07-20T13:18:58.992-0400    INFO    setup    starting manager
+2021-07-20T13:18:58.993-0400    INFO    controller-runtime.manager    starting metrics server    {"path": "/metrics"}
+2021-07-20T13:18:58.993-0400    INFO    controller-runtime.manager.controller.snapshotschedule    Starting EventSource    {"reconciler group": "snapscheduler.backube", "reconciler kind": "SnapshotSchedule", "source": "kind source: /, Kind="}
+2021-07-20T13:18:59.094-0400    INFO    controller-runtime.manager.controller.snapshotschedule    Starting Controller    {"reconciler group": "snapscheduler.backube", "reconciler kind": "SnapshotSchedule"}
+2021-07-20T13:18:59.094-0400    INFO    controller-runtime.manager.controller.snapshotschedule    Starting workers    {"reconciler group": "snapscheduler.backube", "reconciler kind": "SnapshotSchedule", "worker count": 1}
 ...
 ```
 
@@ -85,11 +70,7 @@ tests (mentioned above) and end-to-end tests. These tests are run across a
 number of kubernetes versions (see `KUBERNETES_VERSIONS` in
 [`.github/workflows/tests.yml`](https://github.com/backube/snapscheduler/blob/master/.github/workflows/tests.yml)).
 
-The e2e tests can be found in the
-[`tests/e2e`](https://github.com/backube/snapscheduler/blob/master/tests/e2e)
-directory and are based on the operator-sdk's e2e testing library.
-
-### Running E2E locally just like CI
+### Running E2E locally
 
 The same scripts that are used in CI can be used to test and develop locally:
 
@@ -110,14 +91,94 @@ suitable CSI driver and the snapscheduler running, ready for testing.
 The E2E tests can then be executed via:
 
 ```console
-$ ./.ci-scripts/tests/test-sdk-e2e.sh
-=== RUN   TestSnapscheduler
-=== RUN   TestSnapscheduler/Minimal_schedule
-=== PAUSE TestSnapscheduler/Minimal_schedule
-=== RUN   TestSnapscheduler/Snapshot_labeling
-=== PAUSE TestSnapscheduler/Snapshot_labeling
-=== RUN   TestSnapscheduler/Custom_snapclass
+$ make test-e2e
+cd test-kuttl && /home/jstrunk/src/backube/snapscheduler/bin/kuttl test
+=== RUN   kuttl
+    harness.go:457: starting setup
+    harness.go:248: running tests using configured kubeconfig.
+    harness.go:285: Successful connection to cluster at: https://127.0.0.1:37729
+    harness.go:353: running tests
+    harness.go:74: going to run test suite with timeout of 30 seconds for each step
+    harness.go:365: testsuite: ./e2e has 6 tests
+=== RUN   kuttl/harness
+=== RUN   kuttl/harness/custom-snapclass
+=== PAUSE kuttl/harness/custom-snapclass
 ...
+=== CONT  kuttl
+    harness.go:399: run tests finished
+    harness.go:508: cleaning up
+    harness.go:563: removing temp folder: ""
+--- PASS: kuttl (80.81s)
+    --- PASS: kuttl/harness (0.00s)
+        --- PASS: kuttl/harness/minimal-schedule (15.31s)
+        --- PASS: kuttl/harness/label-selector-equality (78.02s)
+        --- PASS: kuttl/harness/template-labels (78.02s)
+        --- PASS: kuttl/harness/custom-snapclass (78.02s)
+        --- PASS: kuttl/harness/multi-pvc (78.04s)
+        --- PASS: kuttl/harness/label-selector-set (78.04s)
 PASS
-ok    github.com/backube/snapscheduler/test/e2e 70.640s
+```
+
+### Testing w/ OLM
+
+To test the deployment of SnapScheduler w/ OLM (i.e., using the bundle that will
+be consumed in OpenShift), it's necessary to build the bundle, bundle image, and
+a catalog image.
+
+Build and push the bundle and catalog images:
+
+- IMG: The operator image that will be referenced in the bundle
+- IMAGE_TAG_BASE: The base name for the bundle & catalog images (i.e.,
+  foo-bundle, foo-catalog)
+- CHANNELS: The list of channels that the bundle will belong to
+- DEFAULT_CHANNEL: The default channel when someone installs
+- VERSION: The bundle version number (likely the same as the operator version)
+
+```console
+$ make bundle bundle-build bundle-push catalog-build catalog-push IMAGE_TAG_BASE=quay.io/johnstrunk/snapscheduler CHANNELS="candidate,stable" DEFAULT_CHANNEL=stable IMG=quay.io/backube/snapscheduler:latest VERSION=2.0.0
+...
+```
+
+Create a kind cluster & start OLM on it:
+
+```console
+$ hack/setup-kind-cluster.sh
+...
+$ bin/operator-sdk olm install
+...
+```
+
+Add the new catalog image to the cluster:
+
+```console
+$ kubectl -n olm apply -f - <<EOF
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: snapscheduler-catalog
+spec:
+  sourceType: grpc
+  # This should match the image and version from above
+  image: quay.io/johnstrunk/snapscheduler-catalog:v2.0.0
+EOF
+```
+
+Create a subscription for the operator so that it will install:
+
+```console
+$ kubectl -n operators apply -f - <<EOF
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: snapscheduler
+spec:
+  name: snapscheduler
+  sourceNamespace: olm
+  # Channel needs to match the channel in the bundle
+  channel: stable
+  # Needs to match the CatalogSource
+  source: snapscheduler-catalog
+  installPlanApproval: Automatic
 ```
