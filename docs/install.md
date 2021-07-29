@@ -60,48 +60,45 @@ the CRD).
 Install the CRD:
 
 ```console
-$ kubectl apply -f deploy/crds/snapscheduler.backube_snapshotschedules_crd.yaml
-customresourcedefinition.apiextensions.k8s.io/snapshotschedules.snapscheduler.backube created
+$ make install
+/home/jstrunk/src/backube/snapscheduler/bin/controller-gen "crd:trivialVersions=true,preserveUnknownFields=false" rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+cp config/crd/bases/* helm/snapscheduler/crds
+/home/jstrunk/src/backube/snapscheduler/bin/kustomize build config/crd | kubectl apply -f -
+customresourcedefinition.apiextensions.k8s.io/snapshotschedules.snapscheduler.backube configured
 ```
 
 ### Install the operator
 
 Once the CRD has been added to the cluster, the operator can be installed. The
-RBAC configuration for the operator, as defined in the `deploy/` directory,
-assumes the operator will be installed into the `backube-snapscheduler`
-namespace.
-
-First, create the namespace:
+ operator will be installed into the `snapscheduler-system` namespace.
 
 ```console
-$ kubectl create ns backube-snapscheduler
-namespace/backube-snapscheduler created
-```
-
-Create the service account, role, and role binding for the operator:
-
-```console
-$ kubectl apply -f deploy/service_account.yaml
-serviceaccount/snapscheduler created
-$ kubectl apply -f deploy/role.yaml
-clusterrole.rbac.authorization.k8s.io/snapscheduler created
-$ kubectl apply -f deploy/role_binding.yaml
-clusterrolebinding.rbac.authorization.k8s.io/snapscheduler created
-```
-
-Start the operator:
-
-```console
-$ kubectl apply -f deploy/operator.yaml
-deployment.apps/snapscheduler created
+$ make deploy
+/home/jstrunk/src/backube/snapscheduler/bin/controller-gen "crd:trivialVersions=true,preserveUnknownFields=false" rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+cp config/crd/bases/* helm/snapscheduler/crds
+cd config/manager && /home/jstrunk/src/backube/snapscheduler/bin/kustomize edit set image controller=quay.io/backube/snapscheduler:latest
+/home/jstrunk/src/backube/snapscheduler/bin/kustomize build config/default | kubectl apply -f -
+namespace/snapscheduler-system created
+customresourcedefinition.apiextensions.k8s.io/snapshotschedules.snapscheduler.backube created
+serviceaccount/snapscheduler-controller-manager created
+role.rbac.authorization.k8s.io/snapscheduler-leader-election-role created
+clusterrole.rbac.authorization.k8s.io/snapscheduler-manager-role created
+clusterrole.rbac.authorization.k8s.io/snapscheduler-metrics-reader created
+clusterrole.rbac.authorization.k8s.io/snapscheduler-proxy-role created
+rolebinding.rbac.authorization.k8s.io/snapscheduler-leader-election-rolebinding created
+clusterrolebinding.rbac.authorization.k8s.io/snapscheduler-manager-rolebinding created
+clusterrolebinding.rbac.authorization.k8s.io/snapscheduler-proxy-rolebinding created
+configmap/snapscheduler-manager-config created
+service/snapscheduler-controller-manager-metrics-service created
+deployment.apps/snapscheduler-controller-manager created
 ```
 
 Verify the operator starts:
 
 ```console
-$ kubectl -n backube-snapscheduler get deployment/snapscheduler
-NAME            READY   UP-TO-DATE   AVAILABLE   AGE
-snapscheduler   2/2     2            2           49s
+$ kubectl -n snapscheduler-system get deployment/snapscheduler-controller-manager
+NAME                               READY   UP-TO-DATE   AVAILABLE   AGE
+snapscheduler-controller-manager   1/1     1            1           4m15s
 ```
 
 Once the operator is running, [continue on to usage](usage.md).

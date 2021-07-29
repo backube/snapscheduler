@@ -46,11 +46,11 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
         resources:
-          limits:
-            cpu: 100m
-            memory: 30Mi
           requests:
-            cpu: 100m
-            memory: 20Mi
+            cpu: 10m
+            memory: 100Mi
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        kubernetes.io/os: linux
