@@ -70,7 +70,7 @@ docs.](https://backube.github.io/snapscheduler/)
 The operator can be installed from:
 
 - [Artifact
-  Hub](https://artifacthub.io/package/chart/backube-helm-charts/snapscheduler)
+  Hub](https://artifacthub.io/packages/helm/backube-helm-charts/snapscheduler)
 - [OperatorHub.io](https://operatorhub.io/operator/snapscheduler)
 
 Other helpful links:
