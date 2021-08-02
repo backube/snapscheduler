@@ -36,3 +36,7 @@ nodeSelector:
 tolerations: []
 
 affinity: {}
+
+metrics:
+  # Disable auth checks when scraping metrics (allow anyone to scrape)
+  disableAuth: false

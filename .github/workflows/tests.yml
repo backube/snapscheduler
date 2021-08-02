@@ -164,6 +164,7 @@ jobs:
         run: |
           bin/helm install --create-namespace -n backube-snapscheduler \
               --set image.tagOverride=ci-build \
+              --set metrics.disableAuth=true \
               --wait --timeout=300s \
               snapscheduler ./helm/snapscheduler
           kubectl -n backube-snapscheduler get all

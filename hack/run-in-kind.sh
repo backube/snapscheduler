@@ -14,5 +14,7 @@ IMAGE="quay.io/backube/snapscheduler"
 docker tag "${IMAGE}:latest" "${IMAGE}:${KIND_TAG}"
 kind load docker-image "${IMAGE}:${KIND_TAG}"
 
-kubectl create ns backube-snapscheduler
-helm install -n backube-snapscheduler --set image.tagOverride=${KIND_TAG} snapscheduler ./helm/snapscheduler
+helm upgrade --install --create-namespace -n backube-snapscheduler \
+    --set image.tagOverride=${KIND_TAG} \
+    --set metrics.disableAuth=true \
+    snapscheduler ./helm/snapscheduler

@@ -11,4 +11,4 @@ spec:
     port: 8443
     targetPort: https
   selector:
-    {{- include "snapscheduler.labels" . | nindent 4 }}
+    {{- include "snapscheduler.selectorLabels" . | nindent 4 }}
