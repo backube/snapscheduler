@@ -1,0 +1,22 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 90
+collectors:
+  # Operator logs
+  - selector: app.kubernetes.io/name=snapscheduler
+    namespace: backube-snapscheduler
+  # Resources in the test namespace
+  - type: command
+    command: kubectl -n $NAMESPACE get all,pvc,snapshotschedule,volumesnapshot,volumesnapshotcontent -oyaml
+  # Logs from the job
+  - type: command
+    command: kubectl -n $NAMESPACE logs --prefix --all-containers job/check-metrics
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: check-metrics
+status:
+  succeeded: 1
