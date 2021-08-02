@@ -6,9 +6,10 @@ metadata:
 spec:
   template:
     spec:
+      backoffLimit: 50
       containers:
         - name: busybox
           image: busybox
           command: ["/bin/sh", "-c"]
-          args: ["wget -O- --no-check-certificate -q https://snapscheduler-metrics.backube-snapscheduler.svc.cluster.local:8443/metrics | grep -q 'workqueue_work_duration_seconds_count{name=\"snapshotschedule\"}'"]
+          args: ["wget -O- --no-check-certificate -q https://snapscheduler-metrics.backube-snapscheduler.svc.cluster.local:8443/metrics | grep 'workqueue_work_duration_seconds_count{name=\"snapshotschedule\"}'"]
       restartPolicy: Never
