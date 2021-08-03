@@ -29,12 +29,18 @@ annotations:
   # Changelog for current chart & app version
   # Supported kinds: added, changed, deprecated, removed, fixed, security
   artifacthub.io/changes: |
+    - kind: added
+      description: Added option to disable authentication on metrics endpoint
     - kind: changed
-      description: Moved operator to operator-sdk 1.9
+      description: Moved operator to operator-sdk 1.10
     - kind: changed
       description: Updated Helm deployment manifests to more closely follow operator-sdk scaffolding
+    - kind: changed
+      description: Added default host anti-affinity for the operator replicas
     - kind: removed
       description: Removed support for Kubernetes < 1.17
+    - kind: removed
+      description: Removed support v1alpha1 version of VolumeSnapshot
   artifacthub.io/crds: |
     - kind: SnapshotSchedule
       version: v1

@@ -7,10 +7,14 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+## [2.0.0] - 2021-08-03
+
 ### Changed
 
-- Updated project scaffolding to operator-sdk 1.9
+- Updated project scaffolding to operator-sdk 1.10
 - Moved CRD to `apiextensions.k8s.io/v1`
+- Added default host anti-affinity for the operator replicas
+- Updated Helm Chart manifests to more closely match OSDK scaffolding
 
 ### Removed
 
@@ -49,7 +53,8 @@ This project follows [Semantic Versioning](https://semver.org/)
 - Label selectors to control which PVCs are selected for snapshotting
 - Retention policies based on snapshot age or count
 
-[unreleased]: https://github.com/backube/snapscheduler/compare/v1.2.0...HEAD
+[unreleased]: https://github.com/backube/snapscheduler/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/backube/snapscheduler/compare/v1.2.0...v2.0.0
 [1.2.0]: https://github.com/backube/snapscheduler/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/backube/snapscheduler/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/backube/snapscheduler/compare/v1.0.0...v1.1.0

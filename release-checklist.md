@@ -2,6 +2,7 @@
 
 ## Create a release
 
+* Update [CHANGELOG.md](CHANGLOG.md)
 * Update Helm chart template
   * In Chart.yaml, update `version`, `appVersion`, and
     `annotations.artifacthub.io/changes`
