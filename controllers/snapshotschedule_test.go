@@ -68,20 +68,14 @@ var _ = Describe("newSnapForClaim", func() {
 		snapClass := "snapclass"
 		scheduleName := "mysched"
 		schedTime, _ := time.Parse(timeFormat, "2010-07-23T01:02:00Z")
-		VersionChecker.v1Beta1 = true
-		VersionChecker.v1Alpha1 = false
 		snap := newSnapForClaim(snapname, pvc, scheduleName, schedTime, nil, &snapClass)
 
-		snapMeta := snap.ObjectMeta()
-		// Some tests depend on knowing the internals :(
-		betaSnap := snap.v1Beta1
-
-		Expect(snapMeta.Name).To(Equal(snapname))
-		Expect(snapMeta.Namespace).To(Equal(pvc.Namespace))
-		Expect(*betaSnap.Spec.Source.PersistentVolumeClaimName).To(Equal(pvc.Name))
-		Expect(betaSnap.Spec.VolumeSnapshotClassName).NotTo(BeNil())
-		Expect(*betaSnap.Spec.VolumeSnapshotClassName).To(Equal(snapClass))
-		Expect(snapMeta.Labels).To(HaveKeyWithValue(ScheduleKey, scheduleName))
+		Expect(snap.Name).To(Equal(snapname))
+		Expect(snap.Namespace).To(Equal(pvc.Namespace))
+		Expect(*snap.Spec.Source.PersistentVolumeClaimName).To(Equal(pvc.Name))
+		Expect(snap.Spec.VolumeSnapshotClassName).NotTo(BeNil())
+		Expect(*snap.Spec.VolumeSnapshotClassName).To(Equal(snapClass))
+		Expect(snap.Labels).To(HaveKeyWithValue(ScheduleKey, scheduleName))
 	})
 	It("allows providing addl labels", func() {
 		pvc := corev1.PersistentVolumeClaim{
@@ -93,21 +87,17 @@ var _ = Describe("newSnapForClaim", func() {
 		snapname := "mysnap"
 		scheduleName := "mysched"
 		schedTime, _ := time.Parse(timeFormat, "2010-07-23T01:02:00Z")
-		VersionChecker.v1Beta1 = true
-		VersionChecker.v1Alpha1 = false
 		labels := make(map[string]string, 2)
 		labels["one"] = "two"
 		labels["three"] = "four"
 		snap := newSnapForClaim(snapname, pvc, scheduleName, schedTime, labels, nil)
 		// Some tests depend on knowing the internals :(
-		betaSnap := snap.v1Beta1
-		Expect(betaSnap.Spec.VolumeSnapshotClassName).To(BeNil())
-		snapMeta := snap.ObjectMeta()
-		Expect(snapMeta.Labels).NotTo(BeNil())
-		Expect(snapMeta.Labels).To(HaveKeyWithValue(ScheduleKey, scheduleName))
-		Expect(snapMeta.Labels).To(HaveKeyWithValue(WhenKey, schedTime.Format(timeYYYYMMDDHHMMSS)))
-		Expect(snapMeta.Labels).To(HaveKeyWithValue("three", "four"))
-		Expect(len(snapMeta.Labels)).To(Equal(4))
+		Expect(snap.Spec.VolumeSnapshotClassName).To(BeNil())
+		Expect(snap.Labels).NotTo(BeNil())
+		Expect(snap.Labels).To(HaveKeyWithValue(ScheduleKey, scheduleName))
+		Expect(snap.Labels).To(HaveKeyWithValue(WhenKey, schedTime.Format(timeYYYYMMDDHHMMSS)))
+		Expect(snap.Labels).To(HaveKeyWithValue("three", "four"))
+		Expect(len(snap.Labels)).To(Equal(4))
 	})
 })
 
@@ -199,8 +189,6 @@ var _ = Describe("Listing PVCs by selector", func() {
 	var objects []corev1.PersistentVolumeClaim
 	var ns *v1.Namespace
 	BeforeEach(func() {
-		VersionChecker.v1Alpha1 = false
-		VersionChecker.v1Beta1 = true
 		ns = &v1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "test-",

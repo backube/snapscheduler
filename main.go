@@ -27,8 +27,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	snapv1alpha1 "github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1"
-	snapv1beta1 "github.com/kubernetes-csi/external-snapshotter/v2/pkg/apis/volumesnapshot/v1beta1"
+	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v3/apis/volumesnapshot/v1beta1"
 	kruntime "k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -49,8 +48,7 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(snapv1alpha1.AddToScheme(scheme))
-	utilruntime.Must(snapv1beta1.AddToScheme(scheme))
+	utilruntime.Must(snapv1.AddToScheme(scheme))
 
 	utilruntime.Must(snapschedulerv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
@@ -89,8 +87,6 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-
-	utilruntime.Must(controllers.VersionChecker.SetConfig(ctrl.GetConfigOrDie()))
 
 	if err = (&controllers.SnapshotScheduleReconciler{
 		Client: mgr.GetClient(),

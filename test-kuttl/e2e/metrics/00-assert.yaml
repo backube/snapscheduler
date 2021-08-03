@@ -1,7 +1,7 @@
 ---
 apiVersion: kuttl.dev/v1beta1
 kind: TestAssert
-timeout: 90
+timeout: 120
 collectors:
   # Operator logs
   - selector: app.kubernetes.io/name=snapscheduler

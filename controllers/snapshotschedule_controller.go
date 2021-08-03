@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v3/apis/volumesnapshot/v1beta1"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 	"github.com/robfig/cron/v3"
 	corev1 "k8s.io/api/core/v1"
@@ -127,11 +128,6 @@ func doReconcile(schedule *snapschedulerv1.SnapshotSchedule,
 		}
 	}
 
-	if err := VersionChecker.Refresh(logger); err != nil {
-		logger.Error(err, "unable to refresh list of VolumeSnapshot versions")
-		return ctrl.Result{}, err
-	}
-
 	timeNow := time.Now()
 	timeNext := schedule.Status.NextSnapshotTime.Time
 	if !schedule.Spec.Disabled && timeNow.After(timeNext) {
@@ -182,7 +178,8 @@ func handleSnapshotting(schedule *snapschedulerv1.SnapshotSchedule,
 		snapName := snapshotName(pvc.Name, schedule.Name, snapTime)
 		logger.V(4).Info("looking for snapshot", "name", snapName)
 		key := types.NamespacedName{Name: snapName, Namespace: pvc.Namespace}
-		if _, err := GetMVSnapshot(context.TODO(), c, key); err != nil {
+		snap := snapv1.VolumeSnapshot{}
+		if err := c.Get(context.TODO(), key, &snap); err != nil {
 			if kerrors.IsNotFound(err) {
 				labels := make(map[string]string)
 				var snapshotClassName *string
@@ -193,7 +190,7 @@ func handleSnapshotting(schedule *snapschedulerv1.SnapshotSchedule,
 				snap := newSnapForClaim(snapName, pvc, schedule.Name, snapTime, labels, snapshotClassName)
 				if snap != nil {
 					logger.Info("creating a snapshot", "PVC", pvc.Name, "Snapshot", snapName)
-					if err = snap.Create(context.TODO(), c); err != nil {
+					if err = c.Create(context.TODO(), snap); err != nil {
 						logger.Error(err, "while creating snapshots", "name", snapName)
 						return ctrl.Result{}, err
 					}
@@ -287,4 +284,32 @@ func getNextSnapTime(cronspec string, when time.Time) (time.Time, error) {
 
 	next := schedule.Next(when)
 	return next, nil
+}
+
+func newSnapForClaim(snapName string, pvc corev1.PersistentVolumeClaim,
+	scheduleName string, scheduleTime time.Time,
+	labels map[string]string, snapClass *string) *snapv1.VolumeSnapshot {
+	numLabels := 2
+	if labels != nil {
+		numLabels += len(labels)
+	}
+	snapLabels := make(map[string]string, numLabels)
+	for k, v := range labels {
+		snapLabels[k] = v
+	}
+	snapLabels[ScheduleKey] = scheduleName
+	snapLabels[WhenKey] = scheduleTime.Format(timeYYYYMMDDHHMMSS)
+	return &snapv1.VolumeSnapshot{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      snapName,
+			Namespace: pvc.Namespace,
+			Labels:    snapLabels,
+		},
+		Spec: snapv1.VolumeSnapshotSpec{
+			Source: snapv1.VolumeSnapshotSource{
+				PersistentVolumeClaimName: &pvc.Name,
+			},
+			VolumeSnapshotClassName: snapClass,
+		},
+	}
 }
