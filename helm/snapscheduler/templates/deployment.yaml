@@ -12,6 +12,7 @@ spec:
   template:
     metadata:
       labels:
+        backube/snapscheduler-affinity: manager
         {{- include "snapscheduler.selectorLabels" . | nindent 8 }}
     spec:
     {{- with .Values.imagePullSecrets }}

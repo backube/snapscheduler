@@ -35,7 +35,18 @@ nodeSelector:
 
 tolerations: []
 
-affinity: {}
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: backube/snapscheduler-affinity
+                operator: In
+                values:
+                  - manager
+          topologyKey: kubernetes.io/hostname
 
 metrics:
   # Disable auth checks when scraping metrics (allow anyone to scrape)

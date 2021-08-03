@@ -37,7 +37,7 @@ for more information.
 
 ## Requirements
 
-- Kubernetes >= 1.13
+- Kubernetes >= 1.17
 - CSI-based storage driver that supports snapshots (i.e. has the
   `CREATE_DELETE_SNAPSHOT` capability)
 
@@ -133,5 +133,5 @@ case, the defaults, shown below, should be sufficient.
   - Allows applying a node selector to the operator pod
 - `tolerations`: none
   - Allows applying tolerations to the operator pod
-- `affinity`: none
+- `affinity`: node-level anti-affinity
   - Allows setting the operator pod's affinity

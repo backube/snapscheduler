@@ -21,7 +21,20 @@ spec:
     metadata:
       labels:
         control-plane: controller-manager
+        backube/snapscheduler-affinity: manager
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: backube/snapscheduler-affinity
+                      operator: In
+                      values:
+                        - manager
+                topologyKey: kubernetes.io/hostname
       securityContext:
         runAsNonRoot: true
       containers:
