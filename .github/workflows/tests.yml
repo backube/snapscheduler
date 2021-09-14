@@ -45,6 +45,8 @@ jobs:
   codescan:
     name: CodeQL scan
     runs-on: ubuntu-20.04
+    permissions:
+      security-events: write
 
     steps:
       - name: Checkout source
