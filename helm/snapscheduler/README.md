@@ -119,6 +119,9 @@ case, the defaults, shown below, should be sufficient.
   - Overrides the container image pull policy
 - `imagePullSecrets`: none
   - May be set if pull secret(s) are needed to retrieve the operator image
+- `rbacProxy.resources`: requests for 10m CPU and 100Mi memory; no limits
+  - Allows overriding the resource requests/limits for the kube-rbac-proxy
+    container of the operator pod.
 - `serviceAccount.create`: `true`
   - Whether to create the ServiceAccount for the operator
 - `serviceAccount.name`: none
@@ -128,7 +131,8 @@ case, the defaults, shown below, should be sufficient.
 - `securityContext`: none
   - Allows setting the operator container's security context
 - `resources`: requests for 10m CPU and 100Mi memory; no limits
-  - Allows overriding the resource requests/limits for the operator pod
+  - Allows overriding the resource requests/limits for the manager
+    container of the operator pod.
 - `nodeSelector`: `kubernetes.io/arch: amd64`, `kubernetes.io/os: linux`
   - Allows applying a node selector to the operator pod
 - `tolerations`: none
