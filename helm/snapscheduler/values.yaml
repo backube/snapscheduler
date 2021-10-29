@@ -11,6 +11,12 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+rbacProxy:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 100Mi
+
 serviceAccount:
   # Specifies whether a service account should be created
   create: true
