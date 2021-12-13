@@ -7,10 +7,10 @@ VERSION ?= $(shell git describe --tags --dirty --match 'v*' 2> /dev/null || git 
 BUILDDATE := $(shell date -u '+%Y-%m-%dT%H:%M:%S.%NZ')
 
 # Helper software versions
-GOLANGCI_VERSION := v1.41.1
-HELM_VERSION := v3.6.3
+GOLANGCI_VERSION := v1.43.0
+HELM_VERSION := v3.7.2
 OPERATOR_SDK_VERSION := v1.15.0
-KUTTL_VERSION := 0.11.0
+KUTTL_VERSION := 0.11.1
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
@@ -254,10 +254,10 @@ ginkgo: ## Download ginkgo
 
 .PHONY: golangci-lint
 GOLANGCILINT := $(PROJECT_DIR)/bin/golangci-lint
-GOLANGCI_URL := https://install.goreleaser.com/github.com/golangci/golangci-lint.sh
+GOLANGCI_URL := https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
 golangci-lint: ## Download golangci-lint
 ifeq (,$(wildcard $(GOLANGCILINT)))
-	curl -sSL $(GOLANGCI_URL) | sh -s -- -b $(PROJECT_DIR)/bin $(GOLANGCI_VERSION)
+	curl -sSfL $(GOLANGCI_URL) | sh -s -- -b $(PROJECT_DIR)/bin $(GOLANGCI_VERSION)
 endif
 
 .PHONY: helm
