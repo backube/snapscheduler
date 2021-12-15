@@ -119,6 +119,12 @@ case, the defaults, shown below, should be sufficient.
   - Overrides the container image pull policy
 - `imagePullSecrets`: none
   - May be set if pull secret(s) are needed to retrieve the operator image
+- `rbacProxy.image.repository`: `quay.io/brancz/kube-rbac-proxy`
+  - Specifies the container image used for the RBAC proxy
+- `rbacProxy.image.tag`: `v0.11.0`
+  - Specifies the tag for the RBAC proxy container image
+- `rbacProxy.image.pullPolicy`: `IfNotPresent`
+  - Specifies the RBAC proxy container image pull policy
 - `rbacProxy.resources`: requests for 10m CPU and 100Mi memory; no limits
   - Allows overriding the resource requests/limits for the kube-rbac-proxy
     container of the operator pod.
