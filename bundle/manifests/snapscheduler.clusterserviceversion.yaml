@@ -23,12 +23,12 @@ metadata:
     certified: "false"
     description: The SnapScheduler operator takes snapshots of Kubernetes CSI-based
       persistent volumes according to user-supplied schedules.
-    operators.operatorframework.io/builder: operator-sdk-v1.9.0+git
+    operators.operatorframework.io/builder: operator-sdk-v1.14.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/backube/snapscheduler
     support: https://github.com/backube/snapscheduler
-    containerImage: quay.io/backube/snapscheduler:2.0.0
-  name: snapscheduler.v2.0.0
+    containerImage: quay.io/backube/snapscheduler:2.1.0
+  name: snapscheduler.v2.1.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -272,11 +272,12 @@ spec:
                 - --upstream=http://127.0.0.1:8080/
                 - --logtostderr=true
                 - --v=10
-                image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
+                image: quay.io/brancz/kube-rbac-proxy:v0.11.0
                 name: kube-rbac-proxy
                 ports:
                 - containerPort: 8443
                   name: https
+                  protocol: TCP
                 resources: {}
               - args:
                 - --health-probe-bind-address=:8081
@@ -284,7 +285,7 @@ spec:
                 - --leader-elect
                 command:
                 - /manager
-                image: quay.io/backube/snapscheduler:2.0.0
+                image: quay.io/backube/snapscheduler:2.1.0
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -375,4 +376,4 @@ spec:
   provider:
     name: Backube
     url: https://github.com/backube
-  version: 2.0.0
+  version: 2.1.0
