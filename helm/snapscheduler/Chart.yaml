@@ -39,6 +39,8 @@ annotations:
       description: Build w/ Go 1.17
     - kind: changed
       description: Upgrade kube-rbac-proxy image to 0.11.0
+    - kind: changed
+      description: Deploy w/ single replica by default
   artifacthub.io/crds: |
     - kind: SnapshotSchedule
       version: v1

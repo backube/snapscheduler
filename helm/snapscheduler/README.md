@@ -106,7 +106,7 @@ The following optional parameters in the chart can be configured, either by
 using `--set` on the command line or via a `values.yaml` file. In the general
 case, the defaults, shown below, should be sufficient.
 
-- `replicaCount`: `2`
+- `replicaCount`: `1`
   - The number of replicas of the operator to run. Only one is active at a time
     via leader election.
 - `image.repository`: `quay.io/backube/snapscheduler`
