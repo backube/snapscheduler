@@ -276,7 +276,7 @@ var _ = Describe("Listing PVCs by selector", func() {
 				"mylabel": "foo",
 			},
 		}
-		pvcList, err := listPVCsMatchingSelector(logger, k8sClient, ns.Name, mlFoo)
+		pvcList, err := listPVCsMatchingSelector(context.TODO(), logger, k8sClient, ns.Name, mlFoo)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(pvcList.Items)).To(Equal(1))
 		Expect(pvcList.Items[0].Name).To(Equal("name-foo"))
@@ -293,13 +293,13 @@ var _ = Describe("Listing PVCs by selector", func() {
 				},
 			},
 		}
-		pvcList, err := listPVCsMatchingSelector(logger, k8sClient, ns.Name, meBar)
+		pvcList, err := listPVCsMatchingSelector(context.TODO(), logger, k8sClient, ns.Name, meBar)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(pvcList.Items)).To(Equal(1))
 		Expect(pvcList.Items[0].Name).To(Equal("name-bar"))
 	})
 	It("returns everything w/ an empty selector", func() {
-		pvcList, err := listPVCsMatchingSelector(logger, k8sClient, ns.Name, &metav1.LabelSelector{})
+		pvcList, err := listPVCsMatchingSelector(context.TODO(), logger, k8sClient, ns.Name, &metav1.LabelSelector{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(pvcList.Items)).To(Equal(len(objects)))
 	})

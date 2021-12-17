@@ -2,7 +2,7 @@
 apiVersion: v2
 name: snapscheduler
 # Chart version: Incremented during chart, template, or appVersion changes.
-version: "2.0.0"
+version: "2.1.0"
 description: >-
     An operator to take scheduled snapshots of Kubernetes persistent volumes
 type: application
@@ -23,24 +23,24 @@ maintainers:
     url: https://github.com/JohnStrunk
 icon: https://raw.githubusercontent.com/backube/snapscheduler/master/docs/media/snapscheduler.svg?sanitize=true
 # This is the version number of the application being deployed.
-appVersion: "2.0.0"
+appVersion: "2.1.0"
 annotations:
   # https://artifacthub.io/docs/topics/annotations/helm/
   # Changelog for current chart & app version
   # Supported kinds: added, changed, deprecated, removed, fixed, security
   artifacthub.io/changes: |
     - kind: added
-      description: Added option to disable authentication on metrics endpoint
+      description: Ability to configure resource requests for RBAC proxy container when deploying via Helm chart
+    - kind: added
+      description: Ability to configure container image used for kube-rbac-proxy
     - kind: changed
-      description: Moved operator to operator-sdk 1.10
+      description: Moved operator to operator-sdk 1.15
     - kind: changed
-      description: Updated Helm deployment manifests to more closely follow operator-sdk scaffolding
+      description: Build w/ Go 1.17
     - kind: changed
-      description: Added default host anti-affinity for the operator replicas
-    - kind: removed
-      description: Removed support for Kubernetes < 1.17
-    - kind: removed
-      description: Removed support v1alpha1 version of VolumeSnapshot
+      description: Upgrade kube-rbac-proxy image to 0.11.0
+    - kind: changed
+      description: Deploy w/ single replica by default
   artifacthub.io/crds: |
     - kind: SnapshotSchedule
       version: v1
@@ -67,3 +67,6 @@ annotations:
   artifacthub.io/license: AGPL-3.0-or-later
   artifacthub.io/operator: "true"
   artifacthub.io/operatorCapabilities: Seamless Upgrades
+  artifacthub.io/signKey: |
+    fingerprint: 74FC7E7EFD0FF009513CC9E39360133DBD1FF508
+    url: https://keys.openpgp.org/vks/v1/by-fingerprint/74FC7E7EFD0FF009513CC9E39360133DBD1FF508

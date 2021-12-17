@@ -82,7 +82,7 @@ func (r *SnapshotScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	result, err := doReconcile(instance, reqLogger, r.Client)
+	result, err := doReconcile(ctx, instance, reqLogger, r.Client)
 
 	// Update result in CR
 	if err != nil {
@@ -116,7 +116,7 @@ func (r *SnapshotScheduleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func doReconcile(schedule *snapschedulerv1.SnapshotSchedule,
+func doReconcile(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedule,
 	logger logr.Logger, c client.Client) (ctrl.Result, error) {
 	// If necessary, initialize time of next snap based on schedule
 	if schedule.Status.NextSnapshotTime.IsZero() {
@@ -135,7 +135,7 @@ func doReconcile(schedule *snapschedulerv1.SnapshotSchedule,
 		// modifying .status will immediately cause an addl reconcile pass
 		// (which will cover the rest of this reconcile function). We also don't
 		// want to update nextSnapshot until this round is done.
-		return handleSnapshotting(schedule, logger, c)
+		return handleSnapshotting(ctx, schedule, logger, c)
 	}
 
 	// We always update nextSnapshot in case the schedule changed
@@ -145,12 +145,12 @@ func doReconcile(schedule *snapschedulerv1.SnapshotSchedule,
 		return ctrl.Result{}, err
 	}
 
-	if err := expireByTime(schedule, time.Now(), logger, c); err != nil {
+	if err := expireByTime(ctx, schedule, time.Now(), logger, c); err != nil {
 		logger.Error(err, "expireByTime")
 		return ctrl.Result{}, err
 	}
 
-	if err := expireByCount(schedule, logger, c); err != nil {
+	if err := expireByCount(ctx, schedule, logger, c); err != nil {
 		logger.Error(err, "expireByCount")
 		return ctrl.Result{}, err
 	}
@@ -163,9 +163,9 @@ func doReconcile(schedule *snapschedulerv1.SnapshotSchedule,
 	return ctrl.Result{RequeueAfter: requeueTime}, nil
 }
 
-func handleSnapshotting(schedule *snapschedulerv1.SnapshotSchedule,
+func handleSnapshotting(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedule,
 	logger logr.Logger, c client.Client) (ctrl.Result, error) {
-	pvcList, err := listPVCsMatchingSelector(logger, c, schedule.Namespace, &schedule.Spec.ClaimSelector)
+	pvcList, err := listPVCsMatchingSelector(ctx, logger, c, schedule.Namespace, &schedule.Spec.ClaimSelector)
 	if err != nil {
 		logger.Error(err, "unable to get matching PVCs")
 		return ctrl.Result{}, err
@@ -179,7 +179,7 @@ func handleSnapshotting(schedule *snapschedulerv1.SnapshotSchedule,
 		logger.V(4).Info("looking for snapshot", "name", snapName)
 		key := types.NamespacedName{Name: snapName, Namespace: pvc.Namespace}
 		snap := snapv1.VolumeSnapshot{}
-		if err := c.Get(context.TODO(), key, &snap); err != nil {
+		if err := c.Get(ctx, key, &snap); err != nil {
 			if kerrors.IsNotFound(err) {
 				labels := make(map[string]string)
 				var snapshotClassName *string
@@ -190,7 +190,7 @@ func handleSnapshotting(schedule *snapschedulerv1.SnapshotSchedule,
 				snap := newSnapForClaim(snapName, pvc, schedule.Name, snapTime, labels, snapshotClassName)
 				if snap != nil {
 					logger.Info("creating a snapshot", "PVC", pvc.Name, "Snapshot", snapName)
-					if err = c.Create(context.TODO(), snap); err != nil {
+					if err = c.Create(ctx, snap); err != nil {
 						logger.Error(err, "while creating snapshots", "name", snapName)
 						return ctrl.Result{}, err
 					}
@@ -253,7 +253,7 @@ func updateNextSnapTime(snapshotSchedule *snapschedulerv1.SnapshotSchedule, refe
 }
 
 // listPVCsMatchingSelector retrieves a list of PVCs that match the given selector
-func listPVCsMatchingSelector(logger logr.Logger, c client.Client,
+func listPVCsMatchingSelector(ctx context.Context, logger logr.Logger, c client.Client,
 	namespace string, ls *metav1.LabelSelector) (*corev1.PersistentVolumeClaimList, error) {
 	selector, err := metav1.LabelSelectorAsSelector(ls)
 	if err != nil {
@@ -266,7 +266,7 @@ func listPVCsMatchingSelector(logger logr.Logger, c client.Client,
 			Selector: selector,
 		},
 	}
-	err = c.List(context.TODO(), pvcList, listOpts...)
+	err = c.List(ctx, pvcList, listOpts...)
 	logger.Info("Created list of matching PVCs", "count", len(pvcList.Items))
 	return pvcList, err
 }

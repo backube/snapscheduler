@@ -1,20 +1,22 @@
 ---
-# https://github.com/golangci/golangci-lint#config-file
+# https://golangci-lint.run/usage/configuration/#config-file
 
 run:
   timeout: 30m
-  skip-files:
-    - pkg/apis/snapscheduler/v1/zz_generated.openapi.go
+  # skip-files:
 output:
   sort-results: true
 linters:
   disable-all: true
   enable:
     - asciicheck
+    - bidichk
+    - contextcheck
     - deadcode
     - dupl
     - errcheck
     - errorlint
+    - errname
     - exhaustive
     - exportloopref
     - forcetypeassert

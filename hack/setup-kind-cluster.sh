@@ -3,9 +3,9 @@
 set -e -o pipefail
 
 # Possible versions:
-# https://hub.docker.com/r/kindest/node/tags?page=1&ordering=name
+# https://hub.docker.com/r/kindest/node/tags?page=1&ordering=last_updated
 # skopeo inspect docker://kindest/node:v1.17.0 | jq .RepoTags
-KUBE_VERSION="${1:-1.21.1}"
+KUBE_VERSION="${1:-1.23.0}"
 
 # Determine the Kube minor version
 [[ "${KUBE_VERSION}" =~ ^[0-9]+\.([0-9]+) ]] && KUBE_MINOR="${BASH_REMATCH[1]}" || exit 1
@@ -90,7 +90,7 @@ rm -f "${KIND_CONFIG_FILE}"
 
 # Kube >= 1.17, we need to deploy the snapshot controller
 if [[ $KUBE_MINOR -ge 20 ]]; then
-  TAG="v4.1.1"  # https://github.com/kubernetes-csi/external-snapshotter/releases
+  TAG="v4.2.1"  # https://github.com/kubernetes-csi/external-snapshotter/releases
   kubectl create -f "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${TAG}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml"
   kubectl create -f "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${TAG}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml"
   kubectl create -f "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${TAG}/client/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml"
@@ -132,8 +132,12 @@ case "$KUBE_MINOR" in
     HOSTPATH_BRANCH="v1.4.0"
     DEPLOY_SCRIPT="deploy.sh"
     ;;
-  *)
+  18)
     HOSTPATH_BRANCH="v1.7.2"
+    DEPLOY_SCRIPT="deploy.sh"
+    ;;
+  *)
+    HOSTPATH_BRANCH="v1.7.3"
     DEPLOY_SCRIPT="deploy.sh"
     ;;
 esac

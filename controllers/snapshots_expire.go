@@ -35,14 +35,14 @@ import (
 // a given PVC (created by the supplied schedule) is no more than the
 // schedule's maxCount. This function is the entry point for count-based
 // expiration of snapshots.
-func expireByCount(schedule *snapschedulerv1.SnapshotSchedule,
+func expireByCount(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedule,
 	logger logr.Logger, c client.Client) error {
 	if schedule.Spec.Retention.MaxCount == nil {
 		// No count-based retention configured
 		return nil
 	}
 
-	snapList, err := snapshotsFromSchedule(schedule, logger, c)
+	snapList, err := snapshotsFromSchedule(ctx, schedule, logger, c)
 	if err != nil {
 		logger.Error(err, "unable to retrieve list of snapshots")
 		return err
@@ -53,7 +53,7 @@ func expireByCount(schedule *snapschedulerv1.SnapshotSchedule,
 		list = sortSnapsByTime(list)
 		if len(list) > int(*schedule.Spec.Retention.MaxCount) {
 			list = list[:len(list)-int(*schedule.Spec.Retention.MaxCount)]
-			err := deleteSnapshots(list, logger, c)
+			err := deleteSnapshots(ctx, list, logger, c)
 			if err != nil {
 				return err
 			}
@@ -66,8 +66,8 @@ func expireByCount(schedule *snapschedulerv1.SnapshotSchedule,
 // expireByTime deletes snapshots that are older than the retention time in the
 // specified schedule. It only affects snapshots that were created by the provided schedule.
 // This function is the entry point for the time-based expiration of snapshots
-func expireByTime(schedule *snapschedulerv1.SnapshotSchedule, now time.Time,
-	logger logr.Logger, c client.Client) error {
+func expireByTime(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedule,
+	now time.Time, logger logr.Logger, c client.Client) error {
 	expiration, err := getExpirationTime(schedule, now, logger)
 	if err != nil {
 		logger.Error(err, "unable to determine snapshot expiration time")
@@ -78,7 +78,7 @@ func expireByTime(schedule *snapschedulerv1.SnapshotSchedule, now time.Time,
 		return nil
 	}
 
-	snapList, err := snapshotsFromSchedule(schedule, logger, c)
+	snapList, err := snapshotsFromSchedule(ctx, schedule, logger, c)
 	if err != nil {
 		logger.Error(err, "unable to retrieve list of snapshots")
 		return err
@@ -88,14 +88,15 @@ func expireByTime(schedule *snapschedulerv1.SnapshotSchedule, now time.Time,
 
 	logger.Info("deleting expired snapshots", "expiration", expiration.Format(time.RFC3339),
 		"total", len(snapList), "expired", len(expiredSnaps))
-	err = deleteSnapshots(expiredSnaps, logger, c)
+	err = deleteSnapshots(ctx, expiredSnaps, logger, c)
 	return err
 }
 
-func deleteSnapshots(snapshots []snapv1.VolumeSnapshot, logger logr.Logger, c client.Client) error {
+func deleteSnapshots(ctx context.Context, snapshots []snapv1.VolumeSnapshot,
+	logger logr.Logger, c client.Client) error {
 	for i := range snapshots {
 		snap := snapshots[i]
-		if err := c.Delete(context.TODO(), &snap, client.PropagationPolicy(metav1.DeletePropagationBackground)); err != nil {
+		if err := c.Delete(ctx, &snap, client.PropagationPolicy(metav1.DeletePropagationBackground)); err != nil {
 			logger.Error(err, "error deleting snapshot", "name", snap.Name)
 			return err
 		}
@@ -143,7 +144,7 @@ func filterExpiredSnaps(snaps []snapv1.VolumeSnapshot,
 
 // snapshotsFromSchedule returns a list of snapshots that were created by the
 // supplied schedule
-func snapshotsFromSchedule(schedule *snapschedulerv1.SnapshotSchedule,
+func snapshotsFromSchedule(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedule,
 	logger logr.Logger, c client.Client) ([]snapv1.VolumeSnapshot, error) {
 	labelSelector := &metav1.LabelSelector{
 		MatchLabels: map[string]string{
@@ -163,7 +164,7 @@ func snapshotsFromSchedule(schedule *snapschedulerv1.SnapshotSchedule,
 		},
 	}
 	var snapList snapv1.VolumeSnapshotList
-	err = c.List(context.TODO(), &snapList, listOpts...)
+	err = c.List(ctx, &snapList, listOpts...)
 	if err != nil {
 		logger.Error(err, "unable to retrieve list of snapshots")
 		return nil, err

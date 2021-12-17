@@ -145,7 +145,7 @@ var _ = Describe("Finding snapshots created by a schedule", func() {
 					Namespace: ns.Name,
 				},
 			}
-			_, err := snapshotsFromSchedule(s, logger, k8sClient)
+			_, err := snapshotsFromSchedule(context.TODO(), s, logger, k8sClient)
 			Expect(err).To(HaveOccurred())
 		})
 	})
@@ -157,7 +157,7 @@ var _ = Describe("Finding snapshots created by a schedule", func() {
 					Namespace: ns.Name,
 				},
 			}
-			snapList, err := snapshotsFromSchedule(s, logger, k8sClient)
+			snapList, err := snapshotsFromSchedule(context.TODO(), s, logger, k8sClient)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(snapList)).To(Equal(2))
 			for _, snap := range snapList {
@@ -224,7 +224,7 @@ var _ = Describe("Expiring snapshots by time", func() {
 					Namespace: ns1.Name,
 				},
 			}
-			Expect(expireByTime(noexpire, time.Now(), logger, k8sClient)).To(Succeed())
+			Expect(expireByTime(context.TODO(), noexpire, time.Now(), logger, k8sClient)).To(Succeed())
 
 			Eventually(func() int {
 				snapList := &snapv1.VolumeSnapshotList{}
@@ -246,7 +246,7 @@ var _ = Describe("Expiring snapshots by time", func() {
 			}
 			s.Spec.Retention.Expires = "24h"
 
-			Expect(expireByTime(s, time.Now(), logger, k8sClient)).To(Succeed())
+			Expect(expireByTime(context.TODO(), s, time.Now(), logger, k8sClient)).To(Succeed())
 			Eventually(func() int {
 				snapList := &snapv1.VolumeSnapshotList{}
 				Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns1.Name))).To(Succeed())
@@ -256,7 +256,7 @@ var _ = Describe("Expiring snapshots by time", func() {
 				return count
 			}, timeout, interval).Should(Equal(len(data)))
 
-			Expect(expireByTime(s, time.Now().Add(48*time.Hour), logger, k8sClient)).To(Succeed())
+			Expect(expireByTime(context.TODO(), s, time.Now().Add(48*time.Hour), logger, k8sClient)).To(Succeed())
 			Eventually(func() int {
 				snapList := &snapv1.VolumeSnapshotList{}
 				Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns1.Name))).To(Succeed())
@@ -396,7 +396,7 @@ var _ = Describe("Deleting snapshots", func() {
 			Expect(k8sClient.Create(context.TODO(), &o)).To(Succeed())
 		}
 
-		Expect(deleteSnapshots(snapList, logger, k8sClient)).To(Succeed())
+		Expect(deleteSnapshots(context.TODO(), snapList, logger, k8sClient)).To(Succeed())
 
 		snap := &snapv1.VolumeSnapshot{}
 		Eventually(func() bool {
@@ -408,7 +408,7 @@ var _ = Describe("Deleting snapshots", func() {
 			return k8sClient.Get(context.TODO(), client.ObjectKey{Name: "splat", Namespace: ns2.Name}, snap)
 		}, timeout, interval).Should(Succeed())
 
-		Expect(deleteSnapshots(nil, logger, k8sClient)).To(Succeed())
+		Expect(deleteSnapshots(context.TODO(), nil, logger, k8sClient)).To(Succeed())
 	})
 })
 
@@ -487,7 +487,7 @@ var _ = Describe("Expiring snapshots by count", func() {
 			},
 		}
 		// no maxCount, none should be pruned
-		Expect(expireByCount(noexpire, logger, k8sClient)).To(Succeed())
+		Expect(expireByCount(context.TODO(), noexpire, logger, k8sClient)).To(Succeed())
 		Eventually(func() int {
 			snapList := &snapv1.VolumeSnapshotList{}
 			Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns1.Name))).To(Succeed())
@@ -507,7 +507,7 @@ var _ = Describe("Expiring snapshots by count", func() {
 		maxCount := int32(3)
 		s.Spec.Retention.MaxCount = &maxCount
 
-		Expect(expireByCount(s, logger, k8sClient)).To(Succeed())
+		Expect(expireByCount(context.TODO(), s, logger, k8sClient)).To(Succeed())
 		Eventually(func() int {
 			snapList := &snapv1.VolumeSnapshotList{}
 			Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns1.Name))).To(Succeed())

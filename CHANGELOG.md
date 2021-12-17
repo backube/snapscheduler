@@ -7,6 +7,20 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+## [2.1.0] - 2021-12-17
+
+### Added
+
+- Ability to configure resource requests for RBAC proxy container when deploying
+  via Helm chart.
+- Ability to configure container image used for kube-rbac-proxy
+
+### Changed
+
+- Build w/ Go 1.17
+- Upgrade kube-rbac-proxy image to 0.11.0
+- Upgrade operator-sdk to 1.15
+
 ## [2.0.0] - 2021-08-03
 
 ### Changed
@@ -53,7 +67,8 @@ This project follows [Semantic Versioning](https://semver.org/)
 - Label selectors to control which PVCs are selected for snapshotting
 - Retention policies based on snapshot age or count
 
-[unreleased]: https://github.com/backube/snapscheduler/compare/v2.0.0...HEAD
+[unreleased]: https://github.com/backube/snapscheduler/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/backube/snapscheduler/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/backube/snapscheduler/compare/v1.2.0...v2.0.0
 [1.2.0]: https://github.com/backube/snapscheduler/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/backube/snapscheduler/compare/v1.1.0...v1.1.1

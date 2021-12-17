@@ -2,7 +2,7 @@
 apiVersion: kuttl.dev/v1beta1
 kind: TestStep
 commands:
-  - timeout: 120
+  - timeout: 300
     script: |
       set -e -o pipefail
 
@@ -15,5 +15,6 @@ commands:
 
       echo "Waiting for snapshot to be ready: $sname"
       while [[ $(kubectl -n "$NAMESPACE" get "$sname" -otemplate="{{.status.readyToUse}}") != "true" ]]; do
-        sleep 1
+        kubectl -n "$NAMESPACE" get "$sname"
+        sleep 5
       done
