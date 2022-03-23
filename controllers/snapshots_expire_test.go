@@ -29,6 +29,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -102,6 +103,11 @@ var _ = Describe("Finding snapshots created by a schedule", func() {
 						ScheduleKey: "s1",
 					},
 				},
+				Spec: snapv1.VolumeSnapshotSpec{
+					Source: snapv1.VolumeSnapshotSource{
+						PersistentVolumeClaimName: pointer.String("dummy"),
+					},
+				},
 			},
 			&snapv1.VolumeSnapshot{
 				ObjectMeta: metav1.ObjectMeta{
@@ -112,6 +118,11 @@ var _ = Describe("Finding snapshots created by a schedule", func() {
 						ScheduleKey: "s1",
 					},
 				},
+				Spec: snapv1.VolumeSnapshotSpec{
+					Source: snapv1.VolumeSnapshotSource{
+						PersistentVolumeClaimName: pointer.String("dummy"),
+					},
+				},
 			},
 			&snapv1.VolumeSnapshot{
 				ObjectMeta: metav1.ObjectMeta{
@@ -120,6 +131,11 @@ var _ = Describe("Finding snapshots created by a schedule", func() {
 					Labels: map[string]string{
 						"foo":       "bar",
 						ScheduleKey: "s2",
+					},
+				},
+				Spec: snapv1.VolumeSnapshotSpec{
+					Source: snapv1.VolumeSnapshotSource{
+						PersistentVolumeClaimName: pointer.String("dummy"),
 					},
 				},
 			},
@@ -206,6 +222,11 @@ var _ = Describe("Expiring snapshots by time", func() {
 					Labels: map[string]string{
 						"foo":       "bar",
 						ScheduleKey: d.schedule,
+					},
+				},
+				Spec: snapv1.VolumeSnapshotSpec{
+					Source: snapv1.VolumeSnapshotSource{
+						PersistentVolumeClaimName: pointer.String("dummy"),
 					},
 				},
 			}
@@ -371,22 +392,47 @@ var _ = Describe("Deleting snapshots", func() {
 	})
 	It("deletes snapshots in the provided list", func() {
 		snaps := []snapv1.VolumeSnapshot{
-			{ObjectMeta: metav1.ObjectMeta{
-				Name:      "foo",
-				Namespace: ns1.Name,
-			}},
-			{ObjectMeta: metav1.ObjectMeta{
-				Name:      "bar",
-				Namespace: ns1.Name,
-			}},
-			{ObjectMeta: metav1.ObjectMeta{
-				Name:      "baz",
-				Namespace: ns2.Name,
-			}},
-			{ObjectMeta: metav1.ObjectMeta{
-				Name:      "splat",
-				Namespace: ns2.Name,
-			}},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: ns1.Name,
+				},
+				Spec: snapv1.VolumeSnapshotSpec{
+					Source: snapv1.VolumeSnapshotSource{
+						PersistentVolumeClaimName: pointer.String("dummy"),
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "bar",
+					Namespace: ns1.Name,
+				},
+				Spec: snapv1.VolumeSnapshotSpec{
+					Source: snapv1.VolumeSnapshotSource{
+						PersistentVolumeClaimName: pointer.String("dummy"),
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "baz",
+					Namespace: ns2.Name,
+				},
+				Spec: snapv1.VolumeSnapshotSpec{
+					Source: snapv1.VolumeSnapshotSource{
+						PersistentVolumeClaimName: pointer.String("dummy"),
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "splat",
+					Namespace: ns2.Name,
+				},
+				Spec: snapv1.VolumeSnapshotSpec{
+					Source: snapv1.VolumeSnapshotSource{
+						PersistentVolumeClaimName: pointer.String("dummy"),
+					},
+				},
+			},
 		}
 		snapList := []snapv1.VolumeSnapshot{}
 		snapList = append(snapList, snaps[1])
