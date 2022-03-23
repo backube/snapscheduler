@@ -7,6 +7,14 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Changed
+
+- Snapshot objects are now accessed via `snapshot.storage.k8s.io/v1` API version
+
+### Removed
+
+- Removed support for Kubernetes versions < 1.20
+
 ## [2.1.0] - 2021-12-17
 
 ### Added

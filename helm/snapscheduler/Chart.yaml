@@ -2,13 +2,13 @@
 apiVersion: v2
 name: snapscheduler
 # Chart version: Incremented during chart, template, or appVersion changes.
-version: "2.1.0"
+version: "3.0.0"
 description: >-
     An operator to take scheduled snapshots of Kubernetes persistent volumes
 type: application
 # Adding "-0" at the end of the version string permits pre-release kube versions
 # to match. See https://github.com/helm/helm/issues/6190
-kubeVersion: "^1.17.0-0"
+kubeVersion: "^1.20.0-0"
 keywords:
   - csi
   - scheduler
@@ -23,24 +23,16 @@ maintainers:
     url: https://github.com/JohnStrunk
 icon: https://raw.githubusercontent.com/backube/snapscheduler/master/docs/media/snapscheduler.svg?sanitize=true
 # This is the version number of the application being deployed.
-appVersion: "2.1.0"
+appVersion: "3.0.0"
 annotations:
   # https://artifacthub.io/docs/topics/annotations/helm/
   # Changelog for current chart & app version
   # Supported kinds: added, changed, deprecated, removed, fixed, security
   artifacthub.io/changes: |
-    - kind: added
-      description: Ability to configure resource requests for RBAC proxy container when deploying via Helm chart
-    - kind: added
-      description: Ability to configure container image used for kube-rbac-proxy
     - kind: changed
-      description: Moved operator to operator-sdk 1.15
-    - kind: changed
-      description: Build w/ Go 1.17
-    - kind: changed
-      description: Upgrade kube-rbac-proxy image to 0.11.0
-    - kind: changed
-      description: Deploy w/ single replica by default
+      description: Snapshot objects are now accessed via `snapshot.storage.k8s.io/v1` API version
+    - kind: removed
+      description: Removed support for Kubernetes < 1.20
   artifacthub.io/crds: |
     - kind: SnapshotSchedule
       version: v1

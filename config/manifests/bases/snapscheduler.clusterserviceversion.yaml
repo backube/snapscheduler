@@ -203,7 +203,7 @@ spec:
   - email: jstrunk@redhat.com
     name: John Strunk
   maturity: stable
-  minKubeVersion: 1.17.0-0
+  minKubeVersion: 1.20.0-0
   provider:
     name: Backube
     url: https://github.com/backube
