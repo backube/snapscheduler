@@ -6,6 +6,7 @@
 * Update Helm chart template
   * In Chart.yaml, update `version`, `appVersion`, and
     `annotations.artifacthub.io/changes`
+  * In Chart.yaml, update `artifacthub.io/changes` annotation based on changelog
 * Update version compatibility matrix in [docs/index.md](docs/index.md)
 * Commit to `master`
 * Branch to a release branch
