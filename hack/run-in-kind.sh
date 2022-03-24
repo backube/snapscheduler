@@ -14,6 +14,9 @@ IMAGE="quay.io/backube/snapscheduler"
 docker tag "${IMAGE}:latest" "${IMAGE}:${KIND_TAG}"
 kind load docker-image "${IMAGE}:${KIND_TAG}"
 
+docker pull busybox
+kind load docker-image busybox
+
 helm upgrade --install --create-namespace -n backube-snapscheduler \
     --set image.tagOverride=${KIND_TAG} \
     --set metrics.disableAuth=true \
