@@ -57,6 +57,15 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v1
 
@@ -81,6 +90,15 @@ jobs:
         uses: actions/setup-go@v1
         with:
           go-version: ${{ env.GO_VERSION }}
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Build operator container
         run: make docker-build IMAGE=${IMAGE}

@@ -183,12 +183,8 @@ PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 define go-get-tool
 @[ -f $(1) ] || { \
 set -e ;\
-TMP_DIR=$$(mktemp -d) ;\
-cd $$TMP_DIR ;\
-go mod init tmp ;\
 echo "Downloading $(2)" ;\
-GOBIN=$(PROJECT_DIR)/bin go get $(2) ;\
-rm -rf $$TMP_DIR ;\
+GOBIN=$(PROJECT_DIR)/bin go install $(2) ;\
 }
 endef
 
@@ -267,7 +263,7 @@ endef
 .PHONY: ginkgo
 GINKGO := $(PROJECT_DIR)/bin/ginkgo
 ginkgo: ## Download ginkgo
-	$(call go-get-tool,$(GINKGO),github.com/onsi/ginkgo/ginkgo)
+	$(call go-get-tool,$(GINKGO),github.com/onsi/ginkgo/ginkgo@v1.16.5)
 
 .PHONY: golangci-lint
 GOLANGCILINT := $(PROJECT_DIR)/bin/golangci-lint
