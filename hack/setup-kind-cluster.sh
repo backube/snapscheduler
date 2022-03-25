@@ -3,9 +3,9 @@
 set -e -o pipefail
 
 # Possible versions:
-# https://hub.docker.com/r/kindest/node/tags?page=1&ordering=last_updated
-# skopeo inspect docker://kindest/node:v1.17.0 | jq .RepoTags
-KUBE_VERSION="${1:-1.23.0}"
+# https://hub.docker.com/r/kindest/node/tags?page=1&ordering=name
+# skopeo list-tags docker://kindest/node
+KUBE_VERSION="${1:-1.23.5}"
 
 # Determine the Kube minor version
 [[ "${KUBE_VERSION}" =~ ^[0-9]+\.([0-9]+) ]] && KUBE_MINOR="${BASH_REMATCH[1]}" || exit 1
