@@ -22,6 +22,7 @@ Kubernetes version compatibility:
 | 1.2           | 1.13 -- 1.21  | `v1alpha1`, `v1beta1`     |
 | 2.0           | 1.17 -- 1.23  | `v1beta1`                 |
 | 2.1           | 1.17 -- 1.23  | `v1beta1`                 |
+| 3.0           | 1.20 -- 1.23+ | `v1`                      |
 | master        | 1.20 -- 1.23+ | `v1`                      |
 
 ## Contents

@@ -7,9 +7,12 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+## [3.0.0] - 2021-04-01
+
 ### Changed
 
 - Snapshot objects are now accessed via `snapshot.storage.k8s.io/v1` API version
+- Upgrade operator-sdk to 1.18
 
 ### Removed
 
@@ -75,7 +78,8 @@ This project follows [Semantic Versioning](https://semver.org/)
 - Label selectors to control which PVCs are selected for snapshotting
 - Retention policies based on snapshot age or count
 
-[unreleased]: https://github.com/backube/snapscheduler/compare/v2.1.0...HEAD
+[unreleased]: https://github.com/backube/snapscheduler/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/backube/snapscheduler/compare/v2.1.0...v3.0.0
 [2.1.0]: https://github.com/backube/snapscheduler/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/backube/snapscheduler/compare/v1.2.0...v2.0.0
 [1.2.0]: https://github.com/backube/snapscheduler/compare/v1.1.1...v1.2.0
