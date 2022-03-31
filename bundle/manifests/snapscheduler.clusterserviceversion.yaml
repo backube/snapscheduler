@@ -23,12 +23,12 @@ metadata:
     certified: "false"
     description: The SnapScheduler operator takes snapshots of Kubernetes CSI-based
       persistent volumes according to user-supplied schedules.
-    operators.operatorframework.io/builder: operator-sdk-v1.14.0+git
+    operators.operatorframework.io/builder: operator-sdk-v1.17.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/backube/snapscheduler
     support: https://github.com/backube/snapscheduler
-    containerImage: quay.io/backube/snapscheduler:2.1.0
-  name: snapscheduler.v2.1.0
+    containerImage: quay.io/backube/snapscheduler:3.0.0
+  name: snapscheduler.v3.0.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -271,21 +271,27 @@ spec:
                 - --secure-listen-address=0.0.0.0:8443
                 - --upstream=http://127.0.0.1:8080/
                 - --logtostderr=true
-                - --v=10
+                - --v=0
                 image: quay.io/brancz/kube-rbac-proxy:v0.11.0
                 name: kube-rbac-proxy
                 ports:
                 - containerPort: 8443
                   name: https
                   protocol: TCP
-                resources: {}
+                resources:
+                  limits:
+                    cpu: 500m
+                    memory: 128Mi
+                  requests:
+                    cpu: 5m
+                    memory: 64Mi
               - args:
                 - --health-probe-bind-address=:8081
                 - --metrics-bind-address=127.0.0.1:8080
                 - --leader-elect
                 command:
                 - /manager
-                image: quay.io/backube/snapscheduler:2.1.0
+                image: quay.io/backube/snapscheduler:3.0.0
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -372,8 +378,8 @@ spec:
   - email: jstrunk@redhat.com
     name: John Strunk
   maturity: stable
-  minKubeVersion: 1.17.0-0
+  minKubeVersion: 1.20.0-0
   provider:
     name: Backube
     url: https://github.com/backube
-  version: 2.1.0
+  version: 3.0.0
