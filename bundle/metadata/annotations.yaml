@@ -13,3 +13,9 @@ annotations:
   # Annotations for testing.
   operators.operatorframework.io.test.mediatype.v1: scorecard+v1
   operators.operatorframework.io.test.config.v1: tests/scorecard/
+
+  # https://redhat-connect.gitbook.io/certified-operator-guide/ocp-deployment/operator-metadata/bundle-directory/managing-openshift-versions
+  # Single version means that version and greater
+  # Single version preceded by "=" means ONLY that version
+  # Range is also permitted
+  com.redhat.openshift.versions: "v4.7"
