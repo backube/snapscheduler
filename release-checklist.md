@@ -29,6 +29,17 @@
   * `DEFAULT_CHANNEL` is the channel that users will get by default
   * `IMG` is the container image + tag that will be deployed by the bundle
   * In the CSV, add the operator image: `.metadata.annotations.containerImage: quay.io/backube/snapscheduler:2.0.0`
+  * In `bundle/metadata/annotations.yaml`, add the proper annotation to restrict
+    which OpenShift version catalogs it will be added to:
+
+    ```yaml
+    # https://redhat-connect.gitbook.io/certified-operator-guide/ocp-deployment/operator-metadata/bundle-directory/managing-openshift-versions
+    # Single version means that version and greater
+    # Single version preceded by "=" means ONLY that version
+    # Range is also permitted
+    com.redhat.openshift.versions: "v4.7"
+    ```
+
 * Add it to the [community
   repo](https://github.com/k8s-operatorhub/community-operators/tree/main/operators/snapscheduler)
   by copying the bundle directory in as a new subdir named after the version
