@@ -7,7 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
-## [3.0.0] - 2021-04-01
+## [3.0.0] - 2022-04-01
 
 ### Changed
 
