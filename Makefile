@@ -7,10 +7,10 @@ VERSION ?= $(shell git describe --tags --dirty --match 'v*' 2> /dev/null || git 
 BUILDDATE := $(shell date -u '+%Y-%m-%dT%H:%M:%S.%NZ')
 
 # Helper software versions
-GOLANGCI_VERSION := v1.43.0
-HELM_VERSION := v3.7.2
+GOLANGCI_VERSION := v1.46.1
+HELM_VERSION := v3.8.2
 OPERATOR_SDK_VERSION := v1.18.0
-KUTTL_VERSION := 0.11.1
+KUTTL_VERSION := 0.12.1
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
