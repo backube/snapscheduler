@@ -9,7 +9,7 @@ require (
 	github.com/onsi/gomega v1.19.0
 	github.com/openshift/custom-resource-status v1.1.0
 	github.com/robfig/cron/v3 v3.0.1
-	go.uber.org/zap v1.19.1
+	go.uber.org/zap v1.21.0
 	k8s.io/api v0.24.0
 	k8s.io/apimachinery v0.24.0
 	k8s.io/client-go v0.24.0
