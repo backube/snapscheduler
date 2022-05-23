@@ -17,8 +17,8 @@ on:  # yamllint disable-line rule:truthy
     - cron: "15 6 * * 1"  # 6:15 every Monday
 
 env:
-  GO_VERSION: "1.17"
-  KIND_VERSION: "0.12.0"
+  GO_VERSION: "1.18"
+  KIND_VERSION: "0.14.0"
   GO111MODULE: "on"
   IMAGE: "quay.io/backube/snapscheduler"
 
@@ -129,9 +129,10 @@ jobs:
         # See: https://hub.docker.com/r/kindest/node/tags?page=1&ordering=name
         KUBERNETES_VERSIONS:
           - "1.20.7"
-          - "1.21.10"
-          - "1.22.7"
-          - "1.23.5"
+          - "1.21.12"
+          - "1.22.9"
+          - "1.23.6"
+          - "1.24.0"
 
     env:
       KUBECONFIG: /tmp/kubeconfig
