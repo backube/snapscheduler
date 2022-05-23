@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@d0651293c4a5a52e711f25b41b05b2212f385d28
 
       - name: Install prereqs
         run: |
@@ -50,14 +50,14 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@d0651293c4a5a52e711f25b41b05b2212f385d28
 
       - name: Install Go
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@730dc31003a72af3c3b4bf51268c167ad4c67ad6
         with:
           path: |
             ~/.cache/go-build
@@ -67,7 +67,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v1
+        uses: github/codeql-action/init@32c89b94fd7eb71067f3bf2afd2bfc85efa4a880
 
       - name: Download modules
         run: go mod download
@@ -76,7 +76,7 @@ jobs:
         run: make build
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v1
+        uses: github/codeql-action/analyze@32c89b94fd7eb71067f3bf2afd2bfc85efa4a880
 
   build:
     name: Build
@@ -84,14 +84,14 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@d0651293c4a5a52e711f25b41b05b2212f385d28
 
       - name: Install Go
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@730dc31003a72af3c3b4bf51268c167ad4c67ad6
         with:
           path: |
             ~/.cache/go-build
@@ -107,13 +107,13 @@ jobs:
         run: docker save -o /tmp/image.tar ${IMAGE}
 
       - name: Save container as artifact
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: container
           path: /tmp/image.tar
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@66b3de25f6f91f65eb92c514d31d6b6f13d5ab18
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: cover.out
@@ -148,7 +148,7 @@ jobs:
           sudo mv /bin/sh.bash /bin/sh
 
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@d0651293c4a5a52e711f25b41b05b2212f385d28
 
       - name: Install Helm
         run: make helm
@@ -172,7 +172,7 @@ jobs:
           ./hack/setup-kind-cluster.sh "${KUBERNETES_VERSION}"
 
       - name: Load container artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
         with:
           name: container
           path: /tmp
@@ -220,7 +220,7 @@ jobs:
 
     steps:
       - name: Load container artifact
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
         with:
           name: container
           path: /tmp
