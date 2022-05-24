@@ -9,7 +9,7 @@ BUILDDATE := $(shell date -u '+%Y-%m-%dT%H:%M:%S.%NZ')
 # Helper software versions
 GOLANGCI_VERSION := v1.46.1
 HELM_VERSION := v3.8.2
-OPERATOR_SDK_VERSION := v1.18.0
+OPERATOR_SDK_VERSION := v1.20.0
 KUTTL_VERSION := 0.12.1
 
 # CHANNELS define the bundle channels used in the bundle.
