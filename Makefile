@@ -9,7 +9,7 @@ BUILDDATE := $(shell date -u '+%Y-%m-%dT%H:%M:%S.%NZ')
 # Helper software versions
 GOLANGCI_VERSION := v1.46.1
 HELM_VERSION := v3.8.2
-OPERATOR_SDK_VERSION := v1.18.0
+OPERATOR_SDK_VERSION := v1.20.0
 KUTTL_VERSION := 0.12.1
 
 # CHANNELS define the bundle channels used in the bundle.
@@ -189,12 +189,18 @@ GOBIN=$(PROJECT_DIR)/bin go install $(2) ;\
 endef
 
 .PHONY: bundle
+# com.redhat.openshift.versions annotation:
+# https://redhat-connect.gitbook.io/certified-operator-guide/ocp-deployment/operator-metadata/bundle-directory/managing-openshift-versions
+# Single version means that version and greater
+# Single version preceded by "=" means ONLY that version
+# Range is also permitted
 bundle: manifests kustomize operator-sdk ## Generate bundle manifests and metadata, then validate generated files.
 	$(OPERATOR_SDK) generate kustomize manifests -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
 	$(OPERATOR_SDK) bundle validate ./bundle --select-optional name=community --optional-values=image-path=bundle.Dockerfile
 	$(OPERATOR_SDK) bundle validate ./bundle --select-optional suite=operatorframework
+	echo '  com.redhat.openshift.versions: "v4.7"' >> bundle/metadata/annotations.yaml
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
