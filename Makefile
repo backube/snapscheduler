@@ -133,7 +133,7 @@ run: manifests generate lint ## Run a controller from your host.
 	go run -ldflags -X=main.snapschedulerVersion=$(VERSION) ./main.go
 
 .PHONY: docker-build
-docker-build: test ## Build docker image with the manager.
+docker-build: ## Build docker image with the manager.
 	docker build --build-arg "version=$(VERSION)"  --build-arg "builddate=$(BUILDDATE)" -t ${IMG} .
 
 .PHONY: docker-push
