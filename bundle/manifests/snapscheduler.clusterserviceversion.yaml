@@ -23,11 +23,10 @@ metadata:
     certified: "false"
     description: The SnapScheduler operator takes snapshots of Kubernetes CSI-based
       persistent volumes according to user-supplied schedules.
-    operators.operatorframework.io/builder: operator-sdk-v1.17.0+git
+    operators.operatorframework.io/builder: operator-sdk-v1.19.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/backube/snapscheduler
     support: https://github.com/backube/snapscheduler
-    containerImage: quay.io/backube/snapscheduler:3.0.0
   name: snapscheduler.v3.0.0
   namespace: placeholder
 spec:
@@ -241,7 +240,9 @@ spec:
           - create
         serviceAccountName: snapscheduler-controller-manager
       deployments:
-      - name: snapscheduler-controller-manager
+      - label:
+          control-plane: controller-manager
+        name: snapscheduler-controller-manager
         spec:
           replicas: 1
           selector:
