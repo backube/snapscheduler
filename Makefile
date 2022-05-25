@@ -6,11 +6,14 @@
 VERSION ?= $(shell git describe --tags --dirty --match 'v*' 2> /dev/null || git describe --always --dirty)
 BUILDDATE := $(shell date -u '+%Y-%m-%dT%H:%M:%S.%NZ')
 
-# Helper software versions
+## Tool versions
+CONTROLLER_TOOLS_VERSION := v0.8.0
 GOLANGCI_VERSION := v1.46.1
+GINKGO_VERSION := v1.16.5
 HELM_VERSION := v3.8.2
-OPERATOR_SDK_VERSION := v1.20.0
+KUSTOMIZE_VERSION := v4.5.5
 KUTTL_VERSION := 0.12.1
+OPERATOR_SDK_VERSION := v1.21.0
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
@@ -163,30 +166,37 @@ deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
-.PHONY: controller-gen
-CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
-controller-gen: ## Download controller-gen locally if necessary.
-	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.8.0)
+##@ Build Dependencies
+
+## Location to install dependencies to
+LOCALBIN ?= $(shell pwd)/bin
+$(LOCALBIN):
+	mkdir -p $(LOCALBIN)
+
+## Tool Binaries
+CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
+ENVTEST ?= $(LOCALBIN)/setup-envtest
+KUSTOMIZE ?= $(LOCALBIN)/kustomize
+GINKGO := $(LOCALBIN)/ginkgo
+GOLANGCILINT := $(LOCALBIN)/golangci-lint
+HELM := $(LOCALBIN)/helm
+KUTTL := $(LOCALBIN)/kuttl
+OPERATOR_SDK := $(LOCALBIN)/operator-sdk
 
 .PHONY: kustomize
-KUSTOMIZE = $(shell pwd)/bin/kustomize
-kustomize: ## Download kustomize locally if necessary.
-	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v4.5.4)
+kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
+$(KUSTOMIZE): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install sigs.k8s.io/kustomize/kustomize/v4@$(KUSTOMIZE_VERSION)
+
+.PHONY: controller-gen
+controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
+$(CONTROLLER_GEN): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
 
 .PHONY: envtest
-ENVTEST = $(shell pwd)/bin/setup-envtest
-envtest: ## Download envtest-setup locally if necessary.
-	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
-
-# go-get-tool will 'go get' any package $2 and install it to $1.
-PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
-define go-get-tool
-@[ -f $(1) ] || { \
-set -e ;\
-echo "Downloading $(2)" ;\
-GOBIN=$(PROJECT_DIR)/bin go install $(2) ;\
-}
-endef
+envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
+$(ENVTEST): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 
 .PHONY: bundle
 # com.redhat.openshift.versions annotation:
@@ -256,46 +266,33 @@ catalog-push: ## Push a catalog image.
 OS := $(shell go env GOOS)
 ARCH := $(shell go env GOARCH)
 
-# download-tool will curl any file $2 and install it to $1.
-define download-tool
-@[ -f $(1) ] || { \
-set -e ;\
-echo "Downloading $(2)" ;\
-curl -sSLo "$(1)" "$(2)" ;\
-chmod a+x "$(1)" ;\
-}
-endef
-
 .PHONY: ginkgo
-GINKGO := $(PROJECT_DIR)/bin/ginkgo
-ginkgo: ## Download ginkgo
-	$(call go-get-tool,$(GINKGO),github.com/onsi/ginkgo/ginkgo@v1.16.5)
+ginkgo: $(GINKGO) ## Download ginkgo
+$(GINKGO): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install github.com/onsi/ginkgo/ginkgo@$(GINKGO_VERSION)
 
 .PHONY: golangci-lint
-GOLANGCILINT := $(PROJECT_DIR)/bin/golangci-lint
 GOLANGCI_URL := https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
-golangci-lint: ## Download golangci-lint
-ifeq (,$(wildcard $(GOLANGCILINT)))
-	curl -sSfL $(GOLANGCI_URL) | sh -s -- -b $(PROJECT_DIR)/bin $(GOLANGCI_VERSION)
-endif
+golangci-lint: $(GOLANGCILINT) ## Download golangci-lint
+$(GOLANGCILINT): $(LOCALBIN)
+	curl -sSfL $(GOLANGCI_URL) | sh -s -- -b $(LOCALBIN) $(GOLANGCI_VERSION)
 
 .PHONY: helm
-HELM := $(PROJECT_DIR)/bin/helm
 HELM_URL := https://get.helm.sh/helm-$(HELM_VERSION)-linux-amd64.tar.gz
-helm: ## Download helm
-ifeq (,$(wildcard $(HELM)))
-	mkdir -p $(PROJECT_DIR)/bin
-	curl -sSL "$(HELM_URL)" | tar xzf - -C $(PROJECT_DIR)/bin --strip-components=1 --wildcards '*/helm'
-endif
+helm: $(HELM) ## Download helm
+$(HELM): $(LOCALBIN)
+	curl -sSL "$(HELM_URL)" | tar xzf - -C $(LOCALBIN) --strip-components=1 --wildcards '*/helm'
 
 .PHONY: kuttl
-KUTTL := $(PROJECT_DIR)/bin/kuttl
 KUTTL_URL := https://github.com/kudobuilder/kuttl/releases/download/v$(KUTTL_VERSION)/kubectl-kuttl_$(KUTTL_VERSION)_linux_x86_64
-kuttl: ## Download kuttl
-	$(call download-tool,$(KUTTL),$(KUTTL_URL))
+kuttl: $(KUTTL) ## Download kuttl
+$(KUTTL): $(LOCALBIN)
+	curl -sSLo "$(KUTTL)" "$(KUTTL_URL)"
+	chmod a+x "$(KUTTL)"
 
 .PHONY: operator-sdk
-OPERATOR_SDK := $(PROJECT_DIR)/bin/operator-sdk
 OPERATOR_SDK_URL := https://github.com/operator-framework/operator-sdk/releases/download/$(OPERATOR_SDK_VERSION)/operator-sdk_$(OS)_$(ARCH)
-operator-sdk: ## Download operator-sdk
-	$(call download-tool,$(OPERATOR_SDK),$(OPERATOR_SDK_URL))
+operator-sdk: $(OPERATOR_SDK) ## Download operator-sdk
+$(OPERATOR_SDK): $(LOCALBIN)
+	curl -sSLo "$(OPERATOR_SDK)" "$(OPERATOR_SDK_URL)"
+	chmod a+x "$(OPERATOR_SDK)"
