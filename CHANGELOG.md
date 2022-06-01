@@ -7,6 +7,11 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Changed
+
+- Upgrade quay.io/brancz/kube-rbac-proxy to v0.12.0
+- Upgrade operator-sdk to 1.21.0
+
 ## [3.0.0] - 2022-04-01
 
 ### Changed
