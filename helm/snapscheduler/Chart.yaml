@@ -30,9 +30,9 @@ annotations:
   # Supported kinds: added, changed, deprecated, removed, fixed, security
   artifacthub.io/changes: |
     - kind: changed
-      description: Snapshot objects are now accessed via `snapshot.storage.k8s.io/v1` API version
-    - kind: removed
-      description: Removed support for Kubernetes < 1.20
+      description: Upgrade operator-sdk to 1.21.0
+    - kind: security
+      description: Upgrade quay.io/brancz/kube-rbac-proxy to v0.12.0
   artifacthub.io/crds: |
     - kind: SnapshotSchedule
       version: v1
