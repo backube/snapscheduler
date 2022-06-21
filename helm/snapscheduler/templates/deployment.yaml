@@ -39,6 +39,8 @@ spec:
             name: https
           resources:
             {{- toYaml .Values.rbacProxy.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
         - args:
           - --health-probe-bind-address=:8081
           - --metrics-bind-address=127.0.0.1:8080

@@ -7,13 +7,13 @@ VERSION ?= $(shell git describe --tags --dirty --match 'v*' 2> /dev/null || git 
 BUILDDATE := $(shell date -u '+%Y-%m-%dT%H:%M:%S.%NZ')
 
 ## Tool versions
-CONTROLLER_TOOLS_VERSION := v0.8.0
+CONTROLLER_TOOLS_VERSION := v0.9.0
 GOLANGCI_VERSION := v1.46.1
 GINKGO_VERSION := v1.16.5
 HELM_VERSION := v3.8.2
 KUSTOMIZE_VERSION := v4.5.5
 KUTTL_VERSION := 0.12.1
-OPERATOR_SDK_VERSION := v1.21.0
+OPERATOR_SDK_VERSION := v1.22.0
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
@@ -59,7 +59,7 @@ endif
 # Image URL to use all building/pushing image targets
 IMG ?= quay.io/backube/snapscheduler:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.23
+ENVTEST_K8S_VERSION = 1.24.1
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -229,7 +229,7 @@ ifeq (,$(shell which opm 2>/dev/null))
 	set -e ;\
 	mkdir -p $(dir $(OPM)) ;\
 	OS=$(shell go env GOOS) && ARCH=$(shell go env GOARCH) && \
-	curl -sSLo $(OPM) https://github.com/operator-framework/operator-registry/releases/download/v1.19.1/$${OS}-$${ARCH}-opm ;\
+	curl -sSLo $(OPM) https://github.com/operator-framework/operator-registry/releases/download/v1.23.0/$${OS}-$${ARCH}-opm ;\
 	chmod +x $(OPM) ;\
 	}
 else

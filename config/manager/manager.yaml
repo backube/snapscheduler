@@ -37,6 +37,9 @@ spec:
                 topologyKey: kubernetes.io/hostname
       securityContext:
         runAsNonRoot: true
+        # Uncomment when we no longer support OCP 4.10
+        # seccompProfile:
+        #   type: RuntimeDefault
       containers:
       - command:
         - /manager
@@ -46,6 +49,9 @@ spec:
         name: manager
         securityContext:
           allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - "ALL"
         livenessProbe:
           httpGet:
             path: /healthz
