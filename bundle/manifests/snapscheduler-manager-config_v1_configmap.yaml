@@ -12,6 +12,7 @@ data:
     leaderElection:
       leaderElect: true
       resourceName: cd2d8e9f.backube
+      leaderElectionReleaseOnCancel: true
 kind: ConfigMap
 metadata:
   name: snapscheduler-manager-config
