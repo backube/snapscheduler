@@ -144,6 +144,7 @@ case, the defaults, shown below, should be sufficient.
 - `tolerations`: none
   - Allows applying tolerations to the operator pod
 - `topologySpreadConstraints`: none
-  - Topology spread constraints rely on node labels to identify the topology domain(s) that each Node is in.
+  - Topology spread constraints rely on node labels to identify the
+    topology domain(s) that each Node is in.
 - `affinity`: node-level anti-affinity
   - Allows setting the operator pod's affinity
