@@ -18,6 +18,8 @@ docker pull busybox
 kind load docker-image busybox
 
 helm upgrade --install --create-namespace -n backube-snapscheduler \
+    --debug \
     --set image.tagOverride=${KIND_TAG} \
     --set metrics.disableAuth=true \
+    --wait --timeout=5m \
     snapscheduler ./helm/snapscheduler
