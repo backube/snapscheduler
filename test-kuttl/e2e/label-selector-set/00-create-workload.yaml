@@ -35,16 +35,24 @@ metadata:
   name: workload
 spec:
   containers:
-    - name: busybox
-      image: busybox
-      imagePullPolicy: IfNotPresent
-      command: ["/bin/sh", "-c"]
+    - name: workload
+      image: gcr.io/distroless/static:debug-nonroot
+      command: ["sh", "-c"]
       args: ["echo 'data' > /mnt/datafile; sleep 99999"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+        readOnlyRootFilesystem: true
+        # seccompProfile:
+        #   type: RuntimeDefault
       volumeMounts:
         - name: data
           mountPath: "/mnt"
         - name: data2
           mountPath: "/mnt2"
+  securityContext:
+    runAsNonRoot: true
   terminationGracePeriodSeconds: 2
   volumes:
     - name: data

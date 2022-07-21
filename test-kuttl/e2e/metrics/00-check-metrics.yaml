@@ -1,16 +1,22 @@
 ---
-apiVersion: batch/v1
-kind: Job
+kind: Pod
+apiVersion: v1
 metadata:
   name: check-metrics
 spec:
-  template:
-    spec:
-      backoffLimit: 50
-      containers:
-        - name: busybox
-          image: busybox
-          imagePullPolicy: IfNotPresent
-          command: ["/bin/sh", "-c"]
-          args: ["wget -O- --no-check-certificate -q https://snapscheduler-metrics.backube-snapscheduler.svc.cluster.local:8443/metrics | grep 'workqueue_work_duration_seconds_count{name=\"snapshotschedule\"}'"]
-      restartPolicy: Never
+  containers:
+    - name: workload
+      image: gcr.io/distroless/static:debug-nonroot
+      command: ["sh", "-c"]
+      args: ["wget -O- --no-check-certificate -q https://snapscheduler-metrics.backube-snapscheduler.svc.cluster.local:8443/metrics | grep 'workqueue_work_duration_seconds_count{name=\"snapshotschedule\"}'"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+        readOnlyRootFilesystem: true
+        # seccompProfile:
+        #   type: RuntimeDefault
+  restartPolicy: OnFailure
+  securityContext:
+    runAsNonRoot: true
+  terminationGracePeriodSeconds: 2
