@@ -14,9 +14,9 @@ collectors:
     command: kubectl -n $NAMESPACE logs --prefix --all-containers job/check-metrics
 
 ---
-apiVersion: batch/v1
-kind: Job
+apiVersion: v1
+kind: Pod
 metadata:
   name: check-metrics
 status:
-  succeeded: 1
+  phase: Succeeded

@@ -122,7 +122,7 @@ test: manifests generate lint helm-lint ginkgo envtest ## Run tests.
 
 .PHONY: test-e2e
 test-e2e: kuttl ## Run e2e tests. Requires cluster w/ SnapScheduler already running
-	cd test-kuttl && $(KUTTL) test
+	cd test-kuttl && $(KUTTL) test --skip-delete
 	rm -f test-kuttl/kubeconfig
 
 ##@ Build
