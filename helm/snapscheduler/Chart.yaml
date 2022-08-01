@@ -23,12 +23,14 @@ maintainers:
     url: https://github.com/JohnStrunk
 icon: https://raw.githubusercontent.com/backube/snapscheduler/master/docs/media/snapscheduler.svg?sanitize=true
 # This is the version number of the application being deployed.
-appVersion: "3.0.0"
+appVersion: "3.1.0"
 annotations:
   # https://artifacthub.io/docs/topics/annotations/helm/
   # Changelog for current chart & app version
   # Supported kinds: added, changed, deprecated, removed, fixed, security
   artifacthub.io/changes: |
+    - kind: added
+      description: Added ability to control TopologySpreadConstraints
     - kind: changed
       description: Upgrade operator-sdk to 1.22.0
     - kind: security
