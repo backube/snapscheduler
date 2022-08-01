@@ -27,7 +27,7 @@ metadata:
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/backube/snapscheduler
     support: https://github.com/backube/snapscheduler
-  name: snapscheduler.v3.0.0
+  name: snapscheduler.v3.1.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -297,7 +297,7 @@ spec:
                 - --leader-elect
                 command:
                 - /manager
-                image: quay.io/backube/snapscheduler:3.0.0
+                image: quay.io/backube/snapscheduler:3.1.0
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -391,4 +391,4 @@ spec:
   provider:
     name: Backube
     url: https://github.com/backube
-  version: 3.0.0
+  version: 3.1.0

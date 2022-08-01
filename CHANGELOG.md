@@ -7,10 +7,16 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+## [3.1.0] - 2022-08-01
+
+### Added
+
+- Ability to control TopologySpreadConstraints via Helm chart
+
 ### Changed
 
 - Upgrade quay.io/brancz/kube-rbac-proxy to v0.13.0
-- Upgrade operator-sdk to 1.21.0
+- Upgrade operator-sdk to 1.22.0
 
 ## [3.0.0] - 2022-04-01
 
@@ -83,7 +89,8 @@ This project follows [Semantic Versioning](https://semver.org/)
 - Label selectors to control which PVCs are selected for snapshotting
 - Retention policies based on snapshot age or count
 
-[unreleased]: https://github.com/backube/snapscheduler/compare/v3.0.0...HEAD
+[unreleased]: https://github.com/backube/snapscheduler/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/backube/snapscheduler/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/backube/snapscheduler/compare/v2.1.0...v3.0.0
 [2.1.0]: https://github.com/backube/snapscheduler/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/backube/snapscheduler/compare/v1.2.0...v2.0.0
