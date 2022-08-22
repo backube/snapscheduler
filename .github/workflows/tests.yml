@@ -140,7 +140,7 @@ jobs:
         run: make test
 
       - name: Upload coverage
-        uses: codecov/codecov-action@66b3de25f6f91f65eb92c514d31d6b6f13d5ab18
+        uses: codecov/codecov-action@81cd2dc8148241f03f5839d295e000b8f761e378
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: cover.out
