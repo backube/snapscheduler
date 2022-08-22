@@ -57,7 +57,7 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - uses: actions/cache@730dc31003a72af3c3b4bf51268c167ad4c67ad6
+      - uses: actions/cache@a7c34adf76222e77931dedbf4a45b2e4648ced19
         with:
           path: |
             ~/.cache/go-build
@@ -116,7 +116,7 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - uses: actions/cache@730dc31003a72af3c3b4bf51268c167ad4c67ad6
+      - uses: actions/cache@a7c34adf76222e77931dedbf4a45b2e4648ced19
         with:
           path: |
             ~/.cache/go-build
