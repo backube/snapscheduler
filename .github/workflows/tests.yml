@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@d0651293c4a5a52e711f25b41b05b2212f385d28
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
 
       - name: Install prereqs
         run: |
@@ -50,14 +50,14 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@d0651293c4a5a52e711f25b41b05b2212f385d28
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
 
       - name: Install Go
         uses: actions/setup-go@84cbf8094393cdc5fe1fe1671ff2647332956b1a
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - uses: actions/cache@730dc31003a72af3c3b4bf51268c167ad4c67ad6
+      - uses: actions/cache@fd5de65bc895cf536527842281bea11763fefd77
         with:
           path: |
             ~/.cache/go-build
@@ -84,7 +84,7 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@d0651293c4a5a52e711f25b41b05b2212f385d28
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
 
       - name: Install Go
         uses: actions/setup-go@84cbf8094393cdc5fe1fe1671ff2647332956b1a
@@ -109,14 +109,14 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@d0651293c4a5a52e711f25b41b05b2212f385d28
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
 
       - name: Install Go
         uses: actions/setup-go@84cbf8094393cdc5fe1fe1671ff2647332956b1a
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - uses: actions/cache@730dc31003a72af3c3b4bf51268c167ad4c67ad6
+      - uses: actions/cache@fd5de65bc895cf536527842281bea11763fefd77
         with:
           path: |
             ~/.cache/go-build
@@ -176,7 +176,7 @@ jobs:
           sudo mv /bin/sh.bash /bin/sh
 
       - name: Checkout source
-        uses: actions/checkout@d0651293c4a5a52e711f25b41b05b2212f385d28
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
 
       - name: Install Helm
         run: make helm
