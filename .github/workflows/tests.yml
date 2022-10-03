@@ -18,7 +18,7 @@ on:  # yamllint disable-line rule:truthy
 
 env:
   GO_VERSION: "1.18"
-  KIND_VERSION: "0.14.0"
+  KIND_VERSION: "0.15.0"
   GO111MODULE: "on"
   IMAGE: "quay.io/backube/snapscheduler"
 
@@ -155,11 +155,12 @@ jobs:
         # There must be kindest/node images for these versions
         # See: https://hub.docker.com/r/kindest/node/tags?page=1&ordering=name
         KUBERNETES_VERSIONS:
-          - "1.20.7"
-          - "1.21.12"
-          - "1.22.9"
-          - "1.23.6"
-          - "1.24.0"
+          - "1.20.15"
+          - "1.21.14"
+          - "1.22.13"
+          - "1.23.10"
+          - "1.24.4"
+          - "1.25.1"
 
     env:
       KUBECONFIG: /tmp/kubeconfig
