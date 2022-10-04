@@ -13,8 +13,7 @@ on:  # yamllint disable-line rule:truthy
     branches:
       - master
       - release*
-  schedule:
-    - cron: "15 6 * * 1"  # 6:15 every Monday
+  workflow_dispatch:
 
 env:
   GO_VERSION: "1.18"
@@ -243,7 +242,7 @@ jobs:
     name: Push container to registry
     needs: [e2e-success]
     if: >
-      (github.event_name == 'push' || github.event_name == 'schedule') &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-latest
 
@@ -269,14 +268,14 @@ jobs:
 
       - name: Push to registry (latest)
         if: >
-          (github.event_name == 'push' || github.event_name == 'schedule') &&
+          (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
           github.ref == 'refs/heads/master'
         run: |
           docker push "${IMAGE}"
 
       - name: Push to registry (version tag)
         if: >
-          (github.event_name == 'push' || github.event_name == 'schedule') &&
+          (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
           startsWith(github.ref, 'refs/tags/v')
         run: |
           [[ "${{ github.ref }}" =~ ^refs/tags/v([0-9]+\..*) ]] || exit 0
