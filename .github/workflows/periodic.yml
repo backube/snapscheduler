@@ -25,7 +25,6 @@ on:  # yamllint disable-line rule:truthy
 permissions:
   actions: write
   contents: read
-  metadata: read
 
 jobs:
   trigger-workflows:
