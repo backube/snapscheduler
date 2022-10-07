@@ -37,7 +37,7 @@ for more information.
 
 ## Requirements
 
-- Kubernetes >= 1.17
+- Kubernetes >= 1.20
 - CSI-based storage driver that supports snapshots (i.e. has the
   `CREATE_DELETE_SNAPSHOT` capability)
 
