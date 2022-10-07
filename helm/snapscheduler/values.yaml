@@ -5,6 +5,7 @@ replicaCount: 1
 image:
   repository: quay.io/backube/snapscheduler
   tagOverride: ""
+  image: ""
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -15,6 +16,7 @@ rbacProxy:
   image:
     repository: quay.io/brancz/kube-rbac-proxy
     tag: v0.13.1
+    image: ""
     pullPolicy: IfNotPresent
   resources:
     requests:

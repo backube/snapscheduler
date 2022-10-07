@@ -7,6 +7,11 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added
+
+- Ability to specify a container hash instead of just a tag when deploying via
+  Helm chart
+
 ### Changed
 
 - Made CRD validation of cronspec more permissive

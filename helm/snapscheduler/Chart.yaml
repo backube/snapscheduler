@@ -29,6 +29,8 @@ annotations:
   # Changelog for current chart & app version
   # Supported kinds: added, changed, deprecated, removed, fixed, security
   artifacthub.io/changes: |
+    - kind: added
+      description: Added ability to specify a container hash instead of just a tag
     - kind: changed
       description: Made CRD validation of cronspec more permissive
     - kind: changed
