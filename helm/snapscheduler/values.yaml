@@ -14,7 +14,7 @@ fullnameOverride: ""
 rbacProxy:
   image:
     repository: quay.io/brancz/kube-rbac-proxy
-    tag: v0.13.0
+    tag: v0.13.1
     pullPolicy: IfNotPresent
   resources:
     requests:

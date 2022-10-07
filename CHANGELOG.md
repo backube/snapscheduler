@@ -7,6 +7,12 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Changed
+
+- Made CRD validation of cronspec more permissive
+- Upgrade quay.io/brancz/kube-rbac-proxy to v0.13.1
+- Upgrade operator-sdk to 1.23.0
+
 ## [3.1.0] - 2022-08-01
 
 ### Added
