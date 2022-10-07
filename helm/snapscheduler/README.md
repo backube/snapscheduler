@@ -71,6 +71,37 @@ $ kubectl -n <mynampspace> get snapshotschedules
 ...
 ```
 
+### ⚠️ Upgrade notice... ⚠️
+
+If upgrading from v3.1.0 or earlier, manual steps are required. When upgrading
+from versions 3.1.0 and earlier, the `helm upgrade ...` command will fail with
+the following error:
+
+```console
+Error: UPGRADE FAILED: rendered manifests contain a resource that already
+exists. Unable to continue with update: CustomResourceDefinition
+"snapshotschedules.snapscheduler.backube" in namespace "" exists and cannot be
+imported into the current release: invalid ownership metadata; label validation
+error: missing key "app.kubernetes.io/managed-by": must be set to "Helm";
+annotation validation error: missing key "meta.helm.sh/release-name": must be
+set to "snapscheduler"; annotation validation error: missing key
+"meta.helm.sh/release-namespace": must be set to "backube-snapscheduler"
+```
+
+The above error can be fixed by adding the required labels and annotations as
+mentioned in the error message:
+
+```console
+$ kubectl label crd/snapshotschedules.snapscheduler.backube app.kubernetes.io/managed-by=Helm
+customresourcedefinition.apiextensions.k8s.io/snapshotschedules.snapscheduler.backube labeled
+
+$ kubectl annotate crd/snapshotschedules.snapscheduler.backube meta.helm.sh/release-name=snapscheduler
+customresourcedefinition.apiextensions.k8s.io/snapshotschedules.snapscheduler.backube annotated
+
+$ kubectl annotate crd/snapshotschedules.snapscheduler.backube meta.helm.sh/release-namespace=backube-snapscheduler
+customresourcedefinition.apiextensions.k8s.io/snapshotschedules.snapscheduler.backube annotated
+```
+
 ## Examples
 
 The schedule for snapshotting is controlled by the
@@ -122,6 +153,9 @@ case, the defaults, shown below, should be sufficient.
   - Overrides the container image pull policy
 - `imagePullSecrets`: none
   - May be set if pull secret(s) are needed to retrieve the operator image
+- `manageCRDs`: `true`
+  - Whether the chart should automatically install, upgrade, or remove the
+    SnapshotSchedule CRD
 - `rbacProxy.image.repository`: `quay.io/brancz/kube-rbac-proxy`
   - Specifies the container image used for the RBAC proxy
 - `rbacProxy.image.tag`: (see values file for default tag)

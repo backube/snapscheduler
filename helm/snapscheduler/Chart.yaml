@@ -32,6 +32,8 @@ annotations:
     - kind: added
       description: Added ability to specify a container hash instead of just a tag
     - kind: changed
+      description: Helm chart now directly manages CRD installation/upgrade
+    - kind: changed
       description: Made CRD validation of cronspec more permissive
     - kind: changed
       description: Upgrade operator-sdk to 1.23.0
