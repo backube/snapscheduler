@@ -31,7 +31,7 @@ spec:
             {{- if .Values.metrics.disableAuth }}
           - --ignore-paths=/metrics
             {{- end }}
-          image: "{{ .Values.rbacProxy.image.repository }}:{{ .Values.rbacProxy.image.tag }}"
+          image: {{ include "rbacproxy.image" . }}
           imagePullPolicy: {{ .Values.rbacProxy.image.pullPolicy }}
           name: kube-rbac-proxy
           ports:
@@ -47,7 +47,7 @@ spec:
           - --leader-elect
           command:
           - /manager
-          image: "{{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tagOverride }}"
+          image: {{ include "snapscheduler.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           livenessProbe:
             httpGet:

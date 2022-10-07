@@ -61,3 +61,23 @@ Create the name of the service account to use
     {{ default "default" .Values.serviceAccount.name }}
 {{- end -}}
 {{- end -}}
+
+{{- define "snapscheduler.image" -}}
+{{- with .Values.image }}
+{{- if .image -}}
+{{ .image }}
+{{- else -}}
+{{ .repository }}:{{ default $.Chart.AppVersion .tagOverride }}
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{- define "rbacproxy.image" -}}
+{{- with .Values.rbacProxy.image }}
+{{- if .image -}}
+{{ .image }}
+{{- else -}}
+{{ .repository }}:{{ .tag }}
+{{- end -}}
+{{- end -}}
+{{- end }}

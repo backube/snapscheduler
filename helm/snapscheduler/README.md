@@ -111,6 +111,9 @@ case, the defaults, shown below, should be sufficient.
     via leader election.
 - `image.repository`: `quay.io/backube/snapscheduler`
   - The location of the operator container image
+- `image.image`: `""`
+  - If set, it will override the `.repository` and `.tagOverride` fields to
+    allow specifying a specific container and SHA to deploy
 - `image.tagOverride`: `""`
   - If set, it will override the operator container image tag. The default tag
     is set per chart version and can be viewed (as `appVersion`) via `helm show
@@ -121,8 +124,11 @@ case, the defaults, shown below, should be sufficient.
   - May be set if pull secret(s) are needed to retrieve the operator image
 - `rbacProxy.image.repository`: `quay.io/brancz/kube-rbac-proxy`
   - Specifies the container image used for the RBAC proxy
-- `rbacProxy.image.tag`: `v0.11.0`
+- `rbacProxy.image.tag`: (see values file for default tag)
   - Specifies the tag for the RBAC proxy container image
+- `rbacProxy.image.image`: `""`
+  - If set, it will override the `.repository` and `.tag` fields to
+    allow specifying a specific container and SHA to deploy
 - `rbacProxy.image.pullPolicy`: `IfNotPresent`
   - Specifies the RBAC proxy container image pull policy
 - `rbacProxy.resources`: requests for 10m CPU and 100Mi memory; no limits
