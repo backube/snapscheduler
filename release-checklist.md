@@ -8,6 +8,7 @@
     `annotations.artifacthub.io/changes`
   * In Chart.yaml, update `artifacthub.io/changes` annotation based on changelog
 * Update version compatibility matrix in [docs/index.md](docs/index.md)
+* Build OperatorHub bundle
 * Commit to `master`
 * Branch to a release branch
 * Tag a release (vX.Y.Z) on that branch

@@ -2,7 +2,7 @@
 apiVersion: v2
 name: snapscheduler
 # Chart version: Incremented during chart, template, or appVersion changes.
-version: "3.1.0"
+version: "3.2.0"
 description: >-
     An operator to take scheduled snapshots of Kubernetes persistent volumes
 type: application
@@ -23,7 +23,7 @@ maintainers:
     url: https://github.com/JohnStrunk
 icon: https://raw.githubusercontent.com/backube/snapscheduler/master/docs/media/snapscheduler.svg?sanitize=true
 # This is the version number of the application being deployed.
-appVersion: "3.1.0"
+appVersion: "3.2.0"
 annotations:
   # https://artifacthub.io/docs/topics/annotations/helm/
   # Changelog for current chart & app version

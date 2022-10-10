@@ -7,6 +7,8 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+## [3.2.0] - 2022-10-10
+
 ### Added
 
 - Ability to specify a container hash instead of just a tag when deploying via
@@ -128,7 +130,8 @@ This project follows [Semantic Versioning](https://semver.org/)
 - Label selectors to control which PVCs are selected for snapshotting
 - Retention policies based on snapshot age or count
 
-[unreleased]: https://github.com/backube/snapscheduler/compare/v3.1.0...HEAD
+[Unreleased]: https://github.com/backube/snapscheduler/compare/v3.2.0...HEAD
+[3.2.0]: https://github.com/backube/snapscheduler/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/backube/snapscheduler/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/backube/snapscheduler/compare/v2.1.0...v3.0.0
 [2.1.0]: https://github.com/backube/snapscheduler/compare/v2.0.0...v2.1.0
