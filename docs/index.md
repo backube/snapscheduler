@@ -24,7 +24,8 @@ Kubernetes version compatibility:
 | 2.1           | 1.17 -- 1.23  | `v1beta1`                 |
 | 3.0           | 1.20 -- 1.24+ | `v1`                      |
 | 3.1           | 1.20 -- 1.24+ | `v1`                      |
-| master        | 1.20 -- 1.24+ | `v1`                      |
+| 3.2           | 1.20 -- 1.25+ | `v1`                      |
+| master        | 1.20 -- 1.25+ | `v1`                      |
 
 ## Contents
 
@@ -38,5 +39,4 @@ Developer documentation
 
 - [Building & running snapscheduler locally](development.md)
 - [Editing the documentation](docs.md)
-- [Upgrading the operator-sdk version](sdk-upgrade.md)
 - [Project tracking & roadmap](roadmap.md)
