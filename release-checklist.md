@@ -2,7 +2,7 @@
 
 ## Create a release
 
-* Update [CHANGELOG.md](CHANGLOG.md)
+* Update [CHANGELOG.md](CHANGELOG.md)
 * Update Helm chart template
   * In Chart.yaml, update `version`, `appVersion`, and
     `annotations.artifacthub.io/changes`
@@ -13,6 +13,8 @@
 * Branch to a release branch
 * Tag a release (vX.Y.Z) on that branch
 * Ensure the container becomes available on [Quay](https://quay.io/repository/backube/snapscheduler?tab=tags)
+* Edit [.github/workflows/periodic.yml](.github/workflows/periodic.yml) to
+  enable periodic builds of release branch and tagged containers
 
 ## Release updated Helm chart
 

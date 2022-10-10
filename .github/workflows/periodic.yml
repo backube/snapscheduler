@@ -40,4 +40,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Main development branch
           gh workflow run --ref "master" "tests.yml"
+
+          # Active release branches
+          gh workflow run --ref "release-3.2" "tests.yml"
+
+          # Rebuilds of tagged containers
+          gh workflow run --ref "v3.2.0" "tests.yml"
