@@ -21,6 +21,7 @@ function run_check() {
         echo "=====  $exe  ====="
         find . \
             -path ./vendor -prune -o \
+            -path ./.ci-scripts/vendor -prune -o \
             -path ./docs/_site -prune -o \
             -path ./docs/vendor -prune -o \
             -path ./testbin -prune -o \
