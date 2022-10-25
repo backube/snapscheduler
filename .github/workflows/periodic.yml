@@ -47,4 +47,4 @@ jobs:
           gh workflow run --ref "release-3.2" "tests.yml"
 
           # Rebuilds of tagged containers
-          gh workflow run --ref "v3.2.0" "tests.yml"
+          # gh workflow run --ref "v3.2.0" "tests.yml"  # Disabled due to mdl config incompatibility
