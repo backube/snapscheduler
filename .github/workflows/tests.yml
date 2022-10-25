@@ -35,8 +35,12 @@ jobs:
           echo 'APT::Acquire::Retries "5";' | sudo tee /etc/apt/apt.conf.d/80-retries
           sudo apt-get update
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python3-pip ruby
-          sudo gem install asciidoctor mdl
-          sudo pip3 install yamllint
+          sudo gem install bundler
+          cd ./.ci-scripts
+          sudo pip3 install -r requirements.txt
+          bundle install
+          bundle binstubs --all
+          echo "$(pwd)/bin" >> ${GITHUB_PATH}
 
       - name: Run linters
         run: ./.ci-scripts/pre-commit.sh --require-all

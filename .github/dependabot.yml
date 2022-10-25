@@ -2,6 +2,12 @@
 version: 2
 updates:
   - package-ecosystem: "bundler"
+    directory: "/.ci-scripts"
+    rebase-strategy: "disabled"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "bundler"
     directory: "/docs"
     rebase-strategy: "disabled"
     schedule:
@@ -15,6 +21,12 @@ updates:
 
   - package-ecosystem: "gomod"
     directory: "/"
+    rebase-strategy: "disabled"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "pip"
+    directory: "/.ci-scripts"
     rebase-strategy: "disabled"
     schedule:
       interval: "weekly"
