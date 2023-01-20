@@ -8,12 +8,12 @@ BUILDDATE := $(shell date -u '+%Y-%m-%dT%H:%M:%S.%NZ')
 
 ## Tool versions
 CONTROLLER_TOOLS_VERSION := v0.10.0
-ENVTEST_K8S_VERSION = 1.24.2
+ENVTEST_K8S_VERSION = 1.25.0
 GOLANGCI_VERSION := v1.50.1
 HELM_VERSION := v3.11.0
 KUSTOMIZE_VERSION := v4.5.7
 KUTTL_VERSION := 0.15.0
-OPERATOR_SDK_VERSION := v1.25.0
+OPERATOR_SDK_VERSION := v1.26.0
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
