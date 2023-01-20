@@ -31,7 +31,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//nolint: lll
+// nolint: lll
 package v1
 
 import (
