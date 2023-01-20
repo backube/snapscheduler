@@ -28,7 +28,7 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c  # v3.3.0
 
       - name: Install prereqs
         run: |
@@ -53,14 +53,14 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c  # v3.3.0
 
       - name: Install Go
-        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568  # v3.5.0
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - uses: actions/cache@58c146cc91c5b9e778e71775dfe9bf1442ad9a12
+      - uses: actions/cache@58c146cc91c5b9e778e71775dfe9bf1442ad9a12  # v3.2.3
         with:
           path: |
             ~/.cache/go-build
@@ -70,7 +70,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@515828d97454b8354517688ddc5b48402b723750
+        uses: github/codeql-action/init@515828d97454b8354517688ddc5b48402b723750  # v2.1.38
 
       - name: Download modules
         run: go mod download
@@ -79,7 +79,7 @@ jobs:
         run: make build
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@515828d97454b8354517688ddc5b48402b723750
+        uses: github/codeql-action/analyze@515828d97454b8354517688ddc5b48402b723750  # v2.1.38
 
   build:
     name: Build
@@ -87,10 +87,10 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c  # v3.3.0
 
       - name: Install Go
-        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568  # v3.5.0
         with:
           go-version: ${{ env.GO_VERSION }}
 
@@ -101,7 +101,7 @@ jobs:
         run: docker save -o /tmp/image.tar ${IMAGE}
 
       - name: Save container as artifact
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce  # v3.1.2
         with:
           name: container
           path: /tmp/image.tar
@@ -112,14 +112,14 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c  # v3.3.0
 
       - name: Install Go
-        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568  # v3.5.0
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - uses: actions/cache@58c146cc91c5b9e778e71775dfe9bf1442ad9a12
+      - uses: actions/cache@58c146cc91c5b9e778e71775dfe9bf1442ad9a12  # v3.2.3
         with:
           path: |
             ~/.cache/go-build
@@ -143,7 +143,7 @@ jobs:
         run: make test
 
       - name: Upload coverage
-        uses: codecov/codecov-action@d9f34f8cd5cb3b3eb79b3e4b5dae3a16df499a70
+        uses: codecov/codecov-action@d9f34f8cd5cb3b3eb79b3e4b5dae3a16df499a70  # v3.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: cover.out
@@ -181,7 +181,7 @@ jobs:
           sudo mv /bin/sh.bash /bin/sh
 
       - name: Checkout source
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c  # v3.3.0
 
       - name: Install Helm
         run: make helm
@@ -205,7 +205,7 @@ jobs:
           ./hack/setup-kind-cluster.sh "${KUBERNETES_VERSION}"
 
       - name: Load container artifact
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
         with:
           name: container
           path: /tmp
@@ -253,7 +253,7 @@ jobs:
 
     steps:
       - name: Load container artifact
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a  # v3.0.2
         with:
           name: container
           path: /tmp
