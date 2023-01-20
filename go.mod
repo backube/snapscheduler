@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/go-logr/logr v1.2.3
-	github.com/kubernetes-csi/external-snapshotter/client/v6 v6.1.0
+	github.com/kubernetes-csi/external-snapshotter/client/v6 v6.2.0
 	github.com/onsi/ginkgo/v2 v2.7.0
 	github.com/onsi/gomega v1.24.2
 	github.com/openshift/custom-resource-status v1.1.2
