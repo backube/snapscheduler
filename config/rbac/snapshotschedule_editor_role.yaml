@@ -2,6 +2,13 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: snapshotschedule-editor-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: snapscheduler
+    app.kubernetes.io/part-of: snapscheduler
+    app.kubernetes.io/managed-by: kustomize
   name: snapshotschedule-editor-role
 rules:
 - apiGroups:

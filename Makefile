@@ -7,13 +7,13 @@ VERSION ?= $(shell git describe --tags --dirty --match 'v*' 2> /dev/null || git 
 BUILDDATE := $(shell date -u '+%Y-%m-%dT%H:%M:%S.%NZ')
 
 ## Tool versions
-CONTROLLER_TOOLS_VERSION := v0.9.2
-GOLANGCI_VERSION := v1.46.1
-GINKGO_VERSION := v1.16.5
-HELM_VERSION := v3.9.0
-KUSTOMIZE_VERSION := v4.5.5
-KUTTL_VERSION := 0.13.0
-OPERATOR_SDK_VERSION := v1.23.0
+CONTROLLER_TOOLS_VERSION := v0.10.0
+ENVTEST_K8S_VERSION = 1.25.0
+GOLANGCI_VERSION := v1.50.1
+HELM_VERSION := v3.11.0
+KUSTOMIZE_VERSION := v4.5.7
+KUTTL_VERSION := 0.15.0
+OPERATOR_SDK_VERSION := v1.26.0
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
@@ -58,8 +58,6 @@ endif
 
 # Image URL to use all building/pushing image targets
 IMG ?= quay.io/backube/snapscheduler:latest
-# ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.24.2
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -121,10 +119,10 @@ helm-lint: helm ## Lint Helm chart
 
 .PHONY: test
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
-TEST_ARGS ?= -progress -randomizeAllSpecs -randomizeSuites -slowSpecThreshold 30 -p -cover -coverprofile cover.out -outputdir .
+TEST_ARGS ?= --randomize-all --randomize-suites -p -cover -coverprofile cover.out --output-dir .
 TEST_PACKAGES ?= ./...
 test: manifests generate lint helm-lint ginkgo envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" $(GINKGO) $(TEST_ARGS) $(TEST_PACKAGES)
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" $(GINKGO) $(TEST_ARGS) $(TEST_PACKAGES)
 
 .PHONY: test-e2e
 test-e2e: kuttl ## Run e2e tests. Requires cluster w/ SnapScheduler already running
@@ -148,6 +146,23 @@ docker-build: ## Build docker image with the manager.
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
+
+# PLATFORMS defines the target platforms for  the manager image be build to provide support to multiple
+# architectures. (i.e. make docker-buildx IMG=myregistry/mypoperator:0.0.1). To use this option you need to:
+# - able to use docker buildx . More info: https://docs.docker.com/build/buildx/
+# - have enable BuildKit, More info: https://docs.docker.com/develop/develop-images/build_enhancements/
+# - be able to push the image for your registry (i.e. if you do not inform a valid value via IMG=<myregistry/image:<tag>> than the export will fail)
+# To properly provided solutions that supports more than one platform you should use this option.
+PLATFORMS ?= linux/arm64,linux/amd64,linux/s390x,linux/ppc64le
+.PHONY: docker-buildx
+docker-buildx: test ## Build and push docker image for the manager for cross-platform support
+	# copy existing Dockerfile and insert --platform=${BUILDPLATFORM} into Dockerfile.cross, and preserve the original Dockerfile
+	sed -e '1 s/\(^FROM\)/FROM --platform=\$$\{BUILDPLATFORM\}/; t' -e ' 1,// s//FROM --platform=\$$\{BUILDPLATFORM\}/' Dockerfile > Dockerfile.cross
+	- docker buildx create --name project-v3-builder
+	docker buildx use project-v3-builder
+	- docker buildx build --push --platform=$(PLATFORMS) --tag ${IMG} -f Dockerfile.cross
+	- docker buildx rm project-v3-builder
+	rm Dockerfile.cross
 
 ##@ Deployment
 
@@ -275,7 +290,7 @@ ARCH := $(shell go env GOARCH)
 .PHONY: ginkgo
 ginkgo: $(GINKGO) ## Download ginkgo
 $(GINKGO): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install github.com/onsi/ginkgo/ginkgo@$(GINKGO_VERSION)
+	GOBIN=$(LOCALBIN) go install github.com/onsi/ginkgo/v2/ginkgo@latest
 
 .PHONY: golangci-lint
 GOLANGCI_URL := https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh

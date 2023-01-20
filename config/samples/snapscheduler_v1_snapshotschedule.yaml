@@ -2,6 +2,12 @@
 apiVersion: snapscheduler.backube/v1
 kind: SnapshotSchedule
 metadata:
+  labels:
+    app.kubernetes.io/name: snapshotschedule
+    app.kubernetes.io/instance: daily
+    app.kubernetes.io/part-of: snapscheduler
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: snapscheduler
   name: daily
 spec:
   retention:

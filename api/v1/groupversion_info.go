@@ -32,8 +32,8 @@ limitations under the License.
 */
 
 // Package v1 contains API Schema definitions for the snapscheduler v1 API group
-//+kubebuilder:object:generate=true
-//+groupName=snapscheduler.backube
+// +kubebuilder:object:generate=true
+// +groupName=snapscheduler.backube
 package v1
 
 import (

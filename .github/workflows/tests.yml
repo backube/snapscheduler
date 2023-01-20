@@ -16,8 +16,8 @@ on:  # yamllint disable-line rule:truthy
   workflow_dispatch:
 
 env:
-  GO_VERSION: "1.18"
-  KIND_VERSION: "0.15.0"
+  GO_VERSION: "1.19"
+  KIND_VERSION: "0.17.0"
   GO111MODULE: "on"
   IMAGE: "quay.io/backube/snapscheduler"
 
@@ -60,7 +60,7 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - uses: actions/cache@4723a57e26efda3a62cbde1812113b730952852d
+      - uses: actions/cache@58c146cc91c5b9e778e71775dfe9bf1442ad9a12
         with:
           path: |
             ~/.cache/go-build
@@ -119,7 +119,7 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - uses: actions/cache@4723a57e26efda3a62cbde1812113b730952852d
+      - uses: actions/cache@58c146cc91c5b9e778e71775dfe9bf1442ad9a12
         with:
           path: |
             ~/.cache/go-build
@@ -160,10 +160,11 @@ jobs:
         KUBERNETES_VERSIONS:
           - "1.20.15"
           - "1.21.14"
-          - "1.22.13"
-          - "1.23.10"
-          - "1.24.4"
-          - "1.25.1"
+          - "1.22.15"
+          - "1.23.13"
+          - "1.24.7"
+          - "1.25.3"
+          - "1.26.0"
 
     env:
       KUBECONFIG: /tmp/kubeconfig
