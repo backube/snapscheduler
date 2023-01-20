@@ -13,7 +13,7 @@ GINKGO_VERSION := v1.16.5
 HELM_VERSION := v3.11.0
 KUSTOMIZE_VERSION := v4.5.7
 KUTTL_VERSION := 0.15.0
-OPERATOR_SDK_VERSION := v1.23.0
+OPERATOR_SDK_VERSION := v1.24.1
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
