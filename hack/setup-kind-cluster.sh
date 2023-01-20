@@ -5,7 +5,7 @@ set -e -o pipefail
 # Possible versions:
 # https://hub.docker.com/r/kindest/node/tags?page=1&ordering=name
 # skopeo list-tags docker://kindest/node
-KUBE_VERSION="${1:-1.25.0}"
+KUBE_VERSION="${1:-1.26.0}"
 
 function log {
   echo "=====  $*  ====="
@@ -163,7 +163,7 @@ rm -f "${KIND_CONFIG_FILE}"
 
 # Kube >= 1.17, we need to deploy the snapshot controller
 if [[ $KUBE_MINOR -ge 24 ]]; then  # Kube 1.24 removed snapshot.storage.k8s.io/v1beta1
-  TAG="v6.0.0"  # https://github.com/kubernetes-csi/external-snapshotter/releases
+  TAG="v6.2.1"  # https://github.com/kubernetes-csi/external-snapshotter/releases
   log "Deploying external snapshotter: ${TAG}"
   kubectl create -k "https://github.com/kubernetes-csi/external-snapshotter/client/config/crd?ref=${TAG}"
   kubectl create -n kube-system -k "https://github.com/kubernetes-csi/external-snapshotter/deploy/kubernetes/snapshot-controller?ref=${TAG}"
@@ -217,8 +217,16 @@ case "$KUBE_MINOR" in
     HOSTPATH_BRANCH="v1.7.3"
     DEPLOY_SCRIPT="deploy.sh"
     ;;
-  *)
+  21)
     HOSTPATH_BRANCH="v1.9.0"
+    DEPLOY_SCRIPT="deploy.sh"
+    ;;
+  22|23)
+    HOSTPATH_BRANCH="v1.10.0"
+    DEPLOY_SCRIPT="deploy.sh"
+    ;;
+  *)
+    HOSTPATH_BRANCH="v1.11.0"
     DEPLOY_SCRIPT="deploy.sh"
     ;;
 esac
