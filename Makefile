@@ -290,7 +290,7 @@ ARCH := $(shell go env GOARCH)
 .PHONY: ginkgo
 ginkgo: $(GINKGO) ## Download ginkgo
 $(GINKGO): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install github.com/onsi/ginkgo/v2/ginkgo
+	GOBIN=$(LOCALBIN) go install github.com/onsi/ginkgo/v2/ginkgo@latest
 
 .PHONY: golangci-lint
 GOLANGCI_URL := https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh
