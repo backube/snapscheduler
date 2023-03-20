@@ -70,7 +70,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@32dc499307d133bb5085bae78498c0ac2cf762d5  # v2.2.5
+        uses: github/codeql-action/init@168b99b3c22180941ae7dbdd5f5c9678ede476ba  # v2.2.7
 
       - name: Download modules
         run: go mod download
@@ -79,7 +79,7 @@ jobs:
         run: make build
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@32dc499307d133bb5085bae78498c0ac2cf762d5  # v2.2.5
+        uses: github/codeql-action/analyze@168b99b3c22180941ae7dbdd5f5c9678ede476ba  # v2.2.7
 
   build:
     name: Build
