@@ -79,3 +79,7 @@ metrics:
   disableAuth: false
 
 manageCRDs: true
+
+# See https://kubernetes.io/blog/2023/01/12/
+#        protect-mission-critical-pods-priorityclass/
+priorityClassName: ""
