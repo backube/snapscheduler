@@ -3,7 +3,7 @@ module github.com/backube/snapscheduler
 go 1.19
 
 require (
-	github.com/go-logr/logr v1.2.3
+	github.com/go-logr/logr v1.2.4
 	github.com/kubernetes-csi/external-snapshotter/client/v6 v6.2.0
 	github.com/onsi/ginkgo/v2 v2.9.2
 	github.com/onsi/gomega v1.27.5
