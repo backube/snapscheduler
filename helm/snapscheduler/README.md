@@ -188,3 +188,7 @@ case, the defaults, shown below, should be sufficient.
     topology domain(s) that each Node is in.
 - `affinity`: node-level anti-affinity
   - Allows setting the operator pod's affinity
+- `podLabels`: `{}`
+  - map of additional labels to add to pods
+- `podAnnotations`: `{}`
+  - map of additional annotations to add to pods

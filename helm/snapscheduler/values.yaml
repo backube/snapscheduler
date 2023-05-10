@@ -36,6 +36,12 @@ podSecurityContext:
   # seccompProfile:
   #   type: RuntimeDefault
 
+# additional annotations to add to pods
+podAnnotations: {}
+
+# additional labels to add to pods
+podLabels: {}
+
 securityContext:
   allowPrivilegeEscalation: false
   capabilities:
