@@ -2,9 +2,9 @@
 apiVersion: v2
 name: snapscheduler
 # Chart version: Incremented during chart, template, or appVersion changes.
-version: "3.2.0"
+version: "3.3.0"
 description: >-
-    An operator to take scheduled snapshots of Kubernetes persistent volumes
+  An operator to take scheduled snapshots of Kubernetes persistent volumes
 type: application
 # Adding "-0" at the end of the version string permits pre-release kube versions
 # to match. See https://github.com/helm/helm/issues/6190
