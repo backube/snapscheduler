@@ -119,7 +119,7 @@ spec:
                 description: Schedule is a Cronspec specifying when snapshots should
                   be taken. See https://en.wikipedia.org/wiki/Cron for a description
                   of the format.
-                pattern: ^(@(annually|yearly|monthly|weekly|daily|hourly))|((((\d+,)+\d+|(\d+(\/|-)\d+)|\d+|\*)\s?){5,7})$
+                pattern: ^(@(annually|yearly|monthly|weekly|daily|hourly))|((((\d+,)*\d+|(\d+(\/|-)\d+)|\*(\/\d+)?)\s?){5})$
                 type: string
               snapshotTemplate:
                 description: A template to customize the Snapshots.

@@ -79,7 +79,7 @@ type SnapshotScheduleSpec struct {
 	Retention SnapshotRetentionSpec `json:"retention,omitempty"`
 	// Schedule is a Cronspec specifying when snapshots should be taken. See
 	// https://en.wikipedia.org/wiki/Cron for a description of the format.
-	//+kubebuilder:validation:Pattern=`^(@(annually|yearly|monthly|weekly|daily|hourly))|((((\d+,)+\d+|(\d+(\/|-)\d+)|\d+|\*)\s?){5,7})$`
+	//+kubebuilder:validation:Pattern=`^(@(annually|yearly|monthly|weekly|daily|hourly))|((((\d+,)*\d+|(\d+(\/|-)\d+)|\*(\/\d+)?)\s?){5})$`
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Schedule",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	Schedule string `json:"schedule,omitempty"`
 	// Indicates that this schedule should be temporarily disabled
