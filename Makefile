@@ -13,7 +13,7 @@ GOLANGCI_VERSION := v1.50.1
 HELM_VERSION := v3.11.0
 KUSTOMIZE_VERSION := v4.5.7
 KUTTL_VERSION := 0.15.0
-OPERATOR_SDK_VERSION := v1.29.0
+OPERATOR_SDK_VERSION := v1.30.0
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "preview,fast,stable")
