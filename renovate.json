@@ -1,0 +1,38 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:best-practices",
+    ":enablePreCommit",
+    ":gitSignOff"
+  ],
+  "labels": [
+    "dependencies"
+  ],
+  "regexManagers": [
+    {
+      "description": "golangci-lint version updates",
+      "fileMatch": [
+        "^.github/(?:workflows|actions)/.+\\.ya?ml$",
+        "(^|/)Makefile$"
+      ],
+      "matchStrings": [
+        "GOLANGCI_VERSION\\s*:=?\\s*\"?(?<currentValue>.+?)\"?\\n"
+      ],
+      "depNameTemplate": "golangci/golangci-lint",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "description": "KinD version updates",
+      "fileMatch": [
+        "^.github/(?:workflows|actions)/.+\\.ya?ml$",
+        "(^|/)Makefile$"
+      ],
+      "matchStrings": [
+        "KIND_VERSION\\s*:=?\\s*\"?(?<currentValue>.+?)\"?\\n"
+      ],
+      "depNameTemplate": "kubernetes-sigs/kind",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    }
+  ]
+}
