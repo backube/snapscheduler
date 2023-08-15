@@ -1,0 +1,101 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:best-practices",
+    ":enablePreCommit",
+    ":gitSignOff"
+  ],
+  "labels": [
+    "dependencies"
+  ],
+  "regexManagers": [
+    {
+      "description": "controller-tools version updates",
+      "fileMatch": [
+        "^.github/(?:workflows|actions)/.+\\.ya?ml$",
+        "(^|/)Makefile$"
+      ],
+      "matchStrings": [
+        "CONTROLLER_TOOLS_VERSION\\s*:=?\\s*\"?(?<currentValue>.+?)\"?\\n"
+      ],
+      "depNameTemplate": "kubernetes-sigs/controller-tools",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "description": "golang version updates (major/minor only)",
+      "fileMatch": [
+        "^.github/(?:workflows|actions)/.+\\.ya?ml$",
+        "(^|/)Makefile$"
+      ],
+      "matchStrings": [
+        "GO_VERSION\\s*:=?\\s*\"?(?<currentValue>.+?)\"?\\n"
+      ],
+      "depNameTemplate": "go",
+      "datasourceTemplate": "golang-version",
+      "extractVersionTemplate": "^(?<version>.*)\\.\\d+$",
+      "versioningTemplate": "loose"
+    },
+    {
+      "description": "golangci-lint version updates",
+      "fileMatch": [
+        "^.github/(?:workflows|actions)/.+\\.ya?ml$",
+        "(^|/)Makefile$"
+      ],
+      "matchStrings": [
+        "GOLANGCI_VERSION\\s*:=?\\s*\"?(?<currentValue>.+?)\"?\\n"
+      ],
+      "depNameTemplate": "golangci/golangci-lint",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "description": "Helm version updates",
+      "fileMatch": [
+        "^.github/(?:workflows|actions)/.+\\.ya?ml$",
+        "(^|/)Makefile$"
+      ],
+      "matchStrings": [
+        "HELM_VERSION\\s*:=?\\s*\"?(?<currentValue>.+?)\"?\\n"
+      ],
+      "depNameTemplate": "helm/helm",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "description": "KinD version updates",
+      "fileMatch": [
+        "^.github/(?:workflows|actions)/.+\\.ya?ml$",
+        "(^|/)Makefile$"
+      ],
+      "matchStrings": [
+        "KIND_VERSION\\s*:=?\\s*\"?(?<currentValue>.+?)\"?\\n"
+      ],
+      "depNameTemplate": "kubernetes-sigs/kind",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "description": "kustomize version updates",
+      "fileMatch": [
+        "^.github/(?:workflows|actions)/.+\\.ya?ml$",
+        "(^|/)Makefile$"
+      ],
+      "matchStrings": [
+        "KUSTOMIZE_VERSION\\s*:=?\\s*\"?(?<currentValue>.+?)\"?\\n"
+      ],
+      "depNameTemplate": "kubernetes-sigs/kustomize",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^kustomize/(?<version>.*)$"
+    },
+    {
+      "description": "Kuttl version updates",
+      "fileMatch": [
+        "^.github/(?:workflows|actions)/.+\\.ya?ml$",
+        "(^|/)Makefile$"
+      ],
+      "matchStrings": [
+        "KUTTL_VERSION\\s*:=?\\s*\"?(?<currentValue>.+?)\"?\\n"
+      ],
+      "depNameTemplate": "kudobuilder/kuttl",
+      "datasourceTemplate": "github-releases"
+    }
+  ]
+}
