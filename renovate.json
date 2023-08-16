@@ -8,6 +8,9 @@
   "labels": [
     "dependencies"
   ],
+  "postUpdateOptions": [
+    "gomodTidy"
+  ],
   "regexManagers": [
     {
       "description": "controller-tools version updates",
