@@ -8,6 +8,15 @@
   "labels": [
     "dependencies"
   ],
+  "packageRules": [
+    {
+      "description": "Combines updating golang tag in dockerfile & updating golang version in workflows into single PR",
+      "groupName": "golang version",
+      "matchDepNames": [
+        "^golang$"
+      ]
+    }
+  ],
   "postUpdateOptions": [
     "gomodTidy"
   ],
@@ -33,7 +42,7 @@
       "matchStrings": [
         "GO_VERSION\\s*:=?\\s*\"?(?<currentValue>.+?)\"?\\n"
       ],
-      "depNameTemplate": "go",
+      "depNameTemplate": "golang",
       "datasourceTemplate": "golang-version",
       "extractVersionTemplate": "^(?<version>.*)\\.\\d+$",
       "versioningTemplate": "loose"
