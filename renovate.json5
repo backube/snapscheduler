@@ -1,16 +1,19 @@
 {
+  // JSON5 spec: https://json5.org/
+  // Renovate docs: https://docs.renovatebot.com/configuration-options/
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:best-practices",
-    ":enablePreCommit",
-    ":gitSignOff"
+    "config:best-practices",  // Use recommended settings
+    ":enablePreCommit",       // Enable pre-commit hook updates
+    ":gitSignOff"             // Sign off commits
   ],
   "labels": [
     "dependencies"
   ],
   "packageRules": [
     {
-      "description": "Combines updating golang tag in dockerfile & updating golang version in workflows into single PR",
+      // Update golang tag in dockerfile & golang version in workflows in a
+      // single PR"
       "groupName": "golang version",
       "matchDepNames": [
         "^golang$"
@@ -18,7 +21,7 @@
     }
   ],
   "postUpdateOptions": [
-    "gomodTidy"
+    "gomodTidy"   // Run `go mod tidy` after updating dependencies
   ],
   "regexManagers": [
     {
