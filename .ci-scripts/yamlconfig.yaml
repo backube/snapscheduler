@@ -2,13 +2,18 @@
 # https://yamllint.readthedocs.io/en/stable/configuration.html
 
 extends: default
+
 ignore: |
   hack/crds/*
   helm/snapscheduler/templates/*
   helm/snapscheduler/crds/*
   config/**
   bundle/**
+
 rules:
+  comments:  # renovate-bot dosen't put 2 spaces before the version number
+    ignore: |
+      .github/workflows/*
   document-start:
     ignore: |
       deploy/olm-catalog/snapscheduler/1.1.1/snapshotschedules.snapscheduler.backube.crd.yaml
