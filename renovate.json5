@@ -119,5 +119,8 @@
       "depNameTemplate": "kudobuilder/kuttl",
       "datasourceTemplate": "github-releases"
     }
+  ],
+  "schedule": [
+    "before 7am every weekday"  // Update once a day
   ]
 }
