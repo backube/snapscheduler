@@ -1,16 +1,19 @@
 {
+  // JSON5 spec: https://json5.org/
+  // Renovate docs: https://docs.renovatebot.com/configuration-options/
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:best-practices",
-    ":enablePreCommit",
-    ":gitSignOff"
+    "config:best-practices",  // Use recommended settings
+    ":enablePreCommit",       // Enable pre-commit hook updates
+    ":gitSignOff"             // Sign off commits
   ],
   "labels": [
     "dependencies"
   ],
   "packageRules": [
     {
-      "description": "Combines updating golang tag in dockerfile & updating golang version in workflows into single PR",
+      // Update golang tag in dockerfile & golang version in workflows in a
+      // single PR"
       "groupName": "golang version",
       "matchDepNames": [
         "^golang$"
@@ -18,10 +21,11 @@
     }
   ],
   "postUpdateOptions": [
-    "gomodTidy"
+    "gomodTidy"   // Run `go mod tidy` after updating dependencies
   ],
   "regexManagers": [
     {
+      "customType": "regex",
       "description": "controller-tools version updates",
       "fileMatch": [
         "^.github/(?:workflows|actions)/.+\\.ya?ml$",
@@ -34,6 +38,7 @@
       "datasourceTemplate": "github-releases"
     },
     {
+      "customType": "regex",
       "description": "golang version updates (major/minor only)",
       "fileMatch": [
         "^.github/(?:workflows|actions)/.+\\.ya?ml$",
@@ -48,6 +53,7 @@
       "versioningTemplate": "loose"
     },
     {
+      "customType": "regex",
       "description": "golangci-lint version updates",
       "fileMatch": [
         "^.github/(?:workflows|actions)/.+\\.ya?ml$",
@@ -60,6 +66,7 @@
       "datasourceTemplate": "github-releases"
     },
     {
+      "customType": "regex",
       "description": "Helm version updates",
       "fileMatch": [
         "^.github/(?:workflows|actions)/.+\\.ya?ml$",
@@ -72,6 +79,7 @@
       "datasourceTemplate": "github-releases"
     },
     {
+      "customType": "regex",
       "description": "KinD version updates",
       "fileMatch": [
         "^.github/(?:workflows|actions)/.+\\.ya?ml$",
@@ -85,6 +93,7 @@
       "extractVersionTemplate": "^v(?<version>.*)$"
     },
     {
+      "customType": "regex",
       "description": "kustomize version updates",
       "fileMatch": [
         "^.github/(?:workflows|actions)/.+\\.ya?ml$",
@@ -98,6 +107,7 @@
       "extractVersionTemplate": "^kustomize/(?<version>.*)$"
     },
     {
+      "customType": "regex",
       "description": "Kuttl version updates",
       "fileMatch": [
         "^.github/(?:workflows|actions)/.+\\.ya?ml$",
@@ -109,5 +119,8 @@
       "depNameTemplate": "kudobuilder/kuttl",
       "datasourceTemplate": "github-releases"
     }
+  ],
+  "schedule": [
+    "before 7am every weekday"  // Update once a day
   ]
 }
