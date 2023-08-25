@@ -125,5 +125,6 @@
   ],
   "schedule": [
     "before 7am every weekday"  // Update once a day
-  ]
+  ],
+  "semanticCommits": "disabled"
 }
