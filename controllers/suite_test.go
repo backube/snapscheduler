@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	ctrlMetrics "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	snapschedulerv1 "github.com/backube/snapscheduler/api/v1"
 	//+kubebuilder:scaffold:imports
@@ -83,8 +84,10 @@ var _ = BeforeSuite(func() {
 	// Expect(k8sClient).NotTo(BeNil())
 
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
-		Scheme:             scheme.Scheme,
-		MetricsBindAddress: "0",
+		Scheme: scheme.Scheme,
+		Metrics: ctrlMetrics.Options{
+			BindAddress: "0",
+		},
 	})
 	Expect(err).NotTo(HaveOccurred())
 
