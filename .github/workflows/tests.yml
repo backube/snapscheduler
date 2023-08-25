@@ -17,7 +17,7 @@ on:  # yamllint disable-line rule:truthy
 
 env:
   GO_VERSION: "1.21"
-  KIND_VERSION: "0.17.0"
+  KIND_VERSION: "0.20.0"
   GO111MODULE: "on"
   IMAGE: "quay.io/backube/snapscheduler"
 
@@ -60,7 +60,7 @@ jobs:
         uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9  # v3.5.3
 
       - name: Install Go
-        uses: actions/setup-go@fac708d6674e30b6ba41289acaab6d4b75aa0753  # v4.0.1
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
         with:
           go-version: ${{ env.GO_VERSION }}
 
@@ -74,7 +74,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@cdcdbb579706841c47f7063dda365e292e5cad7a  # v2.13.4
+        uses: github/codeql-action/init@a09933a12a80f87b87005513f0abb1494c27a716 # v2.21.4
 
       - name: Download modules
         run: go mod download
@@ -83,7 +83,7 @@ jobs:
         run: make build
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@cdcdbb579706841c47f7063dda365e292e5cad7a  # v2.13.4
+        uses: github/codeql-action/analyze@a09933a12a80f87b87005513f0abb1494c27a716 # v2.21.4
 
   build:
     name: Build
@@ -94,7 +94,7 @@ jobs:
         uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9  # v3.5.3
 
       - name: Install Go
-        uses: actions/setup-go@fac708d6674e30b6ba41289acaab6d4b75aa0753  # v4.0.1
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
         with:
           go-version: ${{ env.GO_VERSION }}
 
@@ -119,7 +119,7 @@ jobs:
         uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9  # v3.5.3
 
       - name: Install Go
-        uses: actions/setup-go@fac708d6674e30b6ba41289acaab6d4b75aa0753  # v4.0.1
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
         with:
           go-version: ${{ env.GO_VERSION }}
 
@@ -160,15 +160,17 @@ jobs:
       fail-fast: false
       matrix:
         # There must be kindest/node images for these versions
-        # See: https://hub.docker.com/r/kindest/node/tags?page=1&ordering=name
+        # See: https://hub.docker.com/r/kindest/node/tags?page=1&ordering=last_updated
         KUBERNETES_VERSIONS:
           - "1.20.15"
           - "1.21.14"
-          - "1.22.15"
-          - "1.23.13"
-          - "1.24.7"
-          - "1.25.3"
-          - "1.26.0"
+          - "1.22.17"
+          - "1.23.17"
+          - "1.24.15"
+          - "1.25.11"
+          - "1.26.6"
+          - "1.27.3"
+          - "1.28.0"
 
     env:
       KUBECONFIG: /tmp/kubeconfig
@@ -194,8 +196,8 @@ jobs:
         run: |
           curl -LO "https://storage.googleapis.com/kubernetes-release/release/v${KUBERNETES_VERSION}/bin/linux/amd64/kubectl"
           sudo install ./kubectl /usr/local/bin/
-          kubectl version --short --client
-          kubectl version --short --client | grep -q ${KUBERNETES_VERSION}
+          kubectl version --client
+          kubectl version --client | grep -q ${KUBERNETES_VERSION}
 
       - name: Install kind
         run: |

@@ -83,6 +83,17 @@
     },
     {
       "customType": "regex",
+      "description": "Docker image updates in yamls",
+      "fileMatch": [
+        "^config/.+\\.ya?ml$"
+      ],
+      "matchStrings": [
+        "image:\\s*\"?(?<depName>.*?):(?<currentValue>.*?)(?:@(?<currentDigest>sha256:[a-f0-9]+))?\"?\\s"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
       "description": "KinD version updates",
       "fileMatch": [
         "^.github/(?:workflows|actions)/.+\\.ya?ml$",
@@ -125,5 +136,6 @@
   ],
   "schedule": [
     "before 7am every weekday"  // Update once a day
-  ]
+  ],
+  "semanticCommits": "disabled"
 }
