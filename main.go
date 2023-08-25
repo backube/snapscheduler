@@ -36,6 +36,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	ctrlMetrics "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	snapschedulerv1 "github.com/backube/snapscheduler/api/v1"
 	"github.com/backube/snapscheduler/controllers"
@@ -79,9 +80,10 @@ func main() {
 	setupLog.Info(fmt.Sprintf("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                        scheme,
-		MetricsBindAddress:            metricsAddr,
-		Port:                          9443,
+		Scheme: scheme,
+		Metrics: ctrlMetrics.Options{
+			BindAddress: metricsAddr,
+		},
 		HealthProbeBindAddress:        probeAddr,
 		LeaderElection:                enableLeaderElection,
 		LeaderElectionID:              "cd2d8e9f.backube",
