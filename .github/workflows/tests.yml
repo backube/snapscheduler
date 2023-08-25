@@ -17,7 +17,7 @@ on:  # yamllint disable-line rule:truthy
 
 env:
   GO_VERSION: "1.21"
-  KIND_VERSION: "0.17.0"
+  KIND_VERSION: "0.20.0"
   GO111MODULE: "on"
   IMAGE: "quay.io/backube/snapscheduler"
 
@@ -160,15 +160,17 @@ jobs:
       fail-fast: false
       matrix:
         # There must be kindest/node images for these versions
-        # See: https://hub.docker.com/r/kindest/node/tags?page=1&ordering=name
+        # See: https://hub.docker.com/r/kindest/node/tags?page=1&ordering=last_updated
         KUBERNETES_VERSIONS:
           - "1.20.15"
           - "1.21.14"
-          - "1.22.15"
-          - "1.23.13"
-          - "1.24.7"
-          - "1.25.3"
-          - "1.26.0"
+          - "1.22.17"
+          - "1.23.17"
+          - "1.24.15"
+          - "1.25.11"
+          - "1.26.6"
+          - "1.27.3"
+          - "1.28.0"
 
     env:
       KUBECONFIG: /tmp/kubeconfig
@@ -194,8 +196,8 @@ jobs:
         run: |
           curl -LO "https://storage.googleapis.com/kubernetes-release/release/v${KUBERNETES_VERSION}/bin/linux/amd64/kubectl"
           sudo install ./kubectl /usr/local/bin/
-          kubectl version --short --client
-          kubectl version --short --client | grep -q ${KUBERNETES_VERSION}
+          kubectl version --client
+          kubectl version --client | grep -q ${KUBERNETES_VERSION}
 
       - name: Install kind
         run: |
