@@ -10,6 +10,9 @@
   "labels": [
     "dependencies"
   ],
+  "lockFileMaintenance": {  // Update Gemfile.lock
+    "enabled": true
+  },
   "packageRules": [
     {
       // Update golang tag in dockerfile & golang version in workflows in a
