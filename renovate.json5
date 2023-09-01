@@ -135,7 +135,8 @@
     }
   ],
   "schedule": [
-    "before 7am every weekday"  // Update once a day
+    "* 3-6 * * 1-5"  // Run between 3am and 6am on weekdays
   ],
-  "semanticCommits": "disabled"
+  "semanticCommits": "disabled",
+  "timezone": "America/New_York"
 }
