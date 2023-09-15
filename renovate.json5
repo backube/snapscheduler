@@ -21,6 +21,16 @@
       "matchDepNames": [
         "^golang$"
       ]
+    },
+    {
+      // Disable some docker image updates
+      "matchDatasources": ["docker"],
+      "matchPackageNames": [
+        "controller", // Ignore the fake "controller" docker image name
+        "quay.io/backube/snapscheduler", // Don't pin our own image
+        "quay.io/operator-framework/scorecard-test" // Ignore OSDK scorecard image
+      ],
+      "enabled": false
     }
   ],
   "postUpdateOptions": [
@@ -132,6 +142,16 @@
       ],
       "depNameTemplate": "kudobuilder/kuttl",
       "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "description": "Update tags for repos in hack/setup-kind-cluster.sh",
+      "fileMatch": [
+        "^hack/setup-kind-cluster.sh$"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-z-.]+?) depName=(?<depName>[^\\s]+?)(?: (?:lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[a-z-0-9]+?))?\\s+TAG\\s*=\\s*[\"']?(?<currentValue>.+?)[\"']?\\s"
+      ]
     }
   ],
   "schedule": [
