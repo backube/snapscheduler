@@ -3,9 +3,10 @@
   // Renovate docs: https://docs.renovatebot.com/configuration-options/
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:best-practices",  // Use recommended settings
-    ":enablePreCommit",       // Enable pre-commit hook updates
-    ":gitSignOff"             // Sign off commits
+    "config:recommended",            // Use recommended settings
+    ":enablePreCommit",              // Enable pre-commit hook updates
+    ":gitSignOff",                   // Sign off commits
+    "helpers:pinGitHubActionDigests" // Pin GitHub action digests
   ],
   "labels": [
     "dependencies"
