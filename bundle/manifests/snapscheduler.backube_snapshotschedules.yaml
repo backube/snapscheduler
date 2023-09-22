@@ -2,7 +2,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.0
+    controller-gen.kubebuilder.io/version: v0.13.0
   creationTimestamp: null
   name: snapshotschedules.snapscheduler.backube
 spec:
@@ -95,6 +95,7 @@ spec:
                       are ANDed.
                     type: object
                 type: object
+                x-kubernetes-map-type: atomic
               disabled:
                 description: Indicates that this schedule should be temporarily disabled
                 type: boolean
@@ -117,7 +118,7 @@ spec:
                 description: Schedule is a Cronspec specifying when snapshots should
                   be taken. See https://en.wikipedia.org/wiki/Cron for a description
                   of the format.
-                pattern: ^(@(annually|yearly|monthly|weekly|daily|hourly))|((((\d+,)+\d+|(\d+(\/|-)\d+)|\d+|\*)\s?){5,7})$
+                pattern: ^(@(annually|yearly|monthly|weekly|daily|hourly))|((((\d+,)*\d+|(\d+(\/|-)\d+)|\*(\/\d+)?)\s?){5})$
                 type: string
               snapshotTemplate:
                 description: A template to customize the Snapshots.

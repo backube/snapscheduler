@@ -23,22 +23,20 @@ maintainers:
     url: https://github.com/JohnStrunk
 icon: https://raw.githubusercontent.com/backube/snapscheduler/master/docs/media/snapscheduler.svg?sanitize=true
 # This is the version number of the application being deployed.
-appVersion: "3.2.0"
+appVersion: "3.3.0"
 annotations:
+  artifacthub.io/category: storage
   # https://artifacthub.io/docs/topics/annotations/helm/
   # Changelog for current chart & app version
   # Supported kinds: added, changed, deprecated, removed, fixed, security
   artifacthub.io/changes: |
     - kind: added
-      description: Added ability to specify a container hash instead of just a tag
-    - kind: changed
-      description: Helm chart now directly manages CRD installation/upgrade
-    - kind: changed
-      description: Made CRD validation of cronspec more permissive
-    - kind: changed
-      description: Upgrade operator-sdk to 1.23.0
-    - kind: security
-      description: Upgrade quay.io/brancz/kube-rbac-proxy to v0.13.1
+      description: Ability to set a `priorityClassName` for the operator via Helm chart
+    - kind: added
+      description: Ability to set pod labels and annotations for the operator via Helm chart
+    - kind: fixed
+      description: Improve cronspec validation to allow "slash" notation
+  artifacthub.io/containsSecurityUpdates: "true"
   artifacthub.io/crds: |
     - kind: SnapshotSchedule
       version: v1

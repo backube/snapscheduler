@@ -6,4 +6,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: quay.io/backube/snapscheduler
-  newTag: 3.2.0
+  newTag: 3.3.0
