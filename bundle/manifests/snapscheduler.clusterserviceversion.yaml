@@ -8,6 +8,13 @@ metadata:
           "apiVersion": "snapscheduler.backube/v1",
           "kind": "SnapshotSchedule",
           "metadata": {
+            "labels": {
+              "app.kubernetes.io/created-by": "snapscheduler",
+              "app.kubernetes.io/instance": "daily",
+              "app.kubernetes.io/managed-by": "kustomize",
+              "app.kubernetes.io/name": "snapshotschedule",
+              "app.kubernetes.io/part-of": "snapscheduler"
+            },
             "name": "daily"
           },
           "spec": {
@@ -21,14 +28,15 @@ metadata:
     capabilities: Full Lifecycle
     categories: Storage
     certified: "false"
+    containerImage: quay.io/backube/snapscheduler:v3.3.0
+    createdAt: "2023-09-22T15:45:56Z"
     description: The SnapScheduler operator takes snapshots of Kubernetes CSI-based
       persistent volumes according to user-supplied schedules.
-    operators.operatorframework.io/builder: operator-sdk-v1.23.0
+    operators.operatorframework.io/builder: operator-sdk-v1.31.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/backube/snapscheduler
     support: https://github.com/backube/snapscheduler
-    containerImage: quay.io/backube/snapscheduler:3.2.0
-  name: snapscheduler.v3.2.0
+  name: snapscheduler.v3.3.0
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -242,6 +250,12 @@ spec:
         serviceAccountName: snapscheduler-controller-manager
       deployments:
       - label:
+          app.kubernetes.io/component: manager
+          app.kubernetes.io/created-by: snapscheduler
+          app.kubernetes.io/instance: controller-manager
+          app.kubernetes.io/managed-by: kustomize
+          app.kubernetes.io/name: deployment
+          app.kubernetes.io/part-of: snapscheduler
           control-plane: controller-manager
         name: snapscheduler-controller-manager
         spec:
@@ -257,6 +271,18 @@ spec:
                 control-plane: controller-manager
             spec:
               affinity:
+                nodeAffinity:
+                  requiredDuringSchedulingIgnoredDuringExecution:
+                    nodeSelectorTerms:
+                    - matchExpressions:
+                      - key: kubernetes.io/arch
+                        operator: In
+                        values:
+                        - amd64
+                      - key: kubernetes.io/os
+                        operator: In
+                        values:
+                        - linux
                 podAntiAffinity:
                   preferredDuringSchedulingIgnoredDuringExecution:
                   - podAffinityTerm:
@@ -274,7 +300,7 @@ spec:
                 - --upstream=http://127.0.0.1:8080/
                 - --logtostderr=true
                 - --v=0
-                image: quay.io/brancz/kube-rbac-proxy:v0.13.1
+                image: quay.io/brancz/kube-rbac-proxy:v0.14.3
                 name: kube-rbac-proxy
                 ports:
                 - containerPort: 8443
@@ -298,7 +324,7 @@ spec:
                 - --leader-elect
                 command:
                 - /manager
-                image: quay.io/backube/snapscheduler:3.2.0
+                image: quay.io/backube/snapscheduler:3.3.0
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -392,4 +418,4 @@ spec:
   provider:
     name: Backube
     url: https://github.com/backube
-  version: 3.2.0
+  version: 3.3.0

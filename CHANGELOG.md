@@ -7,6 +7,17 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+## [3.3.0] - 2023-09-22
+
+### Added
+
+- Ability to set a `priorityClassName` for the operator via Helm chart
+- Ability to set pod labels and annotations for the operator via Helm chart
+
+### Fixed
+
+- Improve cronspec validation to allow "slash" notation
+
 ## [3.2.0] - 2022-10-10
 
 ### Added
@@ -130,7 +141,8 @@ This project follows [Semantic Versioning](https://semver.org/)
 - Label selectors to control which PVCs are selected for snapshotting
 - Retention policies based on snapshot age or count
 
-[Unreleased]: https://github.com/backube/snapscheduler/compare/v3.2.0...HEAD
+[Unreleased]: https://github.com/backube/snapscheduler/compare/v3.3.0...HEAD
+[3.3.0]: https://github.com/backube/snapscheduler/compare/v3.2.0...v3.3.0
 [3.2.0]: https://github.com/backube/snapscheduler/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/backube/snapscheduler/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/backube/snapscheduler/compare/v2.1.0...v3.0.0
