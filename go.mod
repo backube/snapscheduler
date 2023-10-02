@@ -6,7 +6,7 @@ require (
 	github.com/go-logr/logr v1.2.4
 	github.com/kubernetes-csi/external-snapshotter/client/v6 v6.3.0
 	github.com/onsi/ginkgo/v2 v2.12.1
-	github.com/onsi/gomega v1.27.10
+	github.com/onsi/gomega v1.28.0
 	github.com/openshift/custom-resource-status v1.1.2
 	github.com/robfig/cron/v3 v3.0.1
 	go.uber.org/zap v1.26.0
