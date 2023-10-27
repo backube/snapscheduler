@@ -23,7 +23,9 @@ import (
 	"testing"
 
 	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
+	//nolint:revive  // Allow . import
 	. "github.com/onsi/ginkgo/v2"
+	//nolint:revive  // Allow . import
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
