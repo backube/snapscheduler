@@ -15,7 +15,7 @@ fullnameOverride: ""
 rbacProxy:
   image:
     repository: quay.io/brancz/kube-rbac-proxy
-    tag: v0.15.0@sha256:2c7b120590cbe9f634f5099f2cbb91d0b668569023a81505ca124a5c437e7663
+    tag: v0.16.0@sha256:2c8f8c357ff87b8bc5df4d967d5f52a23528c5e9c025f9aaa653a9ef4747585f
     image: ""
     pullPolicy: IfNotPresent
   resources:
