@@ -74,7 +74,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@b7bf0a3ed3ecfa44160715d7c442788f65f0f923 # v3.23.2
+        uses: github/codeql-action/init@e675ced7a7522a761fc9c8eb26682c8b27c42b2b # v3.24.1
 
       - name: Download modules
         run: go mod download
@@ -83,7 +83,7 @@ jobs:
         run: make build
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@b7bf0a3ed3ecfa44160715d7c442788f65f0f923 # v3.23.2
+        uses: github/codeql-action/analyze@e675ced7a7522a761fc9c8eb26682c8b27c42b2b # v3.24.1
 
   build:
     name: Build
@@ -105,7 +105,7 @@ jobs:
         run: docker save -o /tmp/image.tar ${IMAGE}
 
       - name: Save container as artifact
-        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
         with:
           name: container
           path: /tmp/image.tar
@@ -147,7 +147,7 @@ jobs:
         run: make test
 
       - name: Upload coverage
-        uses: codecov/codecov-action@4fe8c5f003fae66aa5ebb77cfd3e7bfbbda0b6b0 # v3.1.5
+        uses: codecov/codecov-action@e0b68c6749509c5f83f984dd99a76a1c1a231044 # v4.0.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: cover.out
@@ -212,7 +212,7 @@ jobs:
           ./hack/setup-kind-cluster.sh "${KUBERNETES_VERSION}"
 
       - name: Load container artifact
-        uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935 # v4.1.1
+        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
         with:
           name: container
           path: /tmp
@@ -260,7 +260,7 @@ jobs:
 
     steps:
       - name: Load container artifact
-        uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935 # v4.1.1
+        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
         with:
           name: container
           path: /tmp
