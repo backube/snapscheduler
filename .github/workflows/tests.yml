@@ -74,7 +74,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@b7bf0a3ed3ecfa44160715d7c442788f65f0f923 # v3.23.2
+        uses: github/codeql-action/init@e675ced7a7522a761fc9c8eb26682c8b27c42b2b # v3.24.1
 
       - name: Download modules
         run: go mod download
@@ -83,7 +83,7 @@ jobs:
         run: make build
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@b7bf0a3ed3ecfa44160715d7c442788f65f0f923 # v3.23.2
+        uses: github/codeql-action/analyze@e675ced7a7522a761fc9c8eb26682c8b27c42b2b # v3.24.1
 
   build:
     name: Build
@@ -212,7 +212,7 @@ jobs:
           ./hack/setup-kind-cluster.sh "${KUBERNETES_VERSION}"
 
       - name: Load container artifact
-        uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935 # v4.1.1
+        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
         with:
           name: container
           path: /tmp
@@ -260,7 +260,7 @@ jobs:
 
     steps:
       - name: Load container artifact
-        uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935 # v4.1.1
+        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
         with:
           name: container
           path: /tmp
