@@ -6,16 +6,16 @@ metadata:
 spec:
   containers:
     - name: workload
-      image: gcr.io/distroless/static:debug-nonroot
+      image: fedora:latest
       command: ["sh", "-c"]
-      args: ["wget -O- --no-check-certificate -q https://snapscheduler-metrics.backube-snapscheduler.svc.cluster.local:8443/metrics | grep 'workqueue_work_duration_seconds_count{name=\"snapshotschedule\"}'"]
+      args: ["curl --insecure https://snapscheduler-metrics.backube-snapscheduler.svc.cluster.local:8443/metrics | grep 'workqueue_work_duration_seconds_count{name=\"snapshotschedule\"}'"]
       securityContext:
         allowPrivilegeEscalation: false
         capabilities:
           drop: ["ALL"]
+        runAsUser: 1000
+        runAsGroup: 1000
         readOnlyRootFilesystem: true
-        # seccompProfile:
-        #   type: RuntimeDefault
   restartPolicy: OnFailure
   securityContext:
     runAsNonRoot: true
