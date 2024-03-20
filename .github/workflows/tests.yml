@@ -17,7 +17,7 @@ on:  # yamllint disable-line rule:truthy
 
 env:
   GO_VERSION: "1.21"
-  KIND_VERSION: "0.21.0"
+  KIND_VERSION: "0.22.0"
   GO111MODULE: "on"
   IMAGE: "quay.io/backube/snapscheduler"
 
