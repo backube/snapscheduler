@@ -25,7 +25,7 @@ repos:
         args: [--markdown-linebreak-ext=md]
 
   - repo: https://github.com/adrienverge/yamllint
-    rev: "v1.33.0"
+    rev: "v1.35.1"
     hooks:
       - id: yamllint
         args: ["--strict", "-c", ".ci-scripts/yamlconfig.yaml"]
@@ -46,6 +46,6 @@ repos:
       - id: shellcheck
 
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: "37.187.1"
+    rev: "37.262.1"
     hooks:
       - id: renovate-config-validator
