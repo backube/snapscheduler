@@ -20,7 +20,7 @@
       // single PR"
       "groupName": "golang version",
       "matchDepNames": [
-        "^golang$"
+        "^(golang|go)$"
       ]
     },
     {
@@ -43,7 +43,7 @@
   "postUpdateOptions": [
     "gomodTidy"   // Run `go mod tidy` after updating dependencies
   ],
-  "regexManagers": [
+  "customManagers": [
     {
       "customType": "regex",
       "description": "controller-tools version updates",
