@@ -3,6 +3,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "snapscheduler.fullname" . }}-metrics
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "snapscheduler.labels" . | nindent 4 }}
 spec:
