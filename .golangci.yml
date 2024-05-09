@@ -2,7 +2,8 @@
 # https://golangci-lint.run/usage/configuration/#config-file
 
 run:
-  timeout: 30m
+  allow-parallel-runners: true
+  timeout: 10m
   # skip-files:
 output:
   sort-results: true
@@ -31,6 +32,7 @@ linters:
     - makezero
     - misspell
     - nakedret
+    - prealloc
     - revive
     - staticcheck
     - typecheck
