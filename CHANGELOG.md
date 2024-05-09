@@ -7,6 +7,18 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+## [3.4.0] - 2024-05-09
+
+### Changed
+
+- Dependency updates (including CVE fixes)
+- Upgrade operator-sdk to 1.34.1
+
+### Fixed
+
+- Helm chart: Add `metadata.namespace` to namespaced resources for compatibility
+  with ArgoCD
+
 ## [3.3.0] - 2023-09-22
 
 ### Added
@@ -141,7 +153,8 @@ This project follows [Semantic Versioning](https://semver.org/)
 - Label selectors to control which PVCs are selected for snapshotting
 - Retention policies based on snapshot age or count
 
-[Unreleased]: https://github.com/backube/snapscheduler/compare/v3.3.0...HEAD
+[Unreleased]: https://github.com/backube/snapscheduler/compare/v3.4.0...HEAD
+[3.4.0]: https://github.com/backube/snapscheduler/compare/v3.3.0...v3.4.0
 [3.3.0]: https://github.com/backube/snapscheduler/compare/v3.2.0...v3.3.0
 [3.2.0]: https://github.com/backube/snapscheduler/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/backube/snapscheduler/compare/v3.0.0...v3.1.0
