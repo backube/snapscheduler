@@ -16,7 +16,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 // nolint funlen  // Long test functions ok
-package controllers
+package controller
 
 import (
 	"context"

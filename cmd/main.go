@@ -39,7 +39,7 @@ import (
 	ctrlMetrics "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	snapschedulerv1 "github.com/backube/snapscheduler/api/v1"
-	"github.com/backube/snapscheduler/controllers"
+	"github.com/backube/snapscheduler/internal/controller"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -94,7 +94,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.SnapshotScheduleReconciler{
+	if err = (&controller.SnapshotScheduleReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
