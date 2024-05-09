@@ -16,11 +16,19 @@
   },
   "packageRules": [
     {
+      // Update GH actions in a single PR
+      "groupName": "GH actions",
+      "matchDepTypes": [
+        "action"
+      ]
+    },
+    {
       // Update golang tag in dockerfile & golang version in workflows in a
       // single PR"
       "groupName": "golang version",
       "matchDepNames": [
-        "^(golang|go)$"
+        "golang",
+        "go"
       ]
     },
     {
