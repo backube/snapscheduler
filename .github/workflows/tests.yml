@@ -161,17 +161,19 @@ jobs:
       matrix:
         # There must be kindest/node images for these versions
         # See: https://hub.docker.com/r/kindest/node/tags?page=1&ordering=last_updated
+        # OpenShift dates: https://access.redhat.com/support/policy/updates/openshift#dates
         KUBERNETES_VERSIONS:
-          - "1.20.15"
-          - "1.21.14"
-          - "1.22.17"
-          - "1.23.17"
-          - "1.24.17"
-          - "1.25.16"
-          - "1.26.14"
-          - "1.27.11"
-          - "1.28.7"
-          - "1.29.2"
+          - "1.20.15"  # Oldest that is expected to work
+          # - "1.21.14"
+          # - "1.22.17"
+          # - "1.23.17"
+          # - "1.24.17"
+          - "1.25.16"  # OCP 4.12 until 2025-01-17
+          - "1.26.15"  # OCP 4.13 until 2024-11-17
+          - "1.27.13"  # OCP 4.14 until 2026-10-31
+          - "1.28.9"   # OCP 4.15 until 2025-08-27
+          - "1.29.4"   # OCP 4.16
+          - "1.30.0"   # OCP 4.17
 
     env:
       KUBECONFIG: /tmp/kubeconfig
