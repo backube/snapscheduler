@@ -162,8 +162,13 @@ kind create cluster ${KIND_CONFIG} --image "kindest/node:v${KUBE_VERSION}"
 rm -f "${KIND_CONFIG_FILE}"
 
 # Kube >= 1.17, we need to deploy the snapshot controller
-if [[ $KUBE_MINOR -ge 24 ]]; then  # Kube 1.24 removed snapshot.storage.k8s.io/v1beta1
+if [[ $KUBE_MINOR -ge 25 ]]; then  # Starting w/ v8, min supported kube is 1.25
   # renovate: datasource=github-releases depName=kubernetes-csi/external-snapshotter versioning=semver-coerced
+  TAG="v8.0.0"  # https://github.com/kubernetes-csi/external-snapshotter/releases
+  log "Deploying external snapshotter: ${TAG}"
+  kubectl create -k "https://github.com/kubernetes-csi/external-snapshotter/client/config/crd?ref=${TAG}"
+  kubectl create -n kube-system -k "https://github.com/kubernetes-csi/external-snapshotter/deploy/kubernetes/snapshot-controller?ref=${TAG}"
+elif [[ $KUBE_MINOR -ge 24 ]]; then  # Kube 1.24 removed snapshot.storage.k8s.io/v1beta1
   TAG="v7.0.2"  # https://github.com/kubernetes-csi/external-snapshotter/releases
   log "Deploying external snapshotter: ${TAG}"
   kubectl create -k "https://github.com/kubernetes-csi/external-snapshotter/client/config/crd?ref=${TAG}"
