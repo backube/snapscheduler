@@ -12,6 +12,8 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+enableOwnerReferences: false
+
 rbacProxy:
   image:
     repository: quay.io/brancz/kube-rbac-proxy
