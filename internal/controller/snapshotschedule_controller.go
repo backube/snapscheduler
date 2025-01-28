@@ -55,7 +55,8 @@ const (
 // SnapshotScheduleReconciler reconciles a SnapshotSchedule object
 type SnapshotScheduleReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme                *runtime.Scheme
+	EnableOwnerReferences bool
 }
 
 //nolint:lll
@@ -82,7 +83,7 @@ func (r *SnapshotScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
-	result, err := doReconcile(ctx, instance, reqLogger, r.Client)
+	result, err := doReconcile(ctx, instance, reqLogger, r.Client, r.EnableOwnerReferences)
 
 	// Update result in CR
 	if err != nil {
@@ -117,7 +118,7 @@ func (r *SnapshotScheduleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func doReconcile(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedule,
-	logger logr.Logger, c client.Client) (ctrl.Result, error) {
+	logger logr.Logger, c client.Client, enableOwnerReferences bool) (ctrl.Result, error) {
 	// If necessary, initialize time of next snap based on schedule
 	if schedule.Status.NextSnapshotTime.IsZero() {
 		// Update nextSnapshot time based on current time and cronspec
@@ -135,7 +136,7 @@ func doReconcile(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedule
 		// modifying .status will immediately cause an addl reconcile pass
 		// (which will cover the rest of this reconcile function). We also don't
 		// want to update nextSnapshot until this round is done.
-		return handleSnapshotting(ctx, schedule, logger, c)
+		return handleSnapshotting(ctx, schedule, logger, c, enableOwnerReferences)
 	}
 
 	// We always update nextSnapshot in case the schedule changed
@@ -164,7 +165,7 @@ func doReconcile(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedule
 }
 
 func handleSnapshotting(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedule,
-	logger logr.Logger, c client.Client) (ctrl.Result, error) {
+	logger logr.Logger, c client.Client, enableOwnerReferences bool) (ctrl.Result, error) {
 	pvcList, err := listPVCsMatchingSelector(ctx, logger, c, schedule.Namespace, &schedule.Spec.ClaimSelector)
 	if err != nil {
 		logger.Error(err, "unable to get matching PVCs")
@@ -187,7 +188,7 @@ func handleSnapshotting(ctx context.Context, schedule *snapschedulerv1.SnapshotS
 					labels = schedule.Spec.SnapshotTemplate.Labels
 					snapshotClassName = schedule.Spec.SnapshotTemplate.SnapshotClassName
 				}
-				snap := newSnapForClaim(snapName, pvc, schedule.Name, snapTime, labels, snapshotClassName)
+				snap := newSnapForClaim(snapName, pvc, schedule, snapTime, labels, snapshotClassName, enableOwnerReferences)
 				if snap != nil {
 					logger.Info("creating a snapshot", "PVC", pvc.Name, "Snapshot", snapName)
 					if err = c.Create(ctx, snap); err != nil {
@@ -287,8 +288,8 @@ func getNextSnapTime(cronspec string, when time.Time) (time.Time, error) {
 }
 
 func newSnapForClaim(snapName string, pvc corev1.PersistentVolumeClaim,
-	scheduleName string, scheduleTime time.Time,
-	labels map[string]string, snapClass *string) *snapv1.VolumeSnapshot {
+	schedule *snapschedulerv1.SnapshotSchedule, scheduleTime time.Time,
+	labels map[string]string, snapClass *string, enableOwnerReferences bool) *snapv1.VolumeSnapshot {
 	numLabels := 2
 	if labels != nil {
 		numLabels += len(labels)
@@ -297,9 +298,9 @@ func newSnapForClaim(snapName string, pvc corev1.PersistentVolumeClaim,
 	for k, v := range labels {
 		snapLabels[k] = v
 	}
-	snapLabels[ScheduleKey] = scheduleName
+	snapLabels[ScheduleKey] = schedule.Name
 	snapLabels[WhenKey] = scheduleTime.Format(timeYYYYMMDDHHMMSS)
-	return &snapv1.VolumeSnapshot{
+	snapshot := &snapv1.VolumeSnapshot{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      snapName,
 			Namespace: pvc.Namespace,
@@ -312,4 +313,17 @@ func newSnapForClaim(snapName string, pvc corev1.PersistentVolumeClaim,
 			VolumeSnapshotClassName: snapClass,
 		},
 	}
+
+	if enableOwnerReferences {
+		snapshot.OwnerReferences = []metav1.OwnerReference{
+			{
+				APIVersion: schedule.APIVersion,
+				Kind:       schedule.Kind,
+				Name:       schedule.Name,
+				UID:        schedule.UID,
+			},
+		}
+	}
+
+	return snapshot
 }
