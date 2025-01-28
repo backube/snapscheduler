@@ -157,7 +157,8 @@ case, the defaults, shown below, should be sufficient.
   - Whether the chart should automatically install, upgrade, or remove the
     SnapshotSchedule CRD
 - `enableOwnerReferences`: `false`
-  - If set to `true`, owner references will be added to the VolumeSnapshot objects created by the operator.
+  - If set to `true`, owner references will be added to the VolumeSnapshot
+    objects created by the operator.
 - `rbacProxy.image.repository`: `quay.io/brancz/kube-rbac-proxy`
   - Specifies the container image used for the RBAC proxy
 - `rbacProxy.image.tag`: (see values file for default tag)
