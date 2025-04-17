@@ -1,31 +1,31 @@
----
+
 pull_request_rules:
-  - name: Automatic merge on approval
-    conditions:
+  - name: Automatic merge on approval + Automatic merge own PRs
+    conditions: []
+    actions:
+      queue:
+queue_rules:
+  - name: duplicated default from Automatic merge on approval
+    queue_conditions:
       - "#approved-reviews-by>=1"
       - "#changes-requested-reviews-by=0"
       - label!=do-not-merge
       - check-success=Successful e2e tests
       - check-success=DCO
-    actions:
-      queue:
-        method: merge
-        name: default
-  - name: Automatic merge own PRs
-    conditions:
+    merge_conditions:
+      - label!=do-not-merge
+      - check-success=Successful e2e tests
+      - check-success=DCO
+    merge_method: merge
+  - name: duplicated default from Automatic merge own PRs
+    queue_conditions:
       - author=JohnStrunk
       - "#changes-requested-reviews-by=0"
       - label!=do-not-merge
       - check-success=Successful e2e tests
       - check-success=DCO
-    actions:
-      queue:
-        method: merge
-        name: default
-
-queue_rules:
-  - name: default
-    conditions:
+    merge_conditions:
       - label!=do-not-merge
       - check-success=Successful e2e tests
       - check-success=DCO
+    merge_method: merge
