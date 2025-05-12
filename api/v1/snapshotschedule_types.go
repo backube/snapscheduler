@@ -35,7 +35,6 @@ limitations under the License.
 package v1
 
 import (
-	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -96,7 +95,7 @@ type SnapshotScheduleStatus struct {
 	// Conditions is a list of conditions related to operator reconciliation.
 	//+optional
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Conditions",xDescriptors={"urn:alm:descriptor:io.kubernetes.conditions"}
-	Conditions []conditionsv1.Condition `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 	// The time of the most recent snapshot taken by this schedule
 	//+optional
 	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Last snapshot",xDescriptors={"urn:alm:descriptor:text"}
@@ -110,7 +109,7 @@ type SnapshotScheduleStatus struct {
 const (
 	// ConditionReconciled is a Condition indicating whether the object is fully
 	// reconciled.
-	ConditionReconciled conditionsv1.ConditionType = "Reconciled"
+	ConditionReconciled = "Reconciled"
 	// ReconciledReasonError indicates there was an error while attempting to reconcile.
 	ReconciledReasonError = "ReconcileError"
 	// ReconciledReasonComplete indicates reconcile was successful

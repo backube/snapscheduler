@@ -8,7 +8,7 @@ spec:
     - name: workload
       image: fedora:latest
       command: ["sh", "-c"]
-      args: ["curl --insecure https://snapscheduler-metrics.backube-snapscheduler.svc.cluster.local:8443/metrics | grep 'workqueue_work_duration_seconds_count{name=\"snapshotschedule\"}'"]
+      args: ["curl --insecure https://snapscheduler-metrics.backube-snapscheduler.svc.cluster.local:8443/metrics | grep 'workqueue_work_duration_seconds_count{controller=\"snapshotschedule\",name=\"snapshotschedule\"}'"]
       securityContext:
         allowPrivilegeEscalation: false
         capabilities:
