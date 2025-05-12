@@ -5,7 +5,7 @@
 package v1
 
 import (
-	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -115,7 +115,7 @@ func (in *SnapshotScheduleStatus) DeepCopyInto(out *SnapshotScheduleStatus) {
 	*out = *in
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
-		*out = make([]conditionsv1.Condition, len(*in))
+		*out = make([]metav1.Condition, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}

@@ -24,10 +24,10 @@ import (
 
 	"github.com/go-logr/logr"
 	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v8/apis/volumesnapshot/v1"
-	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 	"github.com/robfig/cron/v3"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -87,16 +87,16 @@ func (r *SnapshotScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	// Update result in CR
 	if err != nil {
-		conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
+		apimeta.SetStatusCondition(&instance.Status.Conditions, metav1.Condition{
 			Type:    snapschedulerv1.ConditionReconciled,
-			Status:  corev1.ConditionFalse,
+			Status:  metav1.ConditionFalse,
 			Reason:  snapschedulerv1.ReconciledReasonError,
 			Message: err.Error(),
 		})
 	} else {
-		conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
+		apimeta.SetStatusCondition(&instance.Status.Conditions, metav1.Condition{
 			Type:    snapschedulerv1.ConditionReconciled,
-			Status:  corev1.ConditionTrue,
+			Status:  metav1.ConditionTrue,
 			Reason:  snapschedulerv1.ReconciledReasonComplete,
 			Message: "Reconcile complete",
 		})
