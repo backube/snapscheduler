@@ -3,15 +3,15 @@
   // Renovate docs: https://docs.renovatebot.com/configuration-options/
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended",            // Use recommended settings
-    ":enablePreCommit",              // Enable pre-commit hook updates
-    ":gitSignOff",                   // Sign off commits
+    "config:recommended", // Use recommended settings
+    ":enablePreCommit", // Enable pre-commit hook updates
+    ":gitSignOff", // Sign off commits
     "helpers:pinGitHubActionDigests" // Pin GitHub action digests
   ],
   "labels": [
     "dependencies"
   ],
-  "lockFileMaintenance": {  // Update Gemfile.lock
+  "lockFileMaintenance": { // Update Gemfile.lock
     "enabled": true
   },
   "packageRules": [
@@ -33,7 +33,9 @@
     },
     {
       // Disable some docker image updates
-      "matchDatasources": ["docker"],
+      "matchDatasources": [
+        "docker"
+      ],
       "matchPackageNames": [
         "controller", // Ignore the fake "controller" docker image name
         "quay.io/backube/snapscheduler", // Don't pin our own image
@@ -44,12 +46,16 @@
     {
       // Renovate's packages update too frequently, so we only schedule updates
       // once a week to keep the noise down
-      "matchPackageNames": ["renovatebot/pre-commit-hooks"],
-      "schedule": ["before 9am on monday"]
+      "matchPackageNames": [
+        "renovatebot/pre-commit-hooks"
+      ],
+      "schedule": [
+        "before 9am on monday"
+      ]
     }
   ],
   "postUpdateOptions": [
-    "gomodTidy"   // Run `go mod tidy` after updating dependencies
+    "gomodTidy" // Run `go mod tidy` after updating dependencies
   ],
   "customManagers": [
     {
@@ -169,8 +175,11 @@
       ]
     }
   ],
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 0,
+  "rebaseWhen": "behind-base-branch",
   "schedule": [
-    "* 3-6 * * 1-5"  // Run between 3am and 6am on weekdays
+    "* 3-6 * * 1-5" // Run between 3am and 6am on weekdays
   ],
   "semanticCommits": "disabled",
   "timezone": "America/New_York"

@@ -1,0 +1,22 @@
+---
+# https://docs.mergify.com/
+queue_rules:
+  - name: default
+    queue_conditions:
+      - or:
+          - author=JohnStrunk
+          - author=renovate-bot
+          - author=dependabot[bot]
+          - "#approved-reviews-by>=1"
+      - "#changes-requested-reviews-by=0"
+      - label!=do-not-merge
+      - check-success=Successful e2e tests
+      - check-success=DCO
+    merge_conditions: []
+    merge_method: merge
+
+pull_request_rules:
+  - name: Automatic merge
+    conditions: []
+    actions:
+      queue:
