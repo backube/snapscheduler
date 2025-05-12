@@ -17,7 +17,7 @@ enableOwnerReferences: false
 rbacProxy:
   image:
     repository: quay.io/brancz/kube-rbac-proxy
-    tag: v0.18.2@sha256:7de54b6dedc8006ffd447267b826eb417a648c00f2b735b6d313395411803719
+    tag: v0.19.1@sha256:9f21034731c7c3228611b9d40807f3230ce8ed2b286b913bf2d1e760d8d866fc
     image: ""
     pullPolicy: IfNotPresent
   resources:
