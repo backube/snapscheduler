@@ -6,7 +6,7 @@ toolchain go1.24.3
 
 require (
 	github.com/go-logr/logr v1.4.2
-	github.com/kubernetes-csi/external-snapshotter/client/v7 v7.0.0
+	github.com/kubernetes-csi/external-snapshotter/client/v8 v8.2.0
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.37.0
 	github.com/openshift/custom-resource-status v1.1.2
