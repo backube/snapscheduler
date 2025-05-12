@@ -72,7 +72,7 @@ func (r *SnapshotScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	// Fetch the SnapshotSchedule instance
 	instance := &snapschedulerv1.SnapshotSchedule{}
-	err := r.Client.Get(ctx, req.NamespacedName, instance)
+	err := r.Get(ctx, req.NamespacedName, instance)
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -174,7 +174,7 @@ func handleSnapshotting(ctx context.Context, schedule *snapschedulerv1.SnapshotS
 
 	// Iterate through the PVCs and make sure snapshots exist for each. We
 	// stop and re-queue at the first error.
-	snapTime := schedule.Status.NextSnapshotTime.Time.UTC()
+	snapTime := schedule.Status.NextSnapshotTime.UTC()
 	for _, pvc := range pvcList.Items {
 		snapName := snapshotName(pvc.Name, schedule.Name, snapTime)
 		logger.V(4).Info("looking for snapshot", "name", snapName)
