@@ -7,6 +7,14 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+## [3.5.0] - 2025-05-14
+
+### Added
+
+- Ability to enable setting OwnerReferences on snapshots. Enabling this will
+  cause the Snapshots to be deleted when the corresponding SnapshotSchedule is
+  deleted. This is disabled by default.
+
 ## [3.4.0] - 2024-05-09
 
 ### Changed
@@ -153,7 +161,8 @@ This project follows [Semantic Versioning](https://semver.org/)
 - Label selectors to control which PVCs are selected for snapshotting
 - Retention policies based on snapshot age or count
 
-[Unreleased]: https://github.com/backube/snapscheduler/compare/v3.4.0...HEAD
+[Unreleased]: https://github.com/backube/snapscheduler/compare/v3.5.0...HEAD
+[3.5.0]: https://github.com/backube/snapscheduler/compare/v3.4.0...v3.5.0
 [3.4.0]: https://github.com/backube/snapscheduler/compare/v3.3.0...v3.4.0
 [3.3.0]: https://github.com/backube/snapscheduler/compare/v3.2.0...v3.3.0
 [3.2.0]: https://github.com/backube/snapscheduler/compare/v3.1.0...v3.2.0

@@ -2,7 +2,7 @@
 apiVersion: v2
 name: snapscheduler
 # Chart version: Incremented during chart, template, or appVersion changes.
-version: "3.4.0"
+version: "3.5.0"
 description: >-
   An operator to take scheduled snapshots of Kubernetes persistent volumes
 type: application
@@ -23,15 +23,15 @@ maintainers:
     url: https://github.com/JohnStrunk
 icon: https://raw.githubusercontent.com/backube/snapscheduler/master/docs/media/snapscheduler.svg?sanitize=true
 # This is the version number of the application being deployed.
-appVersion: "3.4.0"
+appVersion: "3.5.0"
 annotations:
   artifacthub.io/category: storage
   # https://artifacthub.io/docs/topics/annotations/helm/
   # Changelog for current chart & app version
   # Supported kinds: added, changed, deprecated, removed, fixed, security
   artifacthub.io/changes: |
-    - kind: fixed
-      description: Add `metadata.namespace` to namespaced resources for compatibility with ArgoCD
+    - kind: added
+      description: Ability to enable setting OwnerReferences on snapshots
     - kind: security
       description: Dependency updates
   artifacthub.io/containsSecurityUpdates: "true"

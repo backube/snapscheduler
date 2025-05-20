@@ -1,31 +1,32 @@
 ---
 # https://golangci-lint.run/usage/configuration/#config-file
 
-run:
-  allow-parallel-runners: true
-  timeout: 10m
-  # skip-files:
-output:
-  sort-results: true
+version: "2"
+formatters:
+  enable:
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 linters:
-  disable-all: true
+  default: none
   enable:
     - asciicheck
     - bidichk
     - contextcheck
     - dupl
     - errcheck
-    - errorlint
     - errname
+    - errorlint
     - exhaustive
-    - exportloopref
     - forcetypeassert
     - funlen
     - goconst
     - gocyclo
-    - goimports  # Supersedes gofmt
     - gosec
-    - gosimple
     - govet
     - ineffassign
     - lll
@@ -35,8 +36,20 @@ linters:
     - prealloc
     - revive
     - staticcheck
-    - typecheck
     - unconvert
     - unparam
     - unused
     - whitespace
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+run:
+  allow-parallel-runners: true

@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v7/apis/volumesnapshot/v1"
+	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v8/apis/volumesnapshot/v1"
 	//nolint:revive  // Allow . import
 	. "github.com/onsi/ginkgo/v2"
 	//nolint:revive  // Allow . import

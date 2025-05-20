@@ -7,12 +7,12 @@ VERSION ?= $(shell git describe --tags --dirty --match 'v*' 2> /dev/null || git 
 BUILDDATE := $(shell date -u '+%Y-%m-%dT%H:%M:%S.%NZ')
 
 ## Tool versions
-CONTROLLER_TOOLS_VERSION := v0.15.0
+CONTROLLER_TOOLS_VERSION := v0.18.0
 ENVTEST_K8S_VERSION = 1.28.3
-GOLANGCI_VERSION := v1.59.1
-HELM_VERSION := v3.15.3
-KUSTOMIZE_VERSION := v5.4.2
-KUTTL_VERSION := 0.18.0
+GOLANGCI_VERSION := v2.1.6
+HELM_VERSION := v3.17.3
+KUSTOMIZE_VERSION := v5.6.0
+KUTTL_VERSION := 0.22.0
 OPERATOR_SDK_VERSION := v1.34.1
 
 # CHANNELS define the bundle channels used in the bundle.

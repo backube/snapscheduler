@@ -5,7 +5,7 @@ set -e -o pipefail
 # Possible versions:
 # https://hub.docker.com/r/kindest/node/tags?page=1&ordering=name
 # skopeo list-tags docker://kindest/node
-KUBE_VERSION="${1:-1.29.0}"
+KUBE_VERSION="${1:-1.33.0}"
 
 function log {
   echo "=====  $*  ====="
@@ -164,7 +164,7 @@ rm -f "${KIND_CONFIG_FILE}"
 # Kube >= 1.17, we need to deploy the snapshot controller
 if [[ $KUBE_MINOR -ge 25 ]]; then  # Starting w/ v8, min supported kube is 1.25
   # renovate: datasource=github-releases depName=kubernetes-csi/external-snapshotter versioning=semver-coerced
-  TAG="v8.0.1"  # https://github.com/kubernetes-csi/external-snapshotter/releases
+  TAG="v8.2.1"  # https://github.com/kubernetes-csi/external-snapshotter/releases
   log "Deploying external snapshotter: ${TAG}"
   kubectl create -k "https://github.com/kubernetes-csi/external-snapshotter/client/config/crd?ref=${TAG}"
   kubectl create -n kube-system -k "https://github.com/kubernetes-csi/external-snapshotter/deploy/kubernetes/snapshot-controller?ref=${TAG}"
@@ -233,7 +233,7 @@ case "$KUBE_MINOR" in
     ;;
   *)
     # renovate: datasource=github-releases depName=kubernetes-csi/csi-driver-host-path versioning=semver-coerced
-    TAG="v1.14.0"
+    TAG="v1.16.1"
     DEPLOY_SCRIPT="deploy.sh"
     ;;
 esac

@@ -63,39 +63,57 @@ var _ = Describe("newSnapForClaim", func() {
 				Namespace: "mynamespace",
 			},
 		}
+		schedule := snapschedulerv1.SnapshotSchedule{}
+		schedule.Name = "mysched"
+		schedule.UID = "bb327b3e-2e87-4e0a-9b42-12d61c08bf97"
+		schedule.Kind = "SnapshotSchedule"
+		schedule.APIVersion = "snapscheduler.backube.io/v1"
 		snapname := "mysnap"
 		snapClass := "snapclass"
 		scheduleName := "mysched"
 		schedTime, _ := time.Parse(timeFormat, "2010-07-23T01:02:00Z")
-		snap := newSnapForClaim(snapname, pvc, scheduleName, schedTime, nil, &snapClass)
+		snap := newSnapForClaim(snapname, pvc, &schedule, schedTime, nil, &snapClass, false)
 
 		Expect(snap.Name).To(Equal(snapname))
 		Expect(snap.Namespace).To(Equal(pvc.Namespace))
 		Expect(*snap.Spec.Source.PersistentVolumeClaimName).To(Equal(pvc.Name))
 		Expect(snap.Spec.VolumeSnapshotClassName).NotTo(BeNil())
 		Expect(*snap.Spec.VolumeSnapshotClassName).To(Equal(snapClass))
+		Expect(snap.ObjectMeta.OwnerReferences).To(BeEmpty())
 		Expect(snap.Labels).To(HaveKeyWithValue(ScheduleKey, scheduleName))
 	})
-	It("allows providing addl labels", func() {
+	It("allows providing addl labels and checks enableOwnerReferences", func() {
 		pvc := corev1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "mypvc",
 				Namespace: "mynamespace",
 			},
 		}
+		schedule := snapschedulerv1.SnapshotSchedule{}
+		schedule.Name = "mysched"
+		schedule.UID = "bb327b3e-2e87-4e0a-9b42-12d61c08bf97"
+		schedule.Kind = "SnapshotSchedule"
+		schedule.APIVersion = "snapscheduler.backube.io/v1"
 		snapname := "mysnap"
 		scheduleName := "mysched"
 		schedTime, _ := time.Parse(timeFormat, "2010-07-23T01:02:00Z")
 		labels := make(map[string]string, 2)
 		labels["one"] = "two"
 		labels["three"] = "four"
-		snap := newSnapForClaim(snapname, pvc, scheduleName, schedTime, labels, nil)
+		snap := newSnapForClaim(snapname, pvc, &schedule, schedTime, labels, nil, true)
 		// Some tests depend on knowing the internals :(
 		Expect(snap.Spec.VolumeSnapshotClassName).To(BeNil())
 		Expect(snap.Labels).NotTo(BeNil())
 		Expect(snap.Labels).To(HaveKeyWithValue(ScheduleKey, scheduleName))
 		Expect(snap.Labels).To(HaveKeyWithValue(WhenKey, schedTime.Format(timeYYYYMMDDHHMMSS)))
 		Expect(snap.Labels).To(HaveKeyWithValue("three", "four"))
+		// Test for ownerReferences
+		Expect(snap.OwnerReferences).To(HaveLen(1))
+		ownerRef := snap.OwnerReferences[0]
+		Expect(ownerRef.APIVersion).To(Equal(schedule.APIVersion))
+		Expect(ownerRef.Kind).To(Equal(schedule.Kind))
+		Expect(ownerRef.Name).To(Equal(schedule.Name))
+		Expect(ownerRef.UID).To(Equal(schedule.UID))
 		Expect(len(snap.Labels)).To(Equal(4))
 	})
 })
