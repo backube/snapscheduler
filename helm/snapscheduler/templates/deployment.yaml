@@ -52,7 +52,11 @@ spec:
         - args:
           - --health-probe-bind-address=:8081
           - --metrics-bind-address=127.0.0.1:8080
-          - --leader-elect
+          {{- if .Values.enableLeaderElection }}
+          - --leader-elect=true
+          {{- else }}
+          - --leader-elect=false
+          {{- end }}
           {{- if .Values.enableOwnerReferences }}
           - --enable-owner-references
           {{- end }}

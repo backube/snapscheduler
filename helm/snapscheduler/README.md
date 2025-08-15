@@ -195,3 +195,5 @@ case, the defaults, shown below, should be sufficient.
   - map of additional labels to add to pods
 - `podAnnotations`: `{}`
   - map of additional annotations to add to pods
+- `enableLeaderElection`: `true`
+  - enable leader election for snapscheduler controller
