@@ -7,7 +7,7 @@ VERSION ?= $(shell git describe --tags --dirty --match 'v*' 2> /dev/null || git 
 BUILDDATE := $(shell date -u '+%Y-%m-%dT%H:%M:%S.%NZ')
 
 ## Tool versions
-CONTROLLER_TOOLS_VERSION := v0.18.0
+CONTROLLER_TOOLS_VERSION := v0.19.0
 ENVTEST_K8S_VERSION = 1.28.3
 GOLANGCI_VERSION := v2.4.0
 HELM_VERSION := v3.18.6
