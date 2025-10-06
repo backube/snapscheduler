@@ -1,7 +1,19 @@
 ---
 # https://docs.mergify.com/
+merge_queue:
+  max_parallel_checks: 1
+
+pull_request_rules:
+  - name: default
+    actions:
+      queue:
+    conditions: []
+
 queue_rules:
   - name: default
+    batch_size: 1
+    merge_conditions: []
+    merge_method: merge
     queue_conditions:
       - or:
           - author=JohnStrunk
@@ -12,11 +24,3 @@ queue_rules:
       - label!=do-not-merge
       - check-success=Successful e2e tests
       - check-success=DCO
-    merge_conditions: []
-    merge_method: merge
-
-pull_request_rules:
-  - name: Automatic merge
-    conditions: []
-    actions:
-      queue:
