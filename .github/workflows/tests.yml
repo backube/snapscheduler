@@ -34,7 +34,7 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@6797dcbb9a1889fd411d07e8aba7eded53fb8b48 # v1.264.0
         with:
-          ruby-version: '3.3'
+          ruby-version: '3.4.7'
 
       - name: Install pre-commit
         run: |
