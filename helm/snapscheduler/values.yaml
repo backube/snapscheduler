@@ -1,6 +1,7 @@
 ---
 # replicaCount is the number of replicas of the snapscheduler operator to run.
 replicaCount: 1
+revisionHistoryLimit: 10
 
 image:
   repository: quay.io/backube/snapscheduler
