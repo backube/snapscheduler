@@ -2,8 +2,7 @@
 # yamllint disable rule:line-length
 
 name: Release Charts
-
-on:
+on: # yamllint disable-line rule:truthy
   push:
     branches:
       - master
