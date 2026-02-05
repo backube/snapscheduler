@@ -2,7 +2,7 @@ module github.com/backube/snapscheduler
 
 go 1.25.0
 
-toolchain go1.25.6
+toolchain go1.25.7
 
 require (
 	github.com/go-logr/logr v1.4.3
