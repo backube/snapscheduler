@@ -178,6 +178,10 @@ tests.
   driver)
 - Test scenarios: minimal schedules, label selectors, custom snapshot
   classes, multi-PVC handling
+- **Shell scripts use POSIX syntax**: All test scripts in
+  `test-kuttl/e2e/*/10-waitfor-snapshot.yaml` use POSIX-compliant shell
+  syntax (single brackets `[ ]`, not bash double brackets `[[ ]]`) to
+  ensure compatibility with any POSIX shell (dash, ash, bash, etc.)
 
 ## Development Notes
 
@@ -188,6 +192,117 @@ tests.
   `helm/snapscheduler/templates/` during `make manifests`
 - Version is set via git describe:
   `git describe --tags --dirty --match 'v*'`
+- Pre-commit hooks run automatically on `git commit` (linting, formatting,
+  etc.)
+
+## Local E2E Testing Setup
+
+### Prerequisites
+
+To run e2e tests locally, you need:
+
+- **kubectl**: Any recent version (tested with v1.31.0)
+- **kind**: Version v0.31.0 (as specified in `.github/workflows/tests.yml`)
+  - Earlier versions (e.g., v0.26.0) have containerd compatibility issues
+  - Later versions should work but CI uses v0.31.0
+- **Docker**: For building images and running kind
+- **Helm**: Installed to `./bin/helm` via `make helm`
+
+### Complete E2E Test Workflow
+
+```bash
+# 1. Build the operator
+make build
+
+# 2. Run unit tests first (faster feedback)
+make test
+
+# 3. Set up Kind cluster with CSI hostpath driver
+hack/setup-kind-cluster.sh
+# This creates a cluster with:
+# - External snapshotter controller
+# - CSI hostpath driver
+# - Configured storage classes and snapshot classes
+
+# 4. Build and load container image
+make docker-build
+docker tag quay.io/backube/snapscheduler:latest \
+  quay.io/backube/snapscheduler:local-build
+kind load docker-image quay.io/backube/snapscheduler:local-build
+
+# 5. Deploy SnapScheduler to the cluster
+bin/helm upgrade --install --create-namespace \
+  -n backube-snapscheduler \
+  --set image.tagOverride=local-build \
+  --set metrics.disableAuth=true \
+  --wait --timeout=5m \
+  snapscheduler ./helm/snapscheduler
+
+# 6. Run e2e tests
+make test-e2e
+
+# 7. Clean up
+kind delete cluster
+```
+
+### Quick Test Iteration
+
+For faster iteration when only test logic changes (no code changes):
+
+```bash
+# Tests run against existing cluster
+make test-e2e
+```
+
+### Troubleshooting
+
+**Kind image loading fails:**
+If `kind load docker-image` fails with containerd errors, use manual loading:
+
+```bash
+docker save quay.io/backube/snapscheduler:local-build | \
+  docker exec -i kind-control-plane ctr -n=k8s.io images import -
+```
+
+**Tests require bash:**
+E2E tests now use POSIX shell syntax and work with any POSIX-compliant shell
+(dash, bash, etc.). No special shell configuration needed.
+
+**Cluster creation fails:**
+Ensure you're using kind v0.31.0. Check with `kind version`.
+
+**Pre-commit hooks fail:**
+Pre-commit hooks run on `git commit`. Fix any reported issues before
+committing. Common issues:
+
+- Trailing whitespace: `fix end of files` hook
+- YAML formatting: `yamllint` hook
+- Large files: `check for added large files` hook
+
+## Coding Conventions
+
+### Shell Scripts
+
+When writing shell scripts (including test scripts), use POSIX-compatible
+syntax:
+
+**DO:**
+
+- Use single brackets for tests: `[ "$var" = "value" ]`
+- Use `-z` for empty string checks: `[ -z "$var" ]`
+- Use `-eq`, `-ne`, `-lt`, `-gt` for numeric comparisons: `[ "$n" -eq 5 ]`
+- Always quote variables: `[ -n "$var" ]` not `[ -n $var ]`
+- Use `=` for string equality (not `==`): `[ "$a" = "$b" ]`
+
+**DON'T:**
+
+- Use bash-specific double brackets: `[[ $var == value ]]`
+- Use `==` for comparisons in `[ ]` tests
+- Leave variables unquoted in tests
+
+**Rationale:** POSIX syntax works in all shells (dash, ash, bash, zsh)
+and is required for e2e tests to run in CI without special shell
+configuration.
 
 ## License
 
