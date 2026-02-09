@@ -8,7 +8,7 @@ commands:
 
       for n in datavol voldata; do
         echo "Waiting for snapshot of $n"
-        while [[ $(kubectl -n "$NAMESPACE" get volumesnapshots -oname | wc -l) -lt 1 ]]; do
+        while [ "$(kubectl -n "$NAMESPACE" get volumesnapshots -oname | wc -l)" -lt 1 ]; do
           sleep 1
         done
       done

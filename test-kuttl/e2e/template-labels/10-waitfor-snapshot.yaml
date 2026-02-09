@@ -7,7 +7,7 @@ commands:
       set -e -o pipefail
 
       echo "Waiting for snapshot"
-      while [[ $(kubectl -n "$NAMESPACE" get volumesnapshots -oname) == '' ]]; do
+      while [ -z "$(kubectl -n "$NAMESPACE" get volumesnapshots -oname)" ]; do
         sleep 1
       done
 

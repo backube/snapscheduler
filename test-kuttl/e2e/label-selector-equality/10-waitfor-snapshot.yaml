@@ -7,7 +7,7 @@ commands:
       set -e -o pipefail
 
       echo "Waiting for snapshot"
-      while [[ $(kubectl -n "$NAMESPACE" get volumesnapshots -oname | wc -l) == 0 ]]; do
+      while [ "$(kubectl -n "$NAMESPACE" get volumesnapshots -oname | wc -l)" -eq 0 ]; do
         sleep 1
       done
 
@@ -17,4 +17,4 @@ commands:
       echo "$sname" | grep -q "voldata"
       echo "Verifying there is only 1 snapshot"
       echo "$sname"
-      [[ $(echo "$sname" | wc -l) == 1 ]]
+      [ "$(echo "$sname" | wc -l)" -eq 1 ]

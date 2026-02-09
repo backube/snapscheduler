@@ -7,14 +7,14 @@ commands:
       set -e -o pipefail
 
       echo "Waiting for snapshot"
-      while [[ $(kubectl -n "$NAMESPACE" get volumesnapshots -oname) == '' ]]; do
+      while [ -z "$(kubectl -n "$NAMESPACE" get volumesnapshots -oname)" ]; do
         sleep 1
       done
 
       sname=$(kubectl -n "$NAMESPACE" get volumesnapshots -oname)
 
       echo "Waiting for snapshot to be ready: $sname"
-      while [[ $(kubectl -n "$NAMESPACE" get "$sname" -otemplate="{{.status.readyToUse}}") != "true" ]]; do
+      while [ "$(kubectl -n "$NAMESPACE" get "$sname" -otemplate="{{.status.readyToUse}}")" != "true" ]; do
         kubectl -n "$NAMESPACE" get "$sname"
         sleep 5
       done

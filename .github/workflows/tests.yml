@@ -191,15 +191,6 @@ jobs:
       KUBERNETES_VERSION: ${{ matrix.KUBERNETES_VERSIONS }}
 
     steps:
-      # Bash as default shell is needed by the kuttl tests
-      - name: Set bash as default shell
-        run: |
-          echo 'APT::Acquire::Retries "5";' | sudo tee /etc/apt/apt.conf.d/80-retries
-          sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y bash
-          sudo ln -s bash /bin/sh.bash
-          sudo mv /bin/sh.bash /bin/sh
-
       - name: Checkout source
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
