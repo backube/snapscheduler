@@ -4,11 +4,13 @@ kind: TestStep
 commands:
   - timeout: 180
     script: |
-      set -e -o pipefail
+      set -e
 
       for n in datavol voldata; do
         echo "Waiting for snapshot of $n"
-        while [[ $(kubectl -n "$NAMESPACE" get volumesnapshots -oname | wc -l) -lt 1 ]]; do
+        while true; do
+          snapshots=$(kubectl -n "$NAMESPACE" get volumesnapshots -oname)
+          [ -n "$snapshots" ] && break
           sleep 1
         done
       done

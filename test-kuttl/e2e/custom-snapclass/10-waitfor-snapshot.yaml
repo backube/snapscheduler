@@ -4,14 +4,15 @@ kind: TestStep
 commands:
   - timeout: 90
     script: |
-      set -e -o pipefail
+      set -e
 
       echo "Waiting for snapshot"
-      while [[ $(kubectl -n "$NAMESPACE" get volumesnapshots -oname) == '' ]]; do
+      while [ -z "$(kubectl -n "$NAMESPACE" get volumesnapshots -oname)" ]; do
         sleep 1
       done
 
       sname=$(kubectl -n "$NAMESPACE" get volumesnapshots -oname)
 
       echo "Verifying usage of custom snapshotclass"
-      kubectl -n "$NAMESPACE" get $sname -otemplate='{{.spec.volumeSnapshotClassName}}' | grep -q 'my-custom-class'
+      snapclass=$(kubectl -n "$NAMESPACE" get $sname -otemplate='{{.spec.volumeSnapshotClassName}}')
+      echo "$snapclass" | grep -q 'my-custom-class'

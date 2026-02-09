@@ -4,10 +4,12 @@ kind: TestStep
 commands:
   - timeout: 90
     script: |
-      set -e -o pipefail
+      set -e
 
       echo "Waiting for snapshot"
-      while [[ $(kubectl -n "$NAMESPACE" get volumesnapshots -oname | wc -l) == 0 ]]; do
+      while true; do
+        snapshots=$(kubectl -n "$NAMESPACE" get volumesnapshots -oname)
+        [ -n "$snapshots" ] && break
         sleep 1
       done
 
@@ -17,4 +19,4 @@ commands:
       echo "$sname" | grep -q "voldata"
       echo "Verifying there is only 1 snapshot"
       echo "$sname"
-      [[ $(echo "$sname" | wc -l) == 1 ]]
+      [ "$(echo "$sname" | wc -l)" -eq 1 ]
