@@ -60,6 +60,10 @@ hack/setup-kind-cluster.sh
 
 # Build and deploy operator to Kind cluster
 hack/run-in-kind.sh
+
+# Run complete test suite from scratch (setup cluster, build, deploy, test, cleanup)
+# This is the best way to verify fixes as it tests everything end-to-end
+hack/test-full.sh
 ```
 
 ### Container Images
