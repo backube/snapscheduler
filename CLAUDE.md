@@ -194,6 +194,10 @@ tests.
   `git describe --tags --dirty --match 'v*'`
 - Pre-commit hooks run automatically on `git commit` (linting, formatting,
   etc.)
+- **All commits require DCO signoff**: Use `git commit --signoff` (or
+  `git commit -s`) to indicate compliance with the Developer Certificate
+  of Origin (DCO). The signoff certifies that you have the right to submit
+  the contribution under the project's license.
 
 ## Local E2E Testing Setup
 
