@@ -36,16 +36,10 @@ import (
 // schedule's maxCount. This function is the entry point for count-based
 // expiration of snapshots.
 func expireByCount(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedule,
-	logger logr.Logger, c client.Client) error {
+	logger logr.Logger, c client.Client, snapList []snapv1.VolumeSnapshot) error {
 	if schedule.Spec.Retention.MaxCount == nil {
 		// No count-based retention configured
 		return nil
-	}
-
-	snapList, err := snapshotsFromSchedule(ctx, schedule, logger, c)
-	if err != nil {
-		logger.Error(err, "unable to retrieve list of snapshots")
-		return err
 	}
 
 	grouped := groupSnapsByPVC(snapList)
@@ -67,7 +61,7 @@ func expireByCount(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedu
 // specified schedule. It only affects snapshots that were created by the provided schedule.
 // This function is the entry point for the time-based expiration of snapshots
 func expireByTime(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedule,
-	now time.Time, logger logr.Logger, c client.Client) error {
+	now time.Time, logger logr.Logger, c client.Client, snapList []snapv1.VolumeSnapshot) error {
 	expiration, err := getExpirationTime(schedule, now, logger)
 	if err != nil {
 		logger.Error(err, "unable to determine snapshot expiration time")
@@ -76,12 +70,6 @@ func expireByTime(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedul
 	if expiration == nil {
 		// No time-based retention configured
 		return nil
-	}
-
-	snapList, err := snapshotsFromSchedule(ctx, schedule, logger, c)
-	if err != nil {
-		logger.Error(err, "unable to retrieve list of snapshots")
-		return err
 	}
 
 	expiredSnaps := filterExpiredSnaps(snapList, *expiration)
