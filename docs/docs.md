@@ -14,20 +14,20 @@ using Jekyll.
 
 First, install Ruby and Bundler:
 
- ```
+ ```console
 sudo dnf install ruby ruby-devel @development-tools
 gem install bundler
 ```
 
 Update the Gems:
 
-```
+```console
 bundler update
 ```
 
 Build and serve the documentation:
 
-```
+```console
 PAGES_REPO_NWO=backube/snapscheduler bundle exec jekyll serve -l
 ```
 

@@ -1,0 +1,35 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/debian
+{
+    "name": "Debian",
+    // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+    "image": "mcr.microsoft.com/devcontainers/base:trixie",
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {
+            "moby": false,
+        },
+        "ghcr.io/devcontainers/features/github-cli:1.1.0": {},
+        "ghcr.io/devcontainers/features/go:1.3.3":{},
+        "ghcr.io/devcontainers/features/node:1.7.1": {},
+        "ghcr.io/devcontainers-extra/features/opencode:1.0.0": {},
+        "ghcr.io/devcontainers-extra/features/pre-commit:2.0.18": {},
+        "ghcr.io/devcontainers-extra/features/shellcheck:1.1.0": {},
+        "ghcr.io/devcontainers-extra/features/uv:1.0.2": {},
+    },
+    "containerEnv": {
+        // Ensure UV cache is on the same volume for fast access
+        "UV_CACHE_DIR": "${containerWorkspaceFolder}/../.uv_cache",
+    },
+    "postCreateCommand": {
+        "Initialize pre-commit environment": "nohup sh -c 'pre-commit install -f --install-hooks &' < /dev/null > /dev/null 2>&1",
+        "Install npm tools": "npm install -g --no-fund @google/gemini-cli markdownlint-cli",
+        "Install packages": ".devcontainer/install-packages.sh"
+    },
+    "mounts": [
+    ],
+    "remoteEnv": {
+        // Pass through Context7 API key for MCP access
+        "CONTEXT7_API_KEY": "${localEnv:CONTEXT7_API_KEY}",
+        "TMPDIR": "${containerWorkspaceFolder}/../tmp",
+    },
+}
