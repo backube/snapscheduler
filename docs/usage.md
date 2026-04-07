@@ -7,10 +7,10 @@ The scheduler should already be running in the cluster. If not, go back to
 
 A snapshot schedule defines:
 
-* A [cron-like schedule](https://en.wikipedia.org/wiki/Cron#Overview) for taking
+- A [cron-like schedule](https://en.wikipedia.org/wiki/Cron#Overview) for taking
   snapshots
-* The set of PVCs that will be selected to snapshot
-* The retention policy for the snapshots
+- The set of PVCs that will be selected to snapshot
+- The retention policy for the snapshots
 
 ### Example schedule
 

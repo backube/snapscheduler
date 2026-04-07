@@ -14,6 +14,6 @@ mail [jstrunk@redhat.com](mailto:jstrunk@redhat.com), and **do not** open an
 Issue. If you would like to encrypt the mail, please use gpg key `0xBD1FF508`.
 The fingerprint is:
 
-```
+```text
 74FC 7E7E FD0F F009 513C  C9E3 9360 133D BD1F F508
 ```
