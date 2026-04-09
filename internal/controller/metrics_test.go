@@ -18,8 +18,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 package controller
 
 import (
-	"context"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 
@@ -30,7 +28,6 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
 var _ = Describe("Snapshot metrics", func() {
@@ -66,7 +63,7 @@ var _ = Describe("Snapshot metrics", func() {
 				},
 			}
 
-			updateSnapshotGauges("sched1", "ns1", grouped)
+			updateSnapshotGauges("sched1", "ns1", grouped, make(map[string]struct{}))
 
 			labels1 := prometheus.Labels{
 				"schedule_name": "sched1", "schedule_namespace": "ns1", "pvc_name": "pvc1",
@@ -81,7 +78,7 @@ var _ = Describe("Snapshot metrics", func() {
 		})
 
 		It("handles empty grouped map", func() {
-			updateSnapshotGauges("sched1", "ns1", map[string][]snapv1.VolumeSnapshot{})
+			updateSnapshotGauges("sched1", "ns1", map[string][]snapv1.VolumeSnapshot{}, make(map[string]struct{}))
 			// No panic, no metrics created
 		})
 
@@ -91,7 +88,7 @@ var _ = Describe("Snapshot metrics", func() {
 					{ObjectMeta: metav1.ObjectMeta{Name: "snap1"}, Status: nil},
 				},
 			}
-			updateSnapshotGauges("sched1", "ns1", grouped)
+			updateSnapshotGauges("sched1", "ns1", grouped, make(map[string]struct{}))
 
 			labels := prometheus.Labels{
 				"schedule_name": "sched1", "schedule_namespace": "ns1", "pvc_name": "pvc1",
@@ -212,83 +209,4 @@ var _ = Describe("Snapshot metrics", func() {
 		})
 	})
 
-	Describe("snapshotReadyPredicate", func() {
-		pred := snapshotReadyPredicate()
-
-		It("ignores create events", func() {
-			Expect(pred.Create(event.CreateEvent{})).To(BeFalse())
-		})
-
-		It("ignores delete events", func() {
-			Expect(pred.Delete(event.DeleteEvent{})).To(BeFalse())
-		})
-
-		It("triggers on readyToUse change from false to true", func() {
-			readyFalse := false
-			readyTrue := true
-			e := event.UpdateEvent{
-				ObjectOld: &snapv1.VolumeSnapshot{
-					Status: &snapv1.VolumeSnapshotStatus{ReadyToUse: &readyFalse},
-				},
-				ObjectNew: &snapv1.VolumeSnapshot{
-					Status: &snapv1.VolumeSnapshotStatus{ReadyToUse: &readyTrue},
-				},
-			}
-			Expect(pred.Update(e)).To(BeTrue())
-		})
-
-		It("does not trigger when readyToUse stays the same", func() {
-			readyTrue := true
-			e := event.UpdateEvent{
-				ObjectOld: &snapv1.VolumeSnapshot{
-					Status: &snapv1.VolumeSnapshotStatus{ReadyToUse: &readyTrue},
-				},
-				ObjectNew: &snapv1.VolumeSnapshot{
-					Status: &snapv1.VolumeSnapshotStatus{ReadyToUse: &readyTrue},
-				},
-			}
-			Expect(pred.Update(e)).To(BeFalse())
-		})
-
-		It("does not trigger for non-VolumeSnapshot objects", func() {
-			e := event.UpdateEvent{
-				ObjectOld: &snapv1.VolumeSnapshot{},
-				ObjectNew: &snapv1.VolumeSnapshot{},
-			}
-			Expect(pred.Update(e)).To(BeFalse())
-		})
-	})
-
-	Describe("mapSnapshotToSchedule", func() {
-		It("maps a snapshot with schedule label to the correct schedule", func() {
-			r := &SnapshotScheduleReconciler{}
-			snap := &snapv1.VolumeSnapshot{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "snap1",
-					Namespace: "ns1",
-					Labels: map[string]string{
-						ScheduleKey: "my-schedule",
-					},
-				},
-			}
-
-			requests := r.mapSnapshotToSchedule(context.TODO(), snap)
-			Expect(requests).To(HaveLen(1))
-			Expect(requests[0].Name).To(Equal("my-schedule"))
-			Expect(requests[0].Namespace).To(Equal("ns1"))
-		})
-
-		It("returns nil for snapshots without schedule label", func() {
-			r := &SnapshotScheduleReconciler{}
-			snap := &snapv1.VolumeSnapshot{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "snap1",
-					Namespace: "ns1",
-				},
-			}
-
-			requests := r.mapSnapshotToSchedule(context.TODO(), snap)
-			Expect(requests).To(BeNil())
-		})
-	})
 })

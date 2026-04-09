@@ -541,7 +541,7 @@ var _ = Describe("Expiring snapshots by count", func() {
 		// no maxCount, none should be pruned
 		snapList, err := snapshotsFromSchedule(context.TODO(), noexpire, logger, k8sClient)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(expireByCount(context.TODO(), noexpire, logger, k8sClient, snapList)).To(Succeed())
+		Expect(expireByCount(context.TODO(), noexpire, logger, k8sClient, groupSnapsByPVC(snapList))).To(Succeed())
 		Eventually(func() int {
 			snapList := &snapv1.VolumeSnapshotList{}
 			Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns1.Name))).To(Succeed())
@@ -563,7 +563,7 @@ var _ = Describe("Expiring snapshots by count", func() {
 
 		snapList, err := snapshotsFromSchedule(context.TODO(), s, logger, k8sClient)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(expireByCount(context.TODO(), s, logger, k8sClient, snapList)).To(Succeed())
+		Expect(expireByCount(context.TODO(), s, logger, k8sClient, groupSnapsByPVC(snapList))).To(Succeed())
 		Eventually(func() int {
 			snapList := &snapv1.VolumeSnapshotList{}
 			Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns1.Name))).To(Succeed())

@@ -25,6 +25,18 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
+func scheduleLabels(scheduleName, scheduleNamespace, pvcName string) prometheus.Labels {
+	return prometheus.Labels{
+		"schedule_name":      scheduleName,
+		"schedule_namespace": scheduleNamespace,
+		"pvc_name":           pvcName,
+	}
+}
+
+func isSnapshotReady(snap *snapv1.VolumeSnapshot) bool {
+	return snap.Status != nil && snap.Status.ReadyToUse != nil && *snap.Status.ReadyToUse
+}
+
 var (
 	snapshotCurrentCount = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
@@ -74,24 +86,40 @@ func init() {
 }
 
 // updateSnapshotGauges sets the current snapshot count and ready count gauges
-// for each PVC in the grouped snapshot map.
+// for each PVC in the grouped snapshot map. It also removes gauge entries for
+// PVCs that are no longer present (e.g. deleted PVCs).
 func updateSnapshotGauges(scheduleName, scheduleNamespace string,
-	grouped map[string][]snapv1.VolumeSnapshot) {
+	grouped map[string][]snapv1.VolumeSnapshot, prevPVCs map[string]struct{}) {
+	currentPVCs := make(map[string]struct{}, len(grouped))
 	for pvcName, snaps := range grouped {
-		labels := prometheus.Labels{
-			"schedule_name":      scheduleName,
-			"schedule_namespace": scheduleNamespace,
-			"pvc_name":           pvcName,
-		}
+		currentPVCs[pvcName] = struct{}{}
+		labels := scheduleLabels(scheduleName, scheduleNamespace, pvcName)
 		snapshotCurrentCount.With(labels).Set(float64(len(snaps)))
 
 		readyCount := 0
 		for i := range snaps {
-			if snaps[i].Status != nil && snaps[i].Status.ReadyToUse != nil && *snaps[i].Status.ReadyToUse {
+			if isSnapshotReady(&snaps[i]) {
 				readyCount++
 			}
 		}
 		snapshotCurrentReadyCount.With(labels).Set(float64(readyCount))
+	}
+
+	// Remove stale gauge entries for PVCs that disappeared
+	for pvc := range prevPVCs {
+		if _, exists := currentPVCs[pvc]; !exists {
+			labels := scheduleLabels(scheduleName, scheduleNamespace, pvc)
+			snapshotCurrentCount.Delete(labels)
+			snapshotCurrentReadyCount.Delete(labels)
+		}
+	}
+
+	// Update prevPVCs in-place
+	for pvc := range prevPVCs {
+		delete(prevPVCs, pvc)
+	}
+	for pvc := range currentPVCs {
+		prevPVCs[pvc] = struct{}{}
 	}
 }
 
@@ -105,14 +133,10 @@ func updateReadyCounter(scheduleName, scheduleNamespace string,
 	for pvcName, snaps := range grouped {
 		for i := range snaps {
 			liveUIDs[snaps[i].UID] = struct{}{}
-			if snaps[i].Status != nil && snaps[i].Status.ReadyToUse != nil && *snaps[i].Status.ReadyToUse {
+			if isSnapshotReady(&snaps[i]) {
 				if _, tracked := tracker[snaps[i].UID]; !tracked {
 					tracker[snaps[i].UID] = struct{}{}
-					snapshotReadyTotal.With(prometheus.Labels{
-						"schedule_name":      scheduleName,
-						"schedule_namespace": scheduleNamespace,
-						"pvc_name":           pvcName,
-					}).Inc()
+					snapshotReadyTotal.With(scheduleLabels(scheduleName, scheduleNamespace, pvcName)).Inc()
 				}
 			}
 		}

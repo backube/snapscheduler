@@ -24,7 +24,6 @@ import (
 
 	"github.com/go-logr/logr"
 	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v8/apis/volumesnapshot/v1"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/robfig/cron/v3"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -34,13 +33,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	snapschedulerv1 "github.com/backube/snapscheduler/api/v1"
 )
@@ -58,12 +52,18 @@ const (
 	WhenKey = "snapscheduler.backube/when"
 )
 
+// scheduleTracker holds per-schedule metric tracking state.
+type scheduleTracker struct {
+	readyUIDs map[types.UID]struct{}
+	prevPVCs  map[string]struct{}
+}
+
 // SnapshotScheduleReconciler reconciles a SnapshotSchedule object
 type SnapshotScheduleReconciler struct {
 	client.Client
 	Scheme                *runtime.Scheme
 	EnableOwnerReferences bool
-	readyTracker          map[types.UID]struct{}
+	trackers              map[types.NamespacedName]*scheduleTracker
 }
 
 //nolint:lll
@@ -83,15 +83,17 @@ func (r *SnapshotScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
-			// Clean up any lingering gauge metrics and don't requeue.
+			// Clean up any lingering gauge metrics and tracker state.
 			cleanupScheduleGauges(req.Name, req.Namespace)
+			delete(r.trackers, req.NamespacedName)
 			return ctrl.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
 		return ctrl.Result{}, err
 	}
 
-	result, err := doReconcile(ctx, instance, reqLogger, r.Client, r.EnableOwnerReferences, r.readyTracker)
+	tracker := r.trackerFor(req.NamespacedName)
+	result, err := doReconcile(ctx, instance, reqLogger, r.Client, r.EnableOwnerReferences, tracker)
 
 	// Update result in CR
 	if err != nil {
@@ -120,54 +122,27 @@ func (r *SnapshotScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *SnapshotScheduleReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	r.readyTracker = make(map[types.UID]struct{})
+	r.trackers = make(map[types.NamespacedName]*scheduleTracker)
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&snapschedulerv1.SnapshotSchedule{}).
-		Watches(&snapv1.VolumeSnapshot{},
-			handler.EnqueueRequestsFromMapFunc(r.mapSnapshotToSchedule),
-			builder.WithPredicates(snapshotReadyPredicate())).
 		Complete(r)
 }
 
-// mapSnapshotToSchedule maps a VolumeSnapshot to its owning SnapshotSchedule
-// by reading the schedule label.
-func (r *SnapshotScheduleReconciler) mapSnapshotToSchedule(
-	_ context.Context, obj client.Object) []reconcile.Request {
-	scheduleName, exists := obj.GetLabels()[ScheduleKey]
+func (r *SnapshotScheduleReconciler) trackerFor(key types.NamespacedName) *scheduleTracker {
+	t, exists := r.trackers[key]
 	if !exists {
-		return nil
+		t = &scheduleTracker{
+			readyUIDs: make(map[types.UID]struct{}),
+			prevPVCs:  make(map[string]struct{}),
+		}
+		r.trackers[key] = t
 	}
-	return []reconcile.Request{{
-		NamespacedName: types.NamespacedName{
-			Name:      scheduleName,
-			Namespace: obj.GetNamespace(),
-		},
-	}}
-}
-
-// snapshotReadyPredicate filters VolumeSnapshot events to only trigger
-// reconciliation when readyToUse changes.
-func snapshotReadyPredicate() predicate.Predicate {
-	return predicate.Funcs{
-		CreateFunc: func(_ event.CreateEvent) bool { return false },
-		DeleteFunc: func(_ event.DeleteEvent) bool { return false },
-		UpdateFunc: func(e event.UpdateEvent) bool {
-			oldSnap, ok1 := e.ObjectOld.(*snapv1.VolumeSnapshot)
-			newSnap, ok2 := e.ObjectNew.(*snapv1.VolumeSnapshot)
-			if !ok1 || !ok2 {
-				return false
-			}
-			oldReady := oldSnap.Status != nil && oldSnap.Status.ReadyToUse != nil && *oldSnap.Status.ReadyToUse
-			newReady := newSnap.Status != nil && newSnap.Status.ReadyToUse != nil && *newSnap.Status.ReadyToUse
-			return oldReady != newReady
-		},
-		GenericFunc: func(_ event.GenericEvent) bool { return false },
-	}
+	return t
 }
 
 func doReconcile(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedule,
 	logger logr.Logger, c client.Client, enableOwnerReferences bool,
-	readyTracker map[types.UID]struct{}) (ctrl.Result, error) {
+	tracker *scheduleTracker) (ctrl.Result, error) {
 	// If necessary, initialize time of next snap based on schedule
 	if schedule.Status.NextSnapshotTime.IsZero() {
 		// Update nextSnapshot time based on current time and cronspec
@@ -206,16 +181,15 @@ func doReconcile(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedule
 		return ctrl.Result{}, err
 	}
 
-	if err := expireByCount(ctx, schedule, logger, c, snapList); err != nil {
+	grouped := groupSnapsByPVC(snapList)
+	if err := expireByCount(ctx, schedule, logger, c, grouped); err != nil {
 		logger.Error(err, "expireByCount")
 		return ctrl.Result{}, err
 	}
 
 	// Update snapshot metrics
-	cleanupScheduleGauges(schedule.Name, schedule.Namespace)
-	grouped := groupSnapsByPVC(snapList)
-	updateSnapshotGauges(schedule.Name, schedule.Namespace, grouped)
-	updateReadyCounter(schedule.Name, schedule.Namespace, grouped, readyTracker)
+	updateSnapshotGauges(schedule.Name, schedule.Namespace, grouped, tracker.prevPVCs)
+	updateReadyCounter(schedule.Name, schedule.Namespace, grouped, tracker.readyUIDs)
 
 	// Ensure we requeue in time for the next scheduled snapshot time
 	durTillNext := timeNext.Sub(timeNow)
@@ -255,18 +229,10 @@ func handleSnapshotting(ctx context.Context, schedule *snapschedulerv1.SnapshotS
 					logger.Info("creating a snapshot", "PVC", pvc.Name, "Snapshot", snapName)
 					if err = c.Create(ctx, snap); err != nil {
 						logger.Error(err, "while creating snapshots", "name", snapName)
-						snapshotCreateErrorTotal.With(prometheus.Labels{
-							"schedule_name":      schedule.Name,
-							"schedule_namespace": schedule.Namespace,
-							"pvc_name":           pvc.Name,
-						}).Inc()
+						snapshotCreateErrorTotal.With(scheduleLabels(schedule.Name, schedule.Namespace, pvc.Name)).Inc()
 						return ctrl.Result{}, err
 					}
-					snapshotCreateTotal.With(prometheus.Labels{
-						"schedule_name":      schedule.Name,
-						"schedule_namespace": schedule.Namespace,
-						"pvc_name":           pvc.Name,
-					}).Inc()
+					snapshotCreateTotal.With(scheduleLabels(schedule.Name, schedule.Namespace, pvc.Name)).Inc()
 				} else {
 					logger.Info("unable to create snapshot -- no supported VolumeSnapshot CRD is registered")
 				}

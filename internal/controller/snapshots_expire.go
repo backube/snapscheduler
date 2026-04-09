@@ -36,13 +36,12 @@ import (
 // schedule's maxCount. This function is the entry point for count-based
 // expiration of snapshots.
 func expireByCount(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedule,
-	logger logr.Logger, c client.Client, snapList []snapv1.VolumeSnapshot) error {
+	logger logr.Logger, c client.Client, grouped map[string][]snapv1.VolumeSnapshot) error {
 	if schedule.Spec.Retention.MaxCount == nil {
 		// No count-based retention configured
 		return nil
 	}
 
-	grouped := groupSnapsByPVC(snapList)
 	for _, list := range grouped {
 		list = sortSnapsByTime(list)
 		if len(list) > int(*schedule.Spec.Retention.MaxCount) {
