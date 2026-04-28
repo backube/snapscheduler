@@ -52,11 +52,18 @@ const (
 	WhenKey = "snapscheduler.backube/when"
 )
 
+// scheduleTracker holds per-schedule metric tracking state.
+type scheduleTracker struct {
+	readyUIDs map[types.UID]struct{}
+	prevPVCs  map[string]struct{}
+}
+
 // SnapshotScheduleReconciler reconciles a SnapshotSchedule object
 type SnapshotScheduleReconciler struct {
 	client.Client
 	Scheme                *runtime.Scheme
 	EnableOwnerReferences bool
+	trackers              map[types.NamespacedName]*scheduleTracker
 }
 
 //nolint:lll
@@ -76,14 +83,17 @@ func (r *SnapshotScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
-			// Return and don't requeue
+			// Clean up any lingering gauge metrics and tracker state.
+			cleanupScheduleGauges(req.Name, req.Namespace)
+			delete(r.trackers, req.NamespacedName)
 			return ctrl.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
 		return ctrl.Result{}, err
 	}
 
-	result, err := doReconcile(ctx, instance, reqLogger, r.Client, r.EnableOwnerReferences)
+	tracker := r.trackerFor(req.NamespacedName)
+	result, err := doReconcile(ctx, instance, reqLogger, r.Client, r.EnableOwnerReferences, tracker)
 
 	// Update result in CR
 	if err != nil {
@@ -112,13 +122,27 @@ func (r *SnapshotScheduleReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *SnapshotScheduleReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	r.trackers = make(map[types.NamespacedName]*scheduleTracker)
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&snapschedulerv1.SnapshotSchedule{}).
 		Complete(r)
 }
 
+func (r *SnapshotScheduleReconciler) trackerFor(key types.NamespacedName) *scheduleTracker {
+	t, exists := r.trackers[key]
+	if !exists {
+		t = &scheduleTracker{
+			readyUIDs: make(map[types.UID]struct{}),
+			prevPVCs:  make(map[string]struct{}),
+		}
+		r.trackers[key] = t
+	}
+	return t
+}
+
 func doReconcile(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedule,
-	logger logr.Logger, c client.Client, enableOwnerReferences bool) (ctrl.Result, error) {
+	logger logr.Logger, c client.Client, enableOwnerReferences bool,
+	tracker *scheduleTracker) (ctrl.Result, error) {
 	// If necessary, initialize time of next snap based on schedule
 	if schedule.Status.NextSnapshotTime.IsZero() {
 		// Update nextSnapshot time based on current time and cronspec
@@ -146,15 +170,27 @@ func doReconcile(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedule
 		return ctrl.Result{}, err
 	}
 
-	if err := expireByTime(ctx, schedule, time.Now(), logger, c); err != nil {
+	snapList, err := snapshotsFromSchedule(ctx, schedule, logger, c)
+	if err != nil {
+		logger.Error(err, "unable to retrieve list of snapshots")
+		return ctrl.Result{}, err
+	}
+
+	if err := expireByTime(ctx, schedule, time.Now(), logger, c, snapList); err != nil {
 		logger.Error(err, "expireByTime")
 		return ctrl.Result{}, err
 	}
 
-	if err := expireByCount(ctx, schedule, logger, c); err != nil {
+	grouped := groupSnapsByPVC(snapList)
+	if err := expireByCount(ctx, schedule, logger, c, grouped); err != nil {
 		logger.Error(err, "expireByCount")
 		return ctrl.Result{}, err
 	}
+
+	// Update snapshot metrics
+	updateSnapshotGauges(schedule.Name, schedule.Namespace, grouped, tracker.prevPVCs)
+	updateReadyCounter(schedule.Name, schedule.Namespace, grouped, tracker.readyUIDs)
+
 	// Ensure we requeue in time for the next scheduled snapshot time
 	durTillNext := timeNext.Sub(timeNow)
 	requeueTime := maxRequeueTime
@@ -193,8 +229,10 @@ func handleSnapshotting(ctx context.Context, schedule *snapschedulerv1.SnapshotS
 					logger.Info("creating a snapshot", "PVC", pvc.Name, "Snapshot", snapName)
 					if err = c.Create(ctx, snap); err != nil {
 						logger.Error(err, "while creating snapshots", "name", snapName)
+						snapshotCreateErrorTotal.With(scheduleLabels(schedule.Name, schedule.Namespace, pvc.Name)).Inc()
 						return ctrl.Result{}, err
 					}
+					snapshotCreateTotal.With(scheduleLabels(schedule.Name, schedule.Namespace, pvc.Name)).Inc()
 				} else {
 					logger.Info("unable to create snapshot -- no supported VolumeSnapshot CRD is registered")
 				}
