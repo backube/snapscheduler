@@ -47,8 +47,8 @@ $ kubectl -n <mynampspace> get snapshotschedules
 
 Manual installation consists of several steps:
 
-* Installing the CRD for snapshotschedules
-* Installing the operator.
+- Installing the CRD for snapshotschedules
+- Installing the operator.
 
 ### Install the CRD
 

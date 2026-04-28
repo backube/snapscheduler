@@ -82,7 +82,6 @@ nodes:
     containerPath: /shared
     readOnly: true
     selinuxRelabel: false
-    propagation: HostToContainer
 KINDCONFIG
 fi
 

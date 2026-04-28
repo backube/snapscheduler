@@ -14,7 +14,6 @@ repos:
     rev: "v6.0.0"
     hooks:
       - id: check-added-large-files  # Prevents giant files from being committed
-      - id: check-json               # Check that JSON files are valid
       - id: check-merge-conflict     # Check for files that contain merge conflict strings
       - id: check-symlinks           # Ensure symlinks have a valid target
       - id: check-toml               # Ensure toml files are valid
@@ -24,20 +23,30 @@ repos:
       - id: trailing-whitespace      # Trims trailing whitespace
         args: [--markdown-linebreak-ext=md]
 
+  - repo: https://gitlab.com/bmares/check-json5
+    rev: "v1.0.1"
+    hooks:
+      # Check that JSON files are valid JSON5
+      - id: check-json5
+
   - repo: https://github.com/adrienverge/yamllint
     rev: "v1.38.0"
     hooks:
       - id: yamllint
         args: ["--strict", "-c", ".ci-scripts/yamlconfig.yaml"]
 
-  - repo: https://github.com/markdownlint/markdownlint
-    rev: "v0.15.0"
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: "v0.48.0"
     hooks:
+      # Lint markdown files
       - id: markdownlint
-        args: ["--style", ".ci-scripts/mdl-style.rb"]
+        args: ["--fix", "--config", ".github/markdownlint-config.yaml"]
         exclude: |
           (?x)^(
-            docs/404\.md
+            docs/404\.md |
+            .agents/skills/.* |
+            .github/pull_request_template.md |
+            .gemini/skills/.*
           )$
 
   - repo: https://github.com/jumanjihouse/pre-commit-hooks
@@ -46,6 +55,6 @@ repos:
       - id: shellcheck
 
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: "43.100.0"
+    rev: "43.141.2"
     hooks:
       - id: renovate-config-validator

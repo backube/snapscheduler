@@ -81,8 +81,8 @@ Other helpful links:
 
 ## Licensing
 
-This project is licensed under the [GNU AGPL 3.0 License](LICENSE) with the following
-exceptions:
+This project is licensed under the [GNU AGPL 3.0 License](LICENSE) with the
+following exceptions:
 
 - The files within the `api/*` directories are additionally licensed under
   Apache License 2.0. This is to permit SnapScheduler's CustomResource types to
