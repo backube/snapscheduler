@@ -94,28 +94,40 @@ jobs:
         uses: github/codeql-action/analyze@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
 
   build:
-    name: Build
+    name: Build (${{ matrix.ARCH }})
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        ARCH: [amd64, arm64, s390x, ppc64le]
 
     steps:
       - name: Checkout source
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Install Go
-        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
-        with:
-          go-version: ${{ env.GO_VERSION }}
+      - name: Set up QEMU
+        if: matrix.ARCH != 'amd64'
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
 
       - name: Build operator container
-        run: make docker-build IMAGE=${IMAGE}
-
-      - name: Export container image
-        run: docker save -o /tmp/image.tar ${IMAGE}
+        run: |
+          VERSION=$(git describe --tags --dirty --match 'v*' 2>/dev/null || git describe --always --dirty)
+          BUILDDATE=$(date -u '+%Y-%m-%dT%H:%M:%S.%NZ')
+          docker buildx build \
+            --platform "linux/${{ matrix.ARCH }}" \
+            --build-arg "version=${VERSION}" \
+            --build-arg "builddate=${BUILDDATE}" \
+            --output "type=docker,dest=/tmp/image.tar" \
+            -t "${IMAGE}" \
+            -f Dockerfile .
 
       - name: Save container as artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: container
+          name: container-${{ matrix.ARCH }}
           path: /tmp/image.tar
 
   test:
@@ -218,7 +230,7 @@ jobs:
       - name: Load container artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: container
+          name: container-amd64
           path: /tmp
 
       - name: Import container image
@@ -263,16 +275,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Load container artifact
+      - name: Load container artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: container
           path: /tmp
-
-      - name: Import container image
-        run: |
-          docker load -i /tmp/image.tar
-          docker inspect ${IMAGE}
+          pattern: container-*
 
       - name: Login to registry
         # If the registry server is specified in the image name, we use that.
@@ -282,20 +289,30 @@ jobs:
           echo "Attempting docker login to: ${REGISTRY}"
           echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin ${REGISTRY}
 
-      - name: Push to registry (latest)
-        if: >
-          (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-          github.ref == 'refs/heads/master'
+      - name: Determine tag
+        id: tag
         run: |
-          docker push "${IMAGE}"
+          if [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.ref }}" =~ ^refs/tags/v([0-9]+\..*)$ ]]; then
+            echo "tag=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Push to registry (version tag)
-        if: >
-          (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-          startsWith(github.ref, 'refs/tags/v')
+      - name: Load, tag, and push per-arch images
         run: |
-          [[ "${{ github.ref }}" =~ ^refs/tags/v([0-9]+\..*) ]] || exit 0
-          TAG="${BASH_REMATCH[1]}"
-          echo "Pushing to $TAG"
-          docker tag "${IMAGE}" "${IMAGE}:${TAG}"
-          docker push "${IMAGE}:${TAG}"
+          TAG="${{ steps.tag.outputs.tag }}"
+          for arch in amd64 arm64 s390x ppc64le; do
+            docker load -i "/tmp/container-${arch}/image.tar"
+            docker tag "${IMAGE}" "${IMAGE}:${TAG}-${arch}"
+            docker push "${IMAGE}:${TAG}-${arch}"
+          done
+
+      - name: Create and push manifest
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          docker manifest create "${IMAGE}:${TAG}" \
+            "${IMAGE}:${TAG}-amd64" \
+            "${IMAGE}:${TAG}-arm64" \
+            "${IMAGE}:${TAG}-s390x" \
+            "${IMAGE}:${TAG}-ppc64le"
+          docker manifest push "${IMAGE}:${TAG}"
