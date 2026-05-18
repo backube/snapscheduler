@@ -40,13 +40,6 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
-                - key: kubernetes.io/arch
-                  operator: In
-                  values:
-                    - amd64
-                    # - arm64
-                    # - ppc64le
-                    # - s390x
                 - key: kubernetes.io/os
                   operator: In
                   values:
@@ -98,5 +91,4 @@ spec:
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
       nodeSelector:
-        kubernetes.io/arch: amd64
         kubernetes.io/os: linux
