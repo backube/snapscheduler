@@ -182,7 +182,7 @@ case, the defaults, shown below, should be sufficient.
 - `resources`: requests for 10m CPU and 100Mi memory; no limits
   - Allows overriding the resource requests/limits for the manager
     container of the operator pod.
-- `nodeSelector`: `kubernetes.io/arch: amd64`, `kubernetes.io/os: linux`
+- `nodeSelector`: `kubernetes.io/os: linux`
   - Allows applying a node selector to the operator pod
 - `tolerations`: none
   - Allows applying tolerations to the operator pod

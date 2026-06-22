@@ -275,10 +275,6 @@ spec:
                   requiredDuringSchedulingIgnoredDuringExecution:
                     nodeSelectorTerms:
                     - matchExpressions:
-                      - key: kubernetes.io/arch
-                        operator: In
-                        values:
-                        - amd64
                       - key: kubernetes.io/os
                         operator: In
                         values:
@@ -348,7 +344,6 @@ spec:
                     drop:
                     - ALL
               nodeSelector:
-                kubernetes.io/arch: amd64
                 kubernetes.io/os: linux
               securityContext:
                 runAsNonRoot: true
