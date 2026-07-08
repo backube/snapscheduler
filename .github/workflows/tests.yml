@@ -32,7 +32,7 @@ jobs:
 
       # Install Ruby so that pre-commit markdownlint can run on ubuntu-24
       - name: Setup Ruby
-        uses: ruby/setup-ruby@9eb537ca036ebaed86729dcb9309076e4c5c3b74 # v1.314.0
+        uses: ruby/setup-ruby@d45b1a4e94b71acab930e56e79c6aa188764e7f9 # v1.316.0
         with:
           ruby-version: '4.0.5'
 
@@ -82,7 +82,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
+        uses: github/codeql-action/init@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a # v4.36.3
 
       - name: Download modules
         run: go mod download
@@ -91,7 +91,7 @@ jobs:
         run: make build
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
+        uses: github/codeql-action/analyze@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a # v4.36.3
 
   build:
     name: Build
