@@ -20,6 +20,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"maps"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -218,13 +219,8 @@ func handleSnapshotting(ctx context.Context, schedule *snapschedulerv1.SnapshotS
 		snap := snapv1.VolumeSnapshot{}
 		if err := c.Get(ctx, key, &snap); err != nil {
 			if kerrors.IsNotFound(err) {
-				labels := make(map[string]string)
-				var snapshotClassName *string
-				if schedule.Spec.SnapshotTemplate != nil {
-					labels = schedule.Spec.SnapshotTemplate.Labels
-					snapshotClassName = schedule.Spec.SnapshotTemplate.SnapshotClassName
-				}
-				snap := newSnapForClaim(snapName, pvc, schedule, snapTime, labels, snapshotClassName, enableOwnerReferences)
+				snap := newSnapForClaim(snapName, pvc, schedule, snapTime,
+					schedule.Spec.SnapshotTemplate, enableOwnerReferences)
 				if snap != nil {
 					logger.Info("creating a snapshot", "PVC", pvc.Name, "Snapshot", snapName)
 					if err = c.Create(ctx, snap); err != nil {
@@ -327,22 +323,26 @@ func getNextSnapTime(cronspec string, when time.Time) (time.Time, error) {
 
 func newSnapForClaim(snapName string, pvc corev1.PersistentVolumeClaim,
 	schedule *snapschedulerv1.SnapshotSchedule, scheduleTime time.Time,
-	labels map[string]string, snapClass *string, enableOwnerReferences bool) *snapv1.VolumeSnapshot {
-	numLabels := 2
-	if labels != nil {
-		numLabels += len(labels)
+	template *snapschedulerv1.SnapshotTemplateSpec, enableOwnerReferences bool) *snapv1.VolumeSnapshot {
+	var labels, annotations map[string]string
+	var snapClass *string
+	if template != nil {
+		labels = template.Labels
+		annotations = template.Annotations
+		snapClass = template.SnapshotClassName
 	}
-	snapLabels := make(map[string]string, numLabels)
-	for k, v := range labels {
-		snapLabels[k] = v
-	}
+
+	snapLabels := make(map[string]string, len(labels)+2)
+	maps.Copy(snapLabels, labels)
+	// The schedule's own labels take precedence over those from the template
 	snapLabels[ScheduleKey] = schedule.Name
 	snapLabels[WhenKey] = scheduleTime.Format(timeYYYYMMDDHHMMSS)
 	snapshot := &snapv1.VolumeSnapshot{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      snapName,
-			Namespace: pvc.Namespace,
-			Labels:    snapLabels,
+			Name:        snapName,
+			Namespace:   pvc.Namespace,
+			Labels:      snapLabels,
+			Annotations: maps.Clone(annotations),
 		},
 		Spec: snapv1.VolumeSnapshotSpec{
 			Source: snapv1.VolumeSnapshotSource{

@@ -8,6 +8,11 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added
+
+- Ability to set annotations on the created snapshots via
+  `spec.snapshotTemplate.annotations`
+
 ## [3.5.0] - 2025-05-14
 
 ### Added

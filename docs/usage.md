@@ -48,6 +48,10 @@ spec:
     # VolumeSnapshot object
     labels:  # optional
       mylabel: myvalue
+    # A set of annotations can be added to each
+    # VolumeSnapshot object
+    annotations:  # optional
+      myannotation: myvalue
     # The SnapshotClassName to use when creating the
     # snapshots. If omitted, the cluster default will
     # be used.
