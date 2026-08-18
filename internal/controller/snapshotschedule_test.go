@@ -72,7 +72,8 @@ var _ = Describe("newSnapForClaim", func() {
 		snapClass := "snapclass"
 		scheduleName := "mysched"
 		schedTime, _ := time.Parse(timeFormat, "2010-07-23T01:02:00Z")
-		snap := newSnapForClaim(snapname, pvc, &schedule, schedTime, nil, &snapClass, false)
+		template := snapschedulerv1.SnapshotTemplateSpec{SnapshotClassName: &snapClass}
+		snap := newSnapForClaim(snapname, pvc, &schedule, schedTime, &template, false)
 
 		Expect(snap.Name).To(Equal(snapname))
 		Expect(snap.Namespace).To(Equal(pvc.Namespace))
@@ -81,8 +82,9 @@ var _ = Describe("newSnapForClaim", func() {
 		Expect(*snap.Spec.VolumeSnapshotClassName).To(Equal(snapClass))
 		Expect(snap.ObjectMeta.OwnerReferences).To(BeEmpty())
 		Expect(snap.Labels).To(HaveKeyWithValue(ScheduleKey, scheduleName))
+		Expect(snap.Annotations).To(BeEmpty())
 	})
-	It("allows providing addl labels and checks enableOwnerReferences", func() {
+	It("allows providing addl labels and annotations, and checks enableOwnerReferences", func() {
 		pvc := corev1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "mypvc",
@@ -100,13 +102,23 @@ var _ = Describe("newSnapForClaim", func() {
 		labels := make(map[string]string, 2)
 		labels["one"] = "two"
 		labels["three"] = "four"
-		snap := newSnapForClaim(snapname, pvc, &schedule, schedTime, labels, nil, true)
+		annotations := make(map[string]string, 2)
+		annotations["five"] = "six"
+		annotations["seven"] = "eight"
+		template := snapschedulerv1.SnapshotTemplateSpec{Labels: labels, Annotations: annotations}
+		snap := newSnapForClaim(snapname, pvc, &schedule, schedTime, &template, true)
 		// Some tests depend on knowing the internals :(
 		Expect(snap.Spec.VolumeSnapshotClassName).To(BeNil())
 		Expect(snap.Labels).NotTo(BeNil())
 		Expect(snap.Labels).To(HaveKeyWithValue(ScheduleKey, scheduleName))
 		Expect(snap.Labels).To(HaveKeyWithValue(WhenKey, schedTime.Format(timeYYYYMMDDHHMMSS)))
 		Expect(snap.Labels).To(HaveKeyWithValue("three", "four"))
+		Expect(snap.Labels).NotTo(HaveKey("five"))
+		Expect(snap.Annotations).To(HaveKeyWithValue("five", "six"))
+		Expect(snap.Annotations).To(HaveKeyWithValue("seven", "eight"))
+		Expect(snap.Annotations).NotTo(HaveKey(ScheduleKey))
+		Expect(snap.Annotations).NotTo(HaveKey("three"))
+		Expect(snap.Annotations).To(HaveLen(2))
 		// Test for ownerReferences
 		Expect(snap.OwnerReferences).To(HaveLen(1))
 		ownerRef := snap.OwnerReferences[0]
@@ -115,6 +127,19 @@ var _ = Describe("newSnapForClaim", func() {
 		Expect(ownerRef.Name).To(Equal(schedule.Name))
 		Expect(ownerRef.UID).To(Equal(schedule.UID))
 		Expect(len(snap.Labels)).To(Equal(4))
+	})
+	It("tolerates a nil snapshot template", func() {
+		pvc := corev1.PersistentVolumeClaim{}
+		schedule := snapschedulerv1.SnapshotSchedule{}
+		schedule.Name = "mysched"
+		schedTime, _ := time.Parse(timeFormat, "2010-07-23T01:02:00Z")
+		snap := newSnapForClaim("mysnap", pvc, &schedule, schedTime, nil, false)
+
+		Expect(snap.Spec.VolumeSnapshotClassName).To(BeNil())
+		Expect(snap.Labels).To(HaveLen(2))
+		Expect(snap.Labels).To(HaveKeyWithValue(ScheduleKey, schedule.Name))
+		Expect(snap.Labels).To(HaveKeyWithValue(WhenKey, schedTime.Format(timeYYYYMMDDHHMMSS)))
+		Expect(snap.Annotations).To(BeNil())
 	})
 })
 

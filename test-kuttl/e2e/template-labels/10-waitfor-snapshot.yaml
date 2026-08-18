@@ -17,3 +17,8 @@ commands:
       labels=$(kubectl -n "$NAMESPACE" get $sname -otemplate='{{.metadata.labels}}')
       echo "$labels" | grep -q 'mysnaplabel:myval'
       echo "$labels" | grep -q 'label2:v2'
+
+      echo "Verifying presence of annotations on snapshot"
+      annotations=$(kubectl -n "$NAMESPACE" get $sname -otemplate='{{.metadata.annotations}}')
+      echo "$annotations" | grep -q 'mysnapannotation:myannoval'
+      echo "$annotations" | grep -q 'annotation2:av2'
