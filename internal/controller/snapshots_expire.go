@@ -31,9 +31,12 @@ import (
 	snapschedulerv1 "github.com/backube/snapscheduler/api/v1"
 )
 
-// expireByCount deletes the oldest snapshots until the number of snapshots for
-// a given PVC (created by the supplied schedule) is no more than the
-// schedule's maxCount. This function is the entry point for count-based
+// expireByCount deletes snapshots until the number of snapshots for a given
+// PVC (created by the supplied schedule) is no more than the schedule's
+// maxCount. Stale pending snapshots (not ready to use, and no longer the
+// newest for the PVC) are deleted before any other snapshot so that a
+// restorable snapshot is retained while newer ones are still pending; see
+// sortSnapsForExpiration. This function is the entry point for count-based
 // expiration of snapshots.
 func expireByCount(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedule,
 	logger logr.Logger, c client.Client, grouped map[string][]snapv1.VolumeSnapshot) error {
@@ -43,13 +46,14 @@ func expireByCount(ctx context.Context, schedule *snapschedulerv1.SnapshotSchedu
 	}
 
 	for _, list := range grouped {
-		list = sortSnapsByTime(list)
-		if len(list) > int(*schedule.Spec.Retention.MaxCount) {
-			list = list[:len(list)-int(*schedule.Spec.Retention.MaxCount)]
-			err := deleteSnapshots(ctx, list, logger, c)
-			if err != nil {
-				return err
-			}
+		excess := len(list) - int(*schedule.Spec.Retention.MaxCount)
+		if excess <= 0 {
+			continue
+		}
+		list = sortSnapsForExpiration(list)
+		err := deleteSnapshots(ctx, list[:excess], logger, c)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -184,4 +188,28 @@ func sortSnapsByTime(snaps []snapv1.VolumeSnapshot) []snapv1.VolumeSnapshot {
 		return sorted[i].CreationTimestamp.Before(&sorted[j].CreationTimestamp)
 	})
 	return sorted
+}
+
+// sortSnapsForExpiration sorts the snapshots (all from one PVC) in the order
+// they should be deleted by count-based expiration: stale pending snapshots
+// come first, followed by the rest, each group in order of ascending
+// CreationTimestamp.
+//
+// A pending snapshot (not ready to use per isSnapshotReady) is stale once a
+// newer snapshot exists for the PVC. The newest snapshot is never stale: it is
+// normally the one just created by the schedule and is still being completed
+// by the CSI driver when the follow-up reconcile runs expiration, so it is
+// ranked by age like a ready snapshot rather than being removed immediately.
+func sortSnapsForExpiration(snaps []snapv1.VolumeSnapshot) []snapv1.VolumeSnapshot {
+	sorted := sortSnapsByTime(snaps)
+	stale := make([]snapv1.VolumeSnapshot, 0, len(sorted))
+	rest := make([]snapv1.VolumeSnapshot, 0, len(sorted))
+	for i := range sorted {
+		if i < len(sorted)-1 && !isSnapshotReady(&sorted[i]) {
+			stale = append(stale, sorted[i])
+		} else {
+			rest = append(rest, sorted[i])
+		}
+	}
+	return append(stale, rest...)
 }

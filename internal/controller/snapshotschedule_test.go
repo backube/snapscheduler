@@ -20,16 +20,21 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
+	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v8/apis/volumesnapshot/v1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	snapschedulerv1 "github.com/backube/snapscheduler/api/v1"
@@ -344,5 +349,134 @@ var _ = Describe("Listing PVCs by selector", func() {
 		pvcList, err := listPVCsMatchingSelector(context.TODO(), logger, k8sClient, ns.Name, &metav1.LabelSelector{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(pvcList.Items)).To(Equal(len(objects)))
+	})
+})
+
+var _ = Describe("Count-based expiration during reconcile", func() {
+	var ns *v1.Namespace
+	var pvc *corev1.PersistentVolumeClaim
+	var ready []snapv1.VolumeSnapshot
+	const scheduleName = "schedule"
+	BeforeEach(func() {
+		ns = &v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "test-",
+			},
+		}
+		Expect(k8sClient.Create(context.TODO(), ns)).To(Succeed())
+		Expect(ns.Name).NotTo(BeEmpty())
+
+		pvc = &corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pvc1",
+				Namespace: ns.Name,
+				Labels: map[string]string{
+					"mylabel": "foo",
+				},
+			},
+			Spec: corev1.PersistentVolumeClaimSpec{
+				AccessModes: []corev1.PersistentVolumeAccessMode{
+					corev1.ReadWriteOnce,
+				},
+				Resources: corev1.VolumeResourceRequirements{
+					Requests: corev1.ResourceList{
+						"storage": resource.MustParse("1Gi"),
+					},
+				},
+			},
+		}
+		Expect(k8sClient.Create(context.TODO(), pvc)).To(Succeed())
+		Eventually(func() error {
+			return k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(pvc), &corev1.PersistentVolumeClaim{})
+		}, timeout, interval).Should(Succeed())
+
+		// The PVC already has maxCount ready snapshots from this schedule
+		ready = nil
+		for i := 0; i < 3; i++ {
+			snap := snapv1.VolumeSnapshot{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      fmt.Sprintf("ready-%d", i),
+					Namespace: ns.Name,
+					Labels: map[string]string{
+						ScheduleKey: scheduleName,
+					},
+				},
+				Spec: snapv1.VolumeSnapshotSpec{
+					Source: snapv1.VolumeSnapshotSource{
+						PersistentVolumeClaimName: &pvc.Name,
+					},
+				},
+			}
+			Expect(k8sClient.Create(context.TODO(), &snap)).To(Succeed())
+			Eventually(func() error {
+				return k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(&snap), &snapv1.VolumeSnapshot{})
+			}, timeout, interval).Should(Succeed())
+			snap.Status = &snapv1.VolumeSnapshotStatus{ReadyToUse: pointer.Bool(true)}
+			Expect(k8sClient.Status().Update(context.TODO(), &snap)).To(Succeed())
+			Eventually(func() bool {
+				s := &snapv1.VolumeSnapshot{}
+				Expect(k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(&snap), s)).To(Succeed())
+				return isSnapshotReady(s)
+			}, timeout, interval).Should(BeTrue())
+			ready = append(ready, snap)
+			// Distinct creation timestamps (second resolution)
+			time.Sleep(time.Second)
+		}
+	})
+	AfterEach(func() {
+		Expect(k8sClient.Delete(context.TODO(), ns)).To(Succeed())
+	})
+	It("keeps the snapshot it just created when the PVC is at maxCount", func() {
+		maxCount := int32(3)
+		schedule := &snapschedulerv1.SnapshotSchedule{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      scheduleName,
+				Namespace: ns.Name,
+			},
+			Spec: snapschedulerv1.SnapshotScheduleSpec{
+				Schedule: "@hourly",
+				ClaimSelector: metav1.LabelSelector{
+					MatchLabels: map[string]string{"mylabel": "foo"},
+				},
+				Retention: snapschedulerv1.SnapshotRetentionSpec{
+					MaxCount: &maxCount,
+				},
+			},
+		}
+		// The scheduled time has passed, so the first pass creates a snapshot
+		due := metav1.NewTime(time.Now().Add(-time.Minute))
+		schedule.Status.NextSnapshotTime = &due
+		tracker := &scheduleTracker{
+			readyUIDs: make(map[types.UID]struct{}),
+			prevPVCs:  make(map[string]struct{}),
+		}
+
+		_, err := doReconcile(context.TODO(), schedule, logger, k8sClient, false, tracker)
+		Expect(err).NotTo(HaveOccurred())
+		newKey := types.NamespacedName{
+			Name:      snapshotName(pvc.Name, schedule.Name, due.UTC()),
+			Namespace: ns.Name,
+		}
+		newSnap := &snapv1.VolumeSnapshot{}
+		Eventually(func() error {
+			return k8sClient.Get(context.TODO(), newKey, newSnap)
+		}, timeout, interval).Should(Succeed())
+		Expect(isSnapshotReady(newSnap)).To(BeFalse())
+		Expect(schedule.Status.NextSnapshotTime.Time.After(time.Now())).To(BeTrue())
+
+		// The status update triggers a follow-up pass, which runs expiration
+		// while the new snapshot is still pending
+		_, err = doReconcile(context.TODO(), schedule, logger, k8sClient, false, tracker)
+		Expect(err).NotTo(HaveOccurred())
+
+		// The oldest ready snapshot is removed; the pending one is kept
+		Eventually(func() bool {
+			err := k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(&ready[0]), &snapv1.VolumeSnapshot{})
+			return kerrors.IsNotFound(err)
+		}, timeout, interval).Should(BeTrue())
+		Expect(k8sClient.Get(context.TODO(), newKey, newSnap)).To(Succeed())
+		for i := 1; i < len(ready); i++ {
+			Expect(k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(&ready[i]), &snapv1.VolumeSnapshot{})).To(Succeed())
+		}
 	})
 })
