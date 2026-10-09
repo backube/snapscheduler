@@ -71,6 +71,10 @@ spec:
       - description: A template to customize the Snapshots.
         displayName: Snapshot Template
         path: snapshotTemplate
+      - description: A list of annotations that should be added to each Snapshot created
+          by this schedule.
+        displayName: Annotations
+        path: snapshotTemplate.annotations
       - description: A list of labels that should be added to each Snapshot created
           by this schedule.
         displayName: Labels

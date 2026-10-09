@@ -9,3 +9,6 @@ spec:
     labels:
       mysnaplabel: myval
       label2: v2
+    annotations:
+      mysnapannotation: myannoval
+      annotation2: av2
