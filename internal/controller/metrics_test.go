@@ -30,6 +30,15 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
+const (
+	testPVC1         = "pvc1"
+	testPVC2         = "pvc2"
+	testSnapshot1    = "snap1"
+	testNamespace1   = "ns1"
+	testSnapshotUID1 = "uid-1"
+	testSchedule1    = "sched1"
+)
+
 var _ = Describe("Snapshot metrics", func() {
 	AfterEach(func() {
 		snapshotCurrentCount.Reset()
@@ -37,13 +46,21 @@ var _ = Describe("Snapshot metrics", func() {
 		snapshotReadyTotal.Reset()
 	})
 
+	It("uses stable Prometheus label names", func() {
+		Expect(scheduleLabels(testSchedule1, testNamespace1, testPVC1)).To(Equal(prometheus.Labels{
+			"schedule_name":      testSchedule1,
+			"schedule_namespace": testNamespace1,
+			"pvc_name":           testPVC1,
+		}))
+	})
+
 	Describe("updateSnapshotGauges", func() {
 		It("sets correct counts for snapshots per PVC", func() {
 			readyTrue := true
 			grouped := map[string][]snapv1.VolumeSnapshot{
-				"pvc1": {
+				testPVC1: {
 					{
-						ObjectMeta: metav1.ObjectMeta{Name: "snap1"},
+						ObjectMeta: metav1.ObjectMeta{Name: testSnapshot1},
 						Status: &snapv1.VolumeSnapshotStatus{
 							ReadyToUse: &readyTrue,
 						},
@@ -53,7 +70,7 @@ var _ = Describe("Snapshot metrics", func() {
 						Status:     nil,
 					},
 				},
-				"pvc2": {
+				testPVC2: {
 					{
 						ObjectMeta: metav1.ObjectMeta{Name: "snap3"},
 						Status: &snapv1.VolumeSnapshotStatus{
@@ -63,13 +80,13 @@ var _ = Describe("Snapshot metrics", func() {
 				},
 			}
 
-			updateSnapshotGauges("sched1", "ns1", grouped, make(map[string]struct{}))
+			updateSnapshotGauges(testSchedule1, testNamespace1, grouped, make(map[string]struct{}))
 
 			labels1 := prometheus.Labels{
-				"schedule_name": "sched1", "schedule_namespace": "ns1", "pvc_name": "pvc1",
+				scheduleNameLabel: testSchedule1, scheduleNamespaceLabel: testNamespace1, pvcNameLabel: testPVC1,
 			}
 			labels2 := prometheus.Labels{
-				"schedule_name": "sched1", "schedule_namespace": "ns1", "pvc_name": "pvc2",
+				scheduleNameLabel: testSchedule1, scheduleNamespaceLabel: testNamespace1, pvcNameLabel: testPVC2,
 			}
 			Expect(testutil.ToFloat64(snapshotCurrentCount.With(labels1))).To(Equal(float64(2)))
 			Expect(testutil.ToFloat64(snapshotCurrentReadyCount.With(labels1))).To(Equal(float64(1)))
@@ -78,20 +95,20 @@ var _ = Describe("Snapshot metrics", func() {
 		})
 
 		It("handles empty grouped map", func() {
-			updateSnapshotGauges("sched1", "ns1", map[string][]snapv1.VolumeSnapshot{}, make(map[string]struct{}))
+			updateSnapshotGauges(testSchedule1, testNamespace1, map[string][]snapv1.VolumeSnapshot{}, make(map[string]struct{}))
 			// No panic, no metrics created
 		})
 
 		It("counts zero ready when status is nil", func() {
 			grouped := map[string][]snapv1.VolumeSnapshot{
-				"pvc1": {
-					{ObjectMeta: metav1.ObjectMeta{Name: "snap1"}, Status: nil},
+				testPVC1: {
+					{ObjectMeta: metav1.ObjectMeta{Name: testSnapshot1}, Status: nil},
 				},
 			}
-			updateSnapshotGauges("sched1", "ns1", grouped, make(map[string]struct{}))
+			updateSnapshotGauges(testSchedule1, testNamespace1, grouped, make(map[string]struct{}))
 
 			labels := prometheus.Labels{
-				"schedule_name": "sched1", "schedule_namespace": "ns1", "pvc_name": "pvc1",
+				scheduleNameLabel: testSchedule1, scheduleNamespaceLabel: testNamespace1, pvcNameLabel: testPVC1,
 			}
 			Expect(testutil.ToFloat64(snapshotCurrentCount.With(labels))).To(Equal(float64(1)))
 			Expect(testutil.ToFloat64(snapshotCurrentReadyCount.With(labels))).To(Equal(float64(0)))
@@ -103,9 +120,9 @@ var _ = Describe("Snapshot metrics", func() {
 			readyTrue := true
 			tracker := make(map[types.UID]struct{})
 			grouped := map[string][]snapv1.VolumeSnapshot{
-				"pvc1": {
+				testPVC1: {
 					{
-						ObjectMeta: metav1.ObjectMeta{Name: "snap1", UID: "uid-1"},
+						ObjectMeta: metav1.ObjectMeta{Name: testSnapshot1, UID: testSnapshotUID1},
 						Status: &snapv1.VolumeSnapshotStatus{
 							ReadyToUse: &readyTrue,
 						},
@@ -113,24 +130,24 @@ var _ = Describe("Snapshot metrics", func() {
 				},
 			}
 
-			updateReadyCounter("sched1", "ns1", grouped, tracker)
+			updateReadyCounter(testSchedule1, testNamespace1, grouped, tracker)
 
 			labels := prometheus.Labels{
-				"schedule_name": "sched1", "schedule_namespace": "ns1", "pvc_name": "pvc1",
+				scheduleNameLabel: testSchedule1, scheduleNamespaceLabel: testNamespace1, pvcNameLabel: testPVC1,
 			}
 			Expect(testutil.ToFloat64(snapshotReadyTotal.With(labels))).To(Equal(float64(1)))
-			Expect(tracker).To(HaveKey(types.UID("uid-1")))
+			Expect(tracker).To(HaveKey(types.UID(testSnapshotUID1)))
 		})
 
 		It("does not double-count already tracked snapshots", func() {
 			readyTrue := true
 			tracker := map[types.UID]struct{}{
-				"uid-1": {},
+				testSnapshotUID1: {},
 			}
 			grouped := map[string][]snapv1.VolumeSnapshot{
-				"pvc1": {
+				testPVC1: {
 					{
-						ObjectMeta: metav1.ObjectMeta{Name: "snap1", UID: "uid-1"},
+						ObjectMeta: metav1.ObjectMeta{Name: testSnapshot1, UID: testSnapshotUID1},
 						Status: &snapv1.VolumeSnapshotStatus{
 							ReadyToUse: &readyTrue,
 						},
@@ -138,12 +155,12 @@ var _ = Describe("Snapshot metrics", func() {
 				},
 			}
 
-			updateReadyCounter("sched1", "ns1", grouped, tracker)
+			updateReadyCounter(testSchedule1, testNamespace1, grouped, tracker)
 
 			labels := prometheus.Labels{
-				"schedule_name": "sched1", "schedule_namespace": "ns1", "pvc_name": "pvc1",
+				scheduleNameLabel: testSchedule1, scheduleNamespaceLabel: testNamespace1, pvcNameLabel: testPVC1,
 			}
-			// Counter should be 0 since uid-1 was already tracked
+			// Counter should be 0 since the snapshot UID was already tracked
 			Expect(testutil.ToFloat64(snapshotReadyTotal.With(labels))).To(Equal(float64(0)))
 		})
 
@@ -153,7 +170,7 @@ var _ = Describe("Snapshot metrics", func() {
 			}
 			grouped := map[string][]snapv1.VolumeSnapshot{}
 
-			updateReadyCounter("sched1", "ns1", grouped, tracker)
+			updateReadyCounter(testSchedule1, testNamespace1, grouped, tracker)
 
 			Expect(tracker).NotTo(HaveKey(types.UID("uid-deleted")))
 		})
@@ -162,9 +179,9 @@ var _ = Describe("Snapshot metrics", func() {
 			readyFalse := false
 			tracker := make(map[types.UID]struct{})
 			grouped := map[string][]snapv1.VolumeSnapshot{
-				"pvc1": {
+				testPVC1: {
 					{
-						ObjectMeta: metav1.ObjectMeta{Name: "snap1", UID: "uid-1"},
+						ObjectMeta: metav1.ObjectMeta{Name: testSnapshot1, UID: testSnapshotUID1},
 						Status: &snapv1.VolumeSnapshotStatus{
 							ReadyToUse: &readyFalse,
 						},
@@ -172,21 +189,21 @@ var _ = Describe("Snapshot metrics", func() {
 				},
 			}
 
-			updateReadyCounter("sched1", "ns1", grouped, tracker)
+			updateReadyCounter(testSchedule1, testNamespace1, grouped, tracker)
 
-			Expect(tracker).NotTo(HaveKey(types.UID("uid-1")))
+			Expect(tracker).NotTo(HaveKey(types.UID(testSnapshotUID1)))
 		})
 	})
 
 	Describe("cleanupScheduleGauges", func() {
 		It("removes gauge entries for a schedule", func() {
 			labels := prometheus.Labels{
-				"schedule_name": "sched1", "schedule_namespace": "ns1", "pvc_name": "pvc1",
+				scheduleNameLabel: testSchedule1, scheduleNamespaceLabel: testNamespace1, pvcNameLabel: testPVC1,
 			}
 			snapshotCurrentCount.With(labels).Set(5)
 			snapshotCurrentReadyCount.With(labels).Set(3)
 
-			cleanupScheduleGauges("sched1", "ns1")
+			cleanupScheduleGauges(testSchedule1, testNamespace1)
 
 			// After cleanup, getting the metric should return 0 (fresh counter)
 			Expect(testutil.ToFloat64(snapshotCurrentCount.With(labels))).To(Equal(float64(0)))
@@ -195,15 +212,15 @@ var _ = Describe("Snapshot metrics", func() {
 
 		It("does not affect other schedules", func() {
 			labels1 := prometheus.Labels{
-				"schedule_name": "sched1", "schedule_namespace": "ns1", "pvc_name": "pvc1",
+				scheduleNameLabel: testSchedule1, scheduleNamespaceLabel: testNamespace1, pvcNameLabel: testPVC1,
 			}
 			labels2 := prometheus.Labels{
-				"schedule_name": "sched2", "schedule_namespace": "ns1", "pvc_name": "pvc1",
+				scheduleNameLabel: "sched2", scheduleNamespaceLabel: testNamespace1, pvcNameLabel: testPVC1,
 			}
 			snapshotCurrentCount.With(labels1).Set(5)
 			snapshotCurrentCount.With(labels2).Set(10)
 
-			cleanupScheduleGauges("sched1", "ns1")
+			cleanupScheduleGauges(testSchedule1, testNamespace1)
 
 			Expect(testutil.ToFloat64(snapshotCurrentCount.With(labels2))).To(Equal(float64(10)))
 		})

@@ -25,11 +25,17 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
+const (
+	scheduleNameLabel      = "schedule_name"
+	scheduleNamespaceLabel = "schedule_namespace"
+	pvcNameLabel           = "pvc_name"
+)
+
 func scheduleLabels(scheduleName, scheduleNamespace, pvcName string) prometheus.Labels {
 	return prometheus.Labels{
-		"schedule_name":      scheduleName,
-		"schedule_namespace": scheduleNamespace,
-		"pvc_name":           pvcName,
+		scheduleNameLabel:      scheduleName,
+		scheduleNamespaceLabel: scheduleNamespace,
+		pvcNameLabel:           pvcName,
 	}
 }
 
@@ -43,35 +49,35 @@ var (
 			Name: "snapscheduler_snapshot_current_count",
 			Help: "Current number of VolumeSnapshots managed by a schedule for a given PVC.",
 		},
-		[]string{"schedule_name", "schedule_namespace", "pvc_name"},
+		[]string{scheduleNameLabel, scheduleNamespaceLabel, pvcNameLabel},
 	)
 	snapshotCurrentReadyCount = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "snapscheduler_snapshot_current_ready_count",
 			Help: "Current number of readyToUse VolumeSnapshots managed by a schedule for a given PVC.",
 		},
-		[]string{"schedule_name", "schedule_namespace", "pvc_name"},
+		[]string{scheduleNameLabel, scheduleNamespaceLabel, pvcNameLabel},
 	)
 	snapshotCreateTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "snapscheduler_snapshot_create_total",
 			Help: "Cumulative number of snapshots created by a schedule for a given PVC.",
 		},
-		[]string{"schedule_name", "schedule_namespace", "pvc_name"},
+		[]string{scheduleNameLabel, scheduleNamespaceLabel, pvcNameLabel},
 	)
 	snapshotReadyTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "snapscheduler_snapshot_ready_total",
 			Help: "Cumulative number of snapshots that became readyToUse.",
 		},
-		[]string{"schedule_name", "schedule_namespace", "pvc_name"},
+		[]string{scheduleNameLabel, scheduleNamespaceLabel, pvcNameLabel},
 	)
 	snapshotCreateErrorTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "snapscheduler_snapshot_create_error_total",
 			Help: "Cumulative number of snapshot creation errors.",
 		},
-		[]string{"schedule_name", "schedule_namespace", "pvc_name"},
+		[]string{scheduleNameLabel, scheduleNamespaceLabel, pvcNameLabel},
 	)
 )
 
@@ -153,8 +159,8 @@ func updateReadyCounter(scheduleName, scheduleNamespace string,
 // cleanupScheduleGauges removes all gauge entries for the given schedule.
 func cleanupScheduleGauges(scheduleName, scheduleNamespace string) {
 	partialLabels := prometheus.Labels{
-		"schedule_name":      scheduleName,
-		"schedule_namespace": scheduleNamespace,
+		scheduleNameLabel:      scheduleName,
+		scheduleNamespaceLabel: scheduleNamespace,
 	}
 	snapshotCurrentCount.DeletePartialMatch(partialLabels)
 	snapshotCurrentReadyCount.DeletePartialMatch(partialLabels)
