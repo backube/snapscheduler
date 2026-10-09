@@ -17,7 +17,7 @@ on:  # yamllint disable-line rule:truthy
 
 env:
   GO_VERSION: "1.26"
-  KIND_VERSION: "0.32.0"
+  KIND_VERSION: "0.33.0"
   GO111MODULE: "on"
   IMAGE: "quay.io/backube/snapscheduler"
 
@@ -82,7 +82,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
+        uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
 
       - name: Download modules
         run: go mod download
@@ -91,7 +91,7 @@ jobs:
         run: make build
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
+        uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
 
   build:
     name: Build
