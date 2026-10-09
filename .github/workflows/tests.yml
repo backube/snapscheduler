@@ -240,24 +240,41 @@ jobs:
       - name: Run e2e tests
         run: make test-e2e
 
-  # This is a dummy job that can be used to determine success of CI:
-  # - by Mergify instead of having to list a bunch of other jobs
-  # - by the push jobs to ensure all pre-reqs pass before ANY containers are
-  #   pushed.
-  # - by branch protection so it doesn't need to be updated each time the kube
-  #   versions in the matrix change
+  # This stable gate provides a single CI check for Mergify and branch
+  # protection, independent of the e2e matrix size, and prevents publishing
+  # images before all prerequisites succeed. Keep `needs` and the result checks
+  # below in sync.
   e2e-success:
     name: Successful e2e tests
     needs: [build, e2e, lint]
+    if: ${{ always() }}
     runs-on: ubuntu-latest
+    env:
+      BUILD_RESULT: ${{ needs.build.result }}
+      E2E_RESULT: ${{ needs.e2e.result }}
+      LINT_RESULT: ${{ needs.lint.result }}
     steps:
-      - name: Success
-        run: echo "Previous steps were successful"
+      - name: Verify required jobs succeeded
+        run: |
+          if [ "$BUILD_RESULT" != "success" ]; then
+            echo "::error::Required job 'build' did not succeed (result: $BUILD_RESULT)"
+            exit 1
+          fi
+          if [ "$E2E_RESULT" != "success" ]; then
+            echo "::error::Required job 'e2e' did not succeed (result: $E2E_RESULT)"
+            exit 1
+          fi
+          if [ "$LINT_RESULT" != "success" ]; then
+            echo "::error::Required job 'lint' did not succeed (result: $LINT_RESULT)"
+            exit 1
+          fi
+          echo "Previous steps were successful"
 
   push:
     name: Push container to registry
     needs: [e2e-success]
     if: >
+      success() &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-latest
