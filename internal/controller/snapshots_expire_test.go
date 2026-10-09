@@ -531,6 +531,26 @@ var _ = Describe("Expiring snapshots by count", func() {
 		Expect(k8sClient.Delete(context.TODO(), ns2)).To(Succeed())
 	})
 
+	// countSnaps returns the total number of snapshots in both namespaces
+	countSnaps := func() int {
+		snapList := &snapv1.VolumeSnapshotList{}
+		Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns1.Name))).To(Succeed())
+		count := len(snapList.Items)
+		Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns2.Name))).To(Succeed())
+		count += len(snapList.Items)
+		return count
+	}
+	// markSnapReady sets readyToUse on the snapshot and waits for it to be visible
+	markSnapReady := func(snap *snapv1.VolumeSnapshot) {
+		snap.Status = &snapv1.VolumeSnapshotStatus{ReadyToUse: pointer.Bool(true)}
+		Expect(k8sClient.Status().Update(context.TODO(), snap)).To(Succeed())
+		Eventually(func() bool {
+			s := &snapv1.VolumeSnapshot{}
+			Expect(k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(snap), s)).To(Succeed())
+			return s.Status != nil && s.Status.ReadyToUse != nil && *s.Status.ReadyToUse
+		}, timeout, interval).Should(BeTrue())
+	}
+
 	It("doesn't delete any when there's no max", func() {
 		noexpire := &snapschedulerv1.SnapshotSchedule{
 			ObjectMeta: metav1.ObjectMeta{
@@ -572,5 +592,123 @@ var _ = Describe("Expiring snapshots by count", func() {
 			count += len(snapList.Items)
 			return count
 		}, timeout, interval).Should(Equal(len(data) - 1))
+	})
+	It("removes unready snapshots before ready ones when there are too many", func() {
+		s := &snapschedulerv1.SnapshotSchedule{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "schedule",
+				Namespace: ns1.Name,
+			},
+		}
+		maxCount := int32(3)
+		s.Spec.Retention.MaxCount = &maxCount
+
+		snapList, err := snapshotsFromSchedule(context.TODO(), s, logger, k8sClient)
+		Expect(err).NotTo(HaveOccurred())
+		pvc1Snaps := sortSnapsByTime(groupSnapsByPVC(snapList)["pvc1"])
+		Expect(len(pvc1Snaps)).To(Equal(4))
+		// Only the oldest snapshot is ready; the newer ones are still pending
+		markSnapReady(&pvc1Snaps[0])
+
+		snapList, err = snapshotsFromSchedule(context.TODO(), s, logger, k8sClient)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(expireByCount(context.TODO(), s, logger, k8sClient, groupSnapsByPVC(snapList))).To(Succeed())
+		Eventually(countSnaps, timeout, interval).Should(Equal(len(data) - 1))
+
+		// The ready snapshot is kept; the oldest unready one is removed instead
+		snap := &snapv1.VolumeSnapshot{}
+		Expect(k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(&pvc1Snaps[0]), snap)).To(Succeed())
+		err = k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(&pvc1Snaps[1]), snap)
+		Expect(kerrors.IsNotFound(err)).To(BeTrue())
+	})
+	It("does not remove the newest pending snapshot ahead of ready ones", func() {
+		s := &snapschedulerv1.SnapshotSchedule{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "schedule",
+				Namespace: ns1.Name,
+			},
+		}
+		maxCount := int32(3)
+		s.Spec.Retention.MaxCount = &maxCount
+
+		snapList, err := snapshotsFromSchedule(context.TODO(), s, logger, k8sClient)
+		Expect(err).NotTo(HaveOccurred())
+		pvc1Snaps := sortSnapsByTime(groupSnapsByPVC(snapList)["pvc1"])
+		Expect(len(pvc1Snaps)).To(Equal(4))
+		// The PVC is at maxCount with ready snapshots and the newest one was just
+		// created and is still pending
+		for i := 0; i < 3; i++ {
+			markSnapReady(&pvc1Snaps[i])
+		}
+
+		snapList, err = snapshotsFromSchedule(context.TODO(), s, logger, k8sClient)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(expireByCount(context.TODO(), s, logger, k8sClient, groupSnapsByPVC(snapList))).To(Succeed())
+		Eventually(countSnaps, timeout, interval).Should(Equal(len(data) - 1))
+
+		// The pending snapshot is kept; the oldest ready one is removed
+		snap := &snapv1.VolumeSnapshot{}
+		Expect(k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(&pvc1Snaps[3]), snap)).To(Succeed())
+		err = k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(&pvc1Snaps[0]), snap)
+		Expect(kerrors.IsNotFound(err)).To(BeTrue())
+	})
+	It("removes stale pending snapshots, then the oldest, when maxCount forces it", func() {
+		s := &snapschedulerv1.SnapshotSchedule{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "schedule",
+				Namespace: ns1.Name,
+			},
+		}
+		maxCount := int32(1)
+		s.Spec.Retention.MaxCount = &maxCount
+
+		snapList, err := snapshotsFromSchedule(context.TODO(), s, logger, k8sClient)
+		Expect(err).NotTo(HaveOccurred())
+		pvc1Snaps := sortSnapsByTime(groupSnapsByPVC(snapList)["pvc1"])
+		Expect(len(pvc1Snaps)).To(Equal(4))
+		// The two oldest are ready, the two newest are still pending
+		markSnapReady(&pvc1Snaps[0])
+		markSnapReady(&pvc1Snaps[1])
+
+		snapList, err = snapshotsFromSchedule(context.TODO(), s, logger, k8sClient)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(expireByCount(context.TODO(), s, logger, k8sClient, groupSnapsByPVC(snapList))).To(Succeed())
+		Eventually(countSnaps, timeout, interval).Should(Equal(len(data) - 3))
+
+		// maxCount is still enforced: the stale pending snapshot goes first, then
+		// the oldest ready ones; the newest (pending) snapshot remains
+		snap := &snapv1.VolumeSnapshot{}
+		Expect(k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(&pvc1Snaps[3]), snap)).To(Succeed())
+		for _, i := range []int{0, 1, 2} {
+			err = k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(&pvc1Snaps[i]), snap)
+			Expect(kerrors.IsNotFound(err)).To(BeTrue())
+		}
+	})
+	It("removes the oldest when all snapshots are ready", func() {
+		s := &snapschedulerv1.SnapshotSchedule{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "schedule",
+				Namespace: ns1.Name,
+			},
+		}
+		maxCount := int32(3)
+		s.Spec.Retention.MaxCount = &maxCount
+
+		snapList, err := snapshotsFromSchedule(context.TODO(), s, logger, k8sClient)
+		Expect(err).NotTo(HaveOccurred())
+		pvc1Snaps := sortSnapsByTime(groupSnapsByPVC(snapList)["pvc1"])
+		Expect(len(pvc1Snaps)).To(Equal(4))
+		for i := range pvc1Snaps {
+			markSnapReady(&pvc1Snaps[i])
+		}
+
+		snapList, err = snapshotsFromSchedule(context.TODO(), s, logger, k8sClient)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(expireByCount(context.TODO(), s, logger, k8sClient, groupSnapsByPVC(snapList))).To(Succeed())
+		Eventually(countSnaps, timeout, interval).Should(Equal(len(data) - 1))
+
+		snap := &snapv1.VolumeSnapshot{}
+		err = k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(&pvc1Snaps[0]), snap)
+		Expect(kerrors.IsNotFound(err)).To(BeTrue())
 	})
 })
