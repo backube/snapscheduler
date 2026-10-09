@@ -87,6 +87,14 @@ be deleted according to the more restrictive of the two. For example, the hourly
 schedule shown, above, will keep a maximum of 10 snapshots since that is more
 restrictive than 168 hours since new snapshots are taken hourly.
 
+When `maxCount` is exceeded, stale pending snapshots are deleted first: those
+that are not yet ready to use (`.status.readyToUse` is not `true`) and are no
+longer the newest snapshot for the PVC. The remaining snapshots are then deleted
+oldest first. The newest snapshot is never treated as stale, since it is the one
+most recently created by the schedule and may still be completing. This keeps a
+restorable snapshot while newer snapshots are still being created, without
+exceeding the configured maximum.
+
 ### Selecting PVCs
 
 The `spec.claimSelector` is an optional field can be used to limit which PVCs

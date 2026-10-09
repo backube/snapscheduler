@@ -13,6 +13,13 @@ This project follows [Semantic Versioning](https://semver.org/)
 - Ability to set annotations on the created snapshots via
   `spec.snapshotTemplate.annotations`
 
+### Fixed
+
+- Count-based retention (`maxCount`) now deletes stale pending snapshots (not
+  yet `readyToUse` and no longer the newest for the PVC) before ready ones, so
+  the last restorable snapshot is not removed while newer snapshots are still
+  pending.
+
 ## [3.5.0] - 2025-05-14
 
 ### Added
