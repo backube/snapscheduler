@@ -130,6 +130,13 @@ spec:
               snapshotTemplate:
                 description: A template to customize the Snapshots.
                 properties:
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      A list of annotations that should be added to each Snapshot created by
+                      this schedule.
+                    type: object
                   labels:
                     additionalProperties:
                       type: string

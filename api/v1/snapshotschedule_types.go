@@ -55,6 +55,11 @@ type SnapshotRetentionSpec struct {
 
 // SnapshotTemplateSpec defines the template for Snapshot objects
 type SnapshotTemplateSpec struct {
+	// A list of annotations that should be added to each Snapshot created by
+	// this schedule.
+	//+operator-sdk:csv:customresourcedefinitions:type=spec
+	//+optional
+	Annotations map[string]string `json:"annotations,omitempty"`
 	// A list of labels that should be added to each Snapshot created by this
 	// schedule.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec
