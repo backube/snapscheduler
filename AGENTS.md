@@ -190,7 +190,7 @@ tests.
 
 - All tools (controller-gen, kustomize, golangci-lint, etc.) are
   installed to `./bin` via `make` targets
-- The operator uses controller-runtime v0.23.x and Kubernetes v0.35.x
+- The operator uses controller-runtime v0.25.x and Kubernetes v0.37.x
 - CRD manifests in `config/crd/bases/` are automatically copied to
   `helm/snapscheduler/templates/` during `make manifests`
 - Version is set via git describe:
@@ -209,9 +209,9 @@ tests.
 To run e2e tests locally, you need:
 
 - **kubectl**: Any recent version (tested with v1.31.0)
-- **kind**: Version v0.31.0 (as specified in `.github/workflows/tests.yml`)
+- **kind**: Version v0.33.0 (as specified in `.github/workflows/tests.yml`)
   - Earlier versions (e.g., v0.26.0) have containerd compatibility issues
-  - Later versions should work but CI uses v0.31.0
+  - Later versions should work but CI uses v0.33.0
 - **Docker**: For building images and running kind
 - **Helm**: Installed to `./bin/helm` via `make helm`
 

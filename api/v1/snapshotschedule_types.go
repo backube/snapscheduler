@@ -148,7 +148,3 @@ type SnapshotScheduleList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []SnapshotSchedule `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&SnapshotSchedule{}, &SnapshotScheduleList{})
-}
