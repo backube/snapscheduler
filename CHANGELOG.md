@@ -13,8 +13,18 @@ This project follows [Semantic Versioning](https://semver.org/)
 - Ability to set annotations on the created snapshots via
   `spec.snapshotTemplate.annotations`
 
+### Changed
+
+- Upgrade controller-runtime to v0.25.2 and Kubernetes modules to v0.37.0.
+  Building the module now requires Go 1.26 or newer.
+- The exported `api/v1.SchemeBuilder` now uses `runtime.SchemeBuilder`;
+  `AddToScheme` is unchanged. Consumers relying on controller-runtime-specific
+  builder methods must migrate to apimachinery scheme registration.
+
 ### Fixed
 
+- Upgrade `golang.org/x/net` to v0.60.0 to address reachable HTTP/2
+  vulnerabilities.
 - Count-based retention (`maxCount`) now deletes stale pending snapshots (not
   yet `readyToUse` and no longer the newest for the PVC) before ready ones, so
   the last restorable snapshot is not removed while newer snapshots are still
