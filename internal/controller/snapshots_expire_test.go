@@ -81,6 +81,47 @@ var _ = Describe("Snapshot expiration time is parsed correctly", func() {
 	})
 })
 
+var _ = Describe("Retention expires validation in the CRD", func() {
+	var ns *v1.Namespace
+	BeforeEach(func() {
+		ns = &v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "test-",
+			},
+		}
+		Expect(k8sClient.Create(context.TODO(), ns)).To(Succeed())
+	})
+	AfterEach(func() {
+		Expect(k8sClient.Delete(context.TODO(), ns)).To(Succeed())
+	})
+	scheduleWithExpires := func(expires string) *snapschedulerv1.SnapshotSchedule {
+		return &snapschedulerv1.SnapshotSchedule{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "schedule-",
+				Namespace:    ns.Name,
+			},
+			Spec: snapschedulerv1.SnapshotScheduleSpec{
+				Schedule: "@hourly",
+				Retention: snapschedulerv1.SnapshotRetentionSpec{
+					Expires: expires,
+				},
+			},
+		}
+	}
+	It("accepts h/m/s durations that time.ParseDuration accepts", func() {
+		for _, expires := range []string{"1h", "30m", "168h", "8760h0m0s", "1h30m", "1.5h", "0.5h", "90s"} {
+			_, err := time.ParseDuration(expires)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(k8sClient.Create(context.TODO(), scheduleWithExpires(expires))).To(Succeed(), expires)
+		}
+	})
+	It("rejects values that are not durations or use sub-second units", func() {
+		for _, expires := range []string{"10d", "-1h", "1", "h", "1h ", "garbage", ".4h", "500ms", "1us", "1ns"} {
+			Expect(k8sClient.Create(context.TODO(), scheduleWithExpires(expires))).NotTo(Succeed(), expires)
+		}
+	})
+})
+
 var _ = Describe("Finding snapshots created by a schedule", func() {
 	var objects []client.Object
 	var ns *v1.Namespace

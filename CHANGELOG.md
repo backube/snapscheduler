@@ -29,6 +29,9 @@ This project follows [Semantic Versioning](https://semver.org/)
   yet `readyToUse` and no longer the newest for the PVC) before ready ones, so
   the last restorable snapshot is not removed while newer snapshots are still
   pending.
+- `spec.retention.expires` now accepts multi-term and decimal durations
+  using `h`, `m` and `s` (for example `8760h0m0s` or `1.5h`) instead of only
+  a single `<number>h|m|s` term.
 
 ## [3.5.0] - 2025-05-14
 

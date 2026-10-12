@@ -114,7 +114,7 @@ spec:
                     description: |-
                       The length of time (time.Duration) after which a given Snapshot will be
                       deleted.
-                    pattern: ^\d+(h|m|s)$
+                    pattern: ^(\d+(\.\d+)?(h|m|s))+$
                     type: string
                   maxCount:
                     description: The maximum number of snapshots to retain per PVC
