@@ -42,7 +42,7 @@ import (
 type SnapshotRetentionSpec struct {
 	// The length of time (time.Duration) after which a given Snapshot will be
 	// deleted.
-	//+kubebuilder:validation:Pattern=^\d+(h|m|s)$
+	//+kubebuilder:validation:Pattern=`^(\d+(\.\d+)?(h|m|s))+$`
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Expiration period",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:text"}
 	//+optional
 	Expires string `json:"expires,omitempty"`
