@@ -180,6 +180,22 @@ if [[ $KUBE_MINOR -ge 23 ]]; then
   }
   trap cleanup_psa_probe_namespace EXIT
 
+  log "Waiting for default ServiceAccount in ${PSA_PROBE_NAMESPACE}"
+  PSA_PROBE_SERVICE_ACCOUNT=""
+  for ((PSA_PROBE_SA_WAITED = 0; PSA_PROBE_SA_WAITED <= 30; PSA_PROBE_SA_WAITED++)); do
+    PSA_PROBE_SERVICE_ACCOUNT="$(kubectl get serviceaccount/default -n "${PSA_PROBE_NAMESPACE}" --ignore-not-found -o name)"
+    if [[ -n "${PSA_PROBE_SERVICE_ACCOUNT}" ]]; then
+      break
+    fi
+    if (( PSA_PROBE_SA_WAITED < 30 )); then
+      sleep 1
+    fi
+  done
+  if [[ -z "${PSA_PROBE_SERVICE_ACCOUNT}" ]]; then
+    log "ERROR: timed out waiting 30 seconds for serviceaccount/default in ${PSA_PROBE_NAMESPACE}"
+    exit 1
+  fi
+
   log "Verifying PodSecurity restricted enforcement"
   if PSA_PROBE_OUTPUT="$(kubectl create --dry-run=server -f - 2>&1 <<POD
 apiVersion: v1
