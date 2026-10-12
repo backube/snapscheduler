@@ -37,9 +37,8 @@ serviceAccount:
 
 podSecurityContext:
   runAsNonRoot: true
-  # Uncomment when we no longer support OCP 4.10
-  # seccompProfile:
-  #   type: RuntimeDefault
+  seccompProfile:
+    type: RuntimeDefault
 
 # additional annotations to add to pods
 podAnnotations: {}

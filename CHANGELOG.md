@@ -15,6 +15,8 @@ This project follows [Semantic Versioning](https://semver.org/)
 
 ### Changed
 
+- Make operator pods compliant with restricted Pod Security Admission using
+  `RuntimeDefault` seccomp, and raise the OpenShift support floor to 4.11.
 - Upgrade controller-runtime to v0.25.2 and Kubernetes modules to v0.37.0.
   Building the module now requires Go 1.26 or newer.
 - The exported `api/v1.SchemeBuilder` now uses `runtime.SchemeBuilder`;

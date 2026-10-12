@@ -38,6 +38,7 @@ for more information.
 ## Requirements
 
 - Kubernetes >= 1.20
+- OpenShift >= 4.11
 - CSI-based storage driver that supports snapshots (i.e. has the
   `CREATE_DELETE_SNAPSHOT` capability)
 
@@ -175,10 +176,12 @@ case, the defaults, shown below, should be sufficient.
   - Whether to create the ServiceAccount for the operator
 - `serviceAccount.name`: none
   - Override the name of the operator's ServiceAccount
-- `podSecurityContext`: none
+- `podSecurityContext`: `runAsNonRoot: true`,
+  `seccompProfile.type: RuntimeDefault`
   - Allows setting the security context for the operator pod
-- `securityContext`: none
-  - Allows setting the operator container's security context
+- `securityContext`: `allowPrivilegeEscalation: false`,
+  `capabilities.drop: [ALL]`
+  - Allows setting the operator containers' security context
 - `resources`: requests for 10m CPU and 100Mi memory; no limits
   - Allows overriding the resource requests/limits for the manager
     container of the operator pod.

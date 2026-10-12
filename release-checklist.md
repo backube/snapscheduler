@@ -42,7 +42,7 @@
     # Single version means that version and greater
     # Single version preceded by "=" means ONLY that version
     # Range is also permitted
-    com.redhat.openshift.versions: "v4.7"
+    com.redhat.openshift.versions: "v4.11"
     ```
 
 - Add it to the [community

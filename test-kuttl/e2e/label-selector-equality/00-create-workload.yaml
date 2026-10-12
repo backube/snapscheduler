@@ -44,8 +44,6 @@ spec:
         capabilities:
           drop: ["ALL"]
         readOnlyRootFilesystem: true
-        # seccompProfile:
-        #   type: RuntimeDefault
       volumeMounts:
         - name: data
           mountPath: "/mnt"
@@ -53,6 +51,8 @@ spec:
           mountPath: "/mnt2"
   securityContext:
     runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
   terminationGracePeriodSeconds: 2
   volumes:
     - name: data

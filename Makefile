@@ -243,7 +243,7 @@ bundle: manifests kustomize operator-sdk ## Generate bundle manifests and metada
 	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
 	$(OPERATOR_SDK) bundle validate ./bundle --select-optional name=community --optional-values=image-path=bundle.Dockerfile
 	$(OPERATOR_SDK) bundle validate ./bundle --select-optional suite=operatorframework
-	echo '  com.redhat.openshift.versions: "v4.7"' >> bundle/metadata/annotations.yaml
+	echo '  com.redhat.openshift.versions: "v4.11"' >> bundle/metadata/annotations.yaml
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
