@@ -21,8 +21,15 @@ KIND_CONFIG_FILE="$(mktemp --tmpdir kind-config-XXXXXX.yaml)"
 # Enforce pod security standards
 # https://kubernetes.io/docs/tasks/configure-pod-container/enforce-standards-admission-controller/#configure-the-admission-controller
 # https://kubernetes.io/docs/tutorials/security/cluster-level-pss/
+# PodSecurity admission is available in Kubernetes 1.23 and newer.
 if [[ $KUBE_MINOR -ge 23 ]]; then
   log "Setting up PodSecurity admission"
+  # PodSecurityConfiguration v1 is available in 1.25+; 1.23-1.24 use v1beta1.
+  if [[ $KUBE_MINOR -ge 25 ]]; then
+    PSA_API_VERSION="v1"
+  else
+    PSA_API_VERSION="v1beta1"
+  fi
   # Pod security controller has to be configured by passing a config file to
   # api-server on the command line
   SHARED_DIR="$(mktemp -d --tmpdir control-plane-shared-XXXXXX)"
@@ -32,7 +39,7 @@ kind: AdmissionConfiguration
 plugins:
 - name: PodSecurity
   configuration:
-    apiVersion: pod-security.admission.config.k8s.io/v1beta1
+    apiVersion: pod-security.admission.config.k8s.io/${PSA_API_VERSION}
     kind: PodSecurityConfiguration
     # Defaults applied when a mode label is not set.
     #
@@ -45,7 +52,7 @@ plugins:
     # - "latest" (default)
     # - specific version like "v1.24"
     defaults:
-      enforce: "privileged"
+      enforce: "restricted"
       enforce-version: "latest"
       audit: "restricted"
       audit-version: "latest"
@@ -55,6 +62,7 @@ plugins:
       usernames: []
       runtimeClasses: []
       namespaces:
+        # KUTTL tests use per-test namespaces and remain enforced.
         - default             # CSI hostpath runs here
         - kube-system
         - local-path-storage  # default local storage provisioner
@@ -83,6 +91,8 @@ nodes:
     readOnly: true
     selinuxRelabel: false
 KINDCONFIG
+else
+  log "PodSecurity admission is unavailable before Kubernetes 1.23; skipping PSA setup and enforcement probe"
 fi
 
 if [[ $KUBE_MINOR -le 16 ]]; then
@@ -160,6 +170,45 @@ kind create cluster ${KIND_CONFIG} --image "kindest/node:v${KUBE_VERSION}"
 
 rm -f "${KIND_CONFIG_FILE}"
 
+if [[ $KUBE_MINOR -ge 23 ]]; then
+  # Use a dedicated namespace that is not in the PodSecurity exemption list.
+  PSA_PROBE_NAMESPACE="psa-enforcement-probe-$$"
+  kubectl create namespace "${PSA_PROBE_NAMESPACE}" >/dev/null
+
+  cleanup_psa_probe_namespace() {
+    kubectl delete namespace "${PSA_PROBE_NAMESPACE}" --ignore-not-found --wait=false >/dev/null 2>&1 || true
+  }
+  trap cleanup_psa_probe_namespace EXIT
+
+  log "Verifying PodSecurity restricted enforcement"
+  if PSA_PROBE_OUTPUT="$(kubectl create --dry-run=server -f - 2>&1 <<POD
+apiVersion: v1
+kind: Pod
+metadata:
+  name: psa-enforcement-probe
+  namespace: ${PSA_PROBE_NAMESPACE}
+spec:
+  containers:
+  - name: probe
+    image: registry.k8s.io/pause:3.10
+    securityContext:
+      privileged: true
+POD
+)"; then
+    log "ERROR: PodSecurity accepted a privileged Pod in the probe namespace"
+    echo "${PSA_PROBE_OUTPUT}" >&2
+    exit 1
+  elif ! grep -Fq 'violates PodSecurity "restricted' <<<"${PSA_PROBE_OUTPUT}"; then
+    log "ERROR: PodSecurity enforcement probe failed for an unexpected reason"
+    echo "${PSA_PROBE_OUTPUT}" >&2
+    exit 1
+  fi
+
+  log "PodSecurity restricted enforcement verified"
+  kubectl delete namespace "${PSA_PROBE_NAMESPACE}" --wait=true >/dev/null
+  trap - EXIT
+fi
+
 # Kube >= 1.17, we need to deploy the snapshot controller
 if [[ $KUBE_MINOR -ge 25 ]]; then  # Starting w/ v8, min supported kube is 1.25
   # renovate: datasource=github-releases depName=kubernetes-csi/external-snapshotter versioning=semver-coerced
@@ -228,6 +277,10 @@ case "$KUBE_MINOR" in
     ;;
   22|23)
     TAG="v1.10.0"
+    DEPLOY_SCRIPT="deploy.sh"
+    ;;
+  24)
+    TAG="v1.12.1"
     DEPLOY_SCRIPT="deploy.sh"
     ;;
   *)

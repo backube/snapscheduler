@@ -148,7 +148,8 @@ spec:
 
     ## Requirements
 
-    - OpenShift >= 4.7 (Kubernetes >= 1.20)
+    - OpenShift >= 4.11
+    - Kubernetes >= 1.20
     - CSI-based storage driver that supports snapshots (i.e. has the
       `CREATE_DELETE_SNAPSHOT` capability)
 
@@ -352,6 +353,8 @@ spec:
                 kubernetes.io/os: linux
               securityContext:
                 runAsNonRoot: true
+                seccompProfile:
+                  type: RuntimeDefault
               serviceAccountName: snapscheduler-controller-manager
               terminationGracePeriodSeconds: 10
       permissions:

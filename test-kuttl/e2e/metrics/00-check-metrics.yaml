@@ -19,4 +19,6 @@ spec:
   restartPolicy: OnFailure
   securityContext:
     runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
   terminationGracePeriodSeconds: 2
