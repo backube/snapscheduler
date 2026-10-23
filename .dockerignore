@@ -2,3 +2,4 @@
 # Ignore all files which are not go type
 /bin
 /docs
+/image.tar

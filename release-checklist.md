@@ -13,7 +13,18 @@
 - Branch to a release branch
 - Tag a release (vX.Y.Z) on that branch
 - Ensure the container becomes available on
-  [Quay](https://quay.io/repository/backube/snapscheduler?tab=tags)
+  [Quay](https://quay.io/repository/backube/snapscheduler?tab=tags). The
+  published tag must contain all of `linux/amd64`, `linux/arm64`,
+  `linux/s390x`, and `linux/ppc64le`. CI asserts this for both `latest` and
+  version tags; to check manually:
+
+  ```shell
+  skopeo inspect --raw docker://quay.io/backube/snapscheduler:<tag> |
+    jq -r '(.manifests // [])[]
+      | select(.platform.architecture != "unknown")
+      | "\(.platform.os)/\(.platform.architecture)"' | sort -u
+  ```
+
 - Edit [.github/workflows/periodic.yml](.github/workflows/periodic.yml) to
   enable periodic builds of release branch and tagged containers
 

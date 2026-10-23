@@ -20,6 +20,8 @@ env:
   KIND_VERSION: "0.33.0"
   GO111MODULE: "on"
   IMAGE: "quay.io/backube/snapscheduler"
+  IMAGE_PLATFORMS: "linux/amd64,linux/arm64,linux/s390x,linux/ppc64le"
+  CI_TAG: "ci-build"
 
 jobs:
   lint:
@@ -95,7 +97,10 @@ jobs:
 
   build:
     name: Build
-    runs-on: ubuntu-26.04
+    # The build exports a multi-platform OCI archive instead of relying on the
+    # runner's Docker/containerd image store. Keep the runner pinned so the
+    # toolchain does not drift.
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout source
@@ -106,20 +111,29 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
+      - name: Set up Buildx
+        run: |
+          # Pin BuildKit by digest: the docker-container driver runs it
+          # privileged and it produces the archive that is eventually published.
+          docker buildx create --name snapscheduler-builder \
+            --driver docker-container \
+            --driver-opt image=moby/buildkit:v0.33.1@sha256:cec9f139f45e93c5c69c60f8b07cfad9f43f4ef6b6a6cd917527fea5ff2e3dea \
+            --use
+          docker buildx inspect --bootstrap
+
       - name: Build operator container
         run: |
-          make docker-build \
-            IMG="${IMAGE}" \
-            DOCKER_BUILD_FLAGS="--platform=linux/amd64,linux/arm64,linux/s390x,linux/ppc64le"
-
-      - name: Export container image
-        run: docker save -o /tmp/image.tar ${IMAGE}
+          make docker-build-oci \
+            IMG="${IMAGE}:${CI_TAG}" \
+            OCI_ARCHIVE=/tmp/image.tar \
+            DOCKER_BUILD_FLAGS="--platform=${IMAGE_PLATFORMS}"
 
       - name: Save container as artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: container
           path: /tmp/image.tar
+          if-no-files-found: error
 
   test:
     name: Unit test
@@ -225,16 +239,16 @@ jobs:
           path: /tmp
 
       - name: Import container image
-        run: |
-          docker load -i /tmp/image.tar
-          docker inspect ${IMAGE}
-          docker tag ${IMAGE} ${IMAGE}:ci-build
-          kind load docker-image "${IMAGE}:ci-build"
+        # Kind loads the archive under the full image name embedded at build
+        # time (${IMAGE}:${CI_TAG}), which must match the chart's
+        # image.repository plus the tagOverride below.
+        run: kind load image-archive /tmp/image.tar
 
       - name: Start operator
         run: |
           bin/helm install --create-namespace -n backube-snapscheduler \
-              --set image.tagOverride=ci-build \
+              --set image.repository="${IMAGE}" \
+              --set image.tagOverride="${CI_TAG}" \
               --set metrics.disableAuth=true \
               --wait --timeout=300s \
               snapscheduler ./helm/snapscheduler
@@ -280,7 +294,9 @@ jobs:
       success() &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
-    runs-on: ubuntu-26.04
+    # The image is published from the OCI archive with skopeo, so this job does
+    # not depend on the runner's Docker (containerd) image store.
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Load container artifact
@@ -289,33 +305,75 @@ jobs:
           name: container
           path: /tmp
 
-      - name: Import container image
-        run: |
-          docker load -i /tmp/image.tar
-          docker inspect ${IMAGE}
-
       - name: Login to registry
         # If the registry server is specified in the image name, we use that.
         # If the server isn't in the image name, default to docker.io
+        env:
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
         run: |
           [[ "${IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="docker.io"
-          echo "Attempting docker login to: ${REGISTRY}"
-          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin ${REGISTRY}
+          echo "Attempting skopeo login to: ${REGISTRY}"
+          printf '%s\n' "${REGISTRY_PASSWORD}" | skopeo login \
+            --authfile "${RUNNER_TEMP}/containers-auth.json" \
+            --username "${REGISTRY_USERNAME}" \
+            --password-stdin "${REGISTRY}"
 
-      - name: Push to registry (latest)
-        if: >
-          (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-          github.ref == 'refs/heads/master'
+      - name: Publish and verify multi-platform image
         run: |
-          docker push "${IMAGE}"
+          AUTHFILE="${RUNNER_TEMP}/containers-auth.json"
+          # Keep this list independent of IMAGE_PLATFORMS: it is the supported
+          # platform contract that the published tag must satisfy.
+          EXPECTED_PLATFORMS="linux/amd64 linux/arm64 linux/s390x linux/ppc64le"
 
-      - name: Push to registry (version tag)
-        if: >
-          (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-          startsWith(github.ref, 'refs/tags/v')
-        run: |
-          [[ "${{ github.ref }}" =~ ^refs/tags/v([0-9]+\..*) ]] || exit 0
-          TAG="${BASH_REMATCH[1]}"
-          echo "Pushing to $TAG"
-          docker tag "${IMAGE}" "${IMAGE}:${TAG}"
-          docker push "${IMAGE}:${TAG}"
+          if [ "${GITHUB_REF}" = "refs/heads/master" ]; then
+            TAG="latest"
+          elif [[ "${GITHUB_REF}" =~ ^refs/tags/v([0-9]+\..*) ]]; then
+            TAG="${BASH_REMATCH[1]}"
+          else
+            echo "::error::No publish tag for ${GITHUB_REF}"
+            exit 1
+          fi
+
+          echo "Publishing ${IMAGE}:${TAG} from the OCI archive"
+          skopeo --version
+          skopeo copy --all \
+            --authfile "${AUTHFILE}" \
+            "oci-archive:/tmp/image.tar:${CI_TAG}" \
+            "docker://${IMAGE}:${TAG}"
+
+          # Assert the registry's view of the pushed tag, not the local archive.
+          skopeo inspect --raw \
+            --authfile "${AUTHFILE}" \
+            "docker://${IMAGE}:${TAG}" > /tmp/index.json
+
+          # BuildKit attestation entries are not platforms; drop them.
+          ACTUAL_PLATFORMS=$(jq -r '[.manifests[]? | select((.platform.architecture // "unknown") != "unknown") | "\(.platform.os)/\(.platform.architecture)"] | unique | join(" ")' /tmp/index.json)
+
+          if ! jq -e '(.manifests | length) > 0' /tmp/index.json > /dev/null; then
+            echo "::error::${IMAGE}:${TAG} is not a multi-platform image index"
+            echo "Expected platforms: ${EXPECTED_PLATFORMS}"
+            echo "Actual platforms:   ${ACTUAL_PLATFORMS:-<none>}"
+            echo "Registry index for ${IMAGE}:${TAG}:"
+            cat /tmp/index.json
+            exit 1
+          fi
+
+          MISSING_PLATFORMS=""
+          for PLATFORM in ${EXPECTED_PLATFORMS}; do
+            case " ${ACTUAL_PLATFORMS} " in
+              *" ${PLATFORM} "*) ;;
+              *) MISSING_PLATFORMS="${MISSING_PLATFORMS} ${PLATFORM}" ;;
+            esac
+          done
+
+          if [ -n "${MISSING_PLATFORMS}" ]; then
+            echo "::error::${IMAGE}:${TAG} is missing expected platforms:${MISSING_PLATFORMS}"
+            echo "Expected platforms: ${EXPECTED_PLATFORMS}"
+            echo "Actual platforms:   ${ACTUAL_PLATFORMS}"
+            echo "Registry index for ${IMAGE}:${TAG}:"
+            cat /tmp/index.json
+            exit 1
+          fi
+
+          echo "Success: ${IMAGE}:${TAG} contains all expected platforms: ${ACTUAL_PLATFORMS}"
