@@ -166,6 +166,17 @@
     },
     {
       "customType": "regex",
+      "description": "BuildKit image updates in GitHub workflows",
+      "fileMatch": [
+        "^.github/(?:workflows|actions)/.+\\.ya?ml$"
+      ],
+      "matchStrings": [
+        "image=(?<depName>moby/buildkit):(?<currentValue>[^\\s@]+)@(?<currentDigest>sha256:[a-f0-9]+)"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
       "description": "Update tags for repos in hack/setup-kind-cluster.sh",
       "fileMatch": [
         "^hack/setup-kind-cluster.sh$"

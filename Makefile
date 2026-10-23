@@ -149,6 +149,15 @@ run: manifests generate lint ## Run a controller from your host.
 docker-build: ## Build docker image with the manager.
 	$(CONTAINER_TOOL) build $(DOCKER_BUILD_FLAGS) --build-arg "version=$(VERSION)"  --build-arg "builddate=$(BUILDDATE)" -t ${IMG} .
 
+# OCI_ARCHIVE is the destination of the OCI image archive produced by
+# docker-build-oci. The target requires a buildx builder that supports
+# multi-platform OCI output, e.g. one created with:
+#   docker buildx create --driver docker-container --use
+OCI_ARCHIVE ?= image.tar
+.PHONY: docker-build-oci
+docker-build-oci: ## Build a multi-platform image as an OCI archive (requires buildx).
+	$(CONTAINER_TOOL) buildx build $(DOCKER_BUILD_FLAGS) --build-arg "version=$(VERSION)" --build-arg "builddate=$(BUILDDATE)" -t ${IMG} --output "type=oci,dest=${OCI_ARCHIVE}" .
+
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	$(CONTAINER_TOOL) push ${IMG}
