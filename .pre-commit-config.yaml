@@ -55,6 +55,6 @@ repos:
       - id: shellcheck
 
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: "44.167.7"
+    rev: "44.181.8"
     hooks:
       - id: renovate-config-validator
