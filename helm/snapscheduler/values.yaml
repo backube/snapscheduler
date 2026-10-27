@@ -20,7 +20,7 @@ enableLeaderElection: true
 rbacProxy:
   image:
     repository: quay.io/brancz/kube-rbac-proxy
-    tag: v0.23.0@sha256:a6075902738eaf1780390561ea998a53a056ef1d2b312bcbf0e2e81fec084b3c
+    tag: v0.23.1@sha256:c280684dd23793fb2f287d1f4efc84b7800b3e01205d770b98694827bfe514cb
     image: ""
     pullPolicy: IfNotPresent
   resources:
