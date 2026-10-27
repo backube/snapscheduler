@@ -100,7 +100,7 @@ jobs:
     # The build exports a multi-platform OCI archive instead of relying on the
     # runner's Docker/containerd image store. Keep the runner pinned so the
     # toolchain does not drift.
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Checkout source
@@ -296,7 +296,7 @@ jobs:
       (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
     # The image is published from the OCI archive with skopeo, so this job does
     # not depend on the runner's Docker (containerd) image store.
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Load container artifact
