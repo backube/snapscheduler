@@ -200,10 +200,20 @@ func sortSnapsByTime(snaps []snapv1.VolumeSnapshot) []snapv1.VolumeSnapshot {
 // normally the one just created by the schedule and is still being completed
 // by the CSI driver when the follow-up reconcile runs expiration, so it is
 // ranked by age like a ready snapshot rather than being removed immediately.
+//
+// While no snapshot of the PVC is ready, the oldest pending snapshot is never
+// stale and is deleted last: it is the closest to becoming restorable, so a
+// volume whose snapshots take longer than the schedule interval to complete
+// still ends up with a ready one. This does not apply once the CSI driver has
+// reported an error on it.
 func sortSnapsForExpiration(snaps []snapv1.VolumeSnapshot) []snapv1.VolumeSnapshot {
 	sorted := sortSnapsByTime(snaps)
+	var oldest []snapv1.VolumeSnapshot
+	if len(sorted) > 1 && !anySnapshotReady(sorted) && !snapshotHasError(&sorted[0]) {
+		oldest, sorted = sorted[:1], sorted[1:]
+	}
 	stale := make([]snapv1.VolumeSnapshot, 0, len(sorted))
-	rest := make([]snapv1.VolumeSnapshot, 0, len(sorted))
+	rest := make([]snapv1.VolumeSnapshot, 0, len(sorted)+len(oldest))
 	for i := range sorted {
 		if i < len(sorted)-1 && !isSnapshotReady(&sorted[i]) {
 			stale = append(stale, sorted[i])
@@ -211,5 +221,20 @@ func sortSnapsForExpiration(snaps []snapv1.VolumeSnapshot) []snapv1.VolumeSnapsh
 			rest = append(rest, sorted[i])
 		}
 	}
-	return append(stale, rest...)
+	return append(stale, append(rest, oldest...)...)
+}
+
+// snapshotHasError returns true if the CSI driver reported an error on the snapshot
+func snapshotHasError(snap *snapv1.VolumeSnapshot) bool {
+	return snap.Status != nil && snap.Status.Error != nil
+}
+
+// anySnapshotReady returns true if any of the snapshots is ready to use
+func anySnapshotReady(snaps []snapv1.VolumeSnapshot) bool {
+	for i := range snaps {
+		if isSnapshotReady(&snaps[i]) {
+			return true
+		}
+	}
+	return false
 }

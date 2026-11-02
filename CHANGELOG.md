@@ -31,6 +31,9 @@ This project follows [Semantic Versioning](https://semver.org/)
   yet `readyToUse` and no longer the newest for the PVC) before ready ones, so
   the last restorable snapshot is not removed while newer snapshots are still
   pending.
+- While no snapshot of a PVC is ready yet, count-based retention keeps the
+  oldest pending snapshot, so a volume whose snapshots take longer than the
+  schedule interval to complete still gets a ready snapshot.
 - `spec.retention.expires` now accepts multi-term and decimal durations
   using `h`, `m` and `s` (for example `8760h0m0s` or `1.5h`) instead of only
   a single `<number>h|m|s` term.
