@@ -20,6 +20,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -753,3 +754,43 @@ var _ = Describe("Expiring snapshots by count", func() {
 		Expect(kerrors.IsNotFound(err)).To(BeTrue())
 	})
 })
+
+var _ = DescribeTable("Ordering snapshots for count-based expiration",
+	func(states []string, maxCount int, expectDeleted []int) {
+		base := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+		snaps := make([]snapv1.VolumeSnapshot, len(states))
+		// Listed newest first to check that ordering does not depend on input order
+		for i := range states {
+			snap := snapv1.VolumeSnapshot{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              fmt.Sprintf("snap-%d", i),
+					CreationTimestamp: metav1.NewTime(base.Add(time.Duration(i) * time.Hour)),
+				},
+			}
+			switch states[i] {
+			case "ready":
+				snap.Status = &snapv1.VolumeSnapshotStatus{ReadyToUse: pointer.Bool(true)}
+			case "failed":
+				snap.Status = &snapv1.VolumeSnapshotStatus{Error: &snapv1.VolumeSnapshotError{}}
+			}
+			snaps[len(states)-1-i] = snap
+		}
+		sorted := sortSnapsForExpiration(snaps)
+		deleted := []string{}
+		for _, snap := range sorted[:len(snaps)-maxCount] {
+			deleted = append(deleted, snap.Name)
+		}
+		expected := []string{}
+		for _, i := range expectDeleted {
+			expected = append(expected, fmt.Sprintf("snap-%d", i))
+		}
+		Expect(deleted).To(Equal(expected))
+	},
+	Entry("all ready: oldest first", []string{"ready", "ready", "ready", "ready"}, 3, []int{0}),
+	Entry("one ready: stale pending first", []string{"ready", "pending", "pending", "pending"}, 3, []int{1}),
+	Entry("one ready, newer than a pending one", []string{"pending", "ready", "pending"}, 2, []int{0}),
+	Entry("none ready: oldest pending is kept", []string{"pending", "pending", "pending", "pending"}, 2, []int{1, 2}),
+	Entry("none ready, maxCount 1: newer pending ones go", []string{"pending", "pending", "pending", "pending"}, 1, []int{1, 2, 3}),
+	Entry("none ready, maxCount 1: just-created one goes", []string{"pending", "pending"}, 1, []int{1}),
+	Entry("none ready, maxCount 1: failed oldest is not kept", []string{"failed", "pending"}, 1, []int{0}),
+)
