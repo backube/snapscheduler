@@ -37,6 +37,9 @@ This project follows [Semantic Versioning](https://semver.org/)
 - `spec.retention.expires` now accepts multi-term and decimal durations
   using `h`, `m` and `s` (for example `8760h0m0s` or `1.5h`) instead of only
   a single `<number>h|m|s` term.
+- A `spec.retention.expires` of zero (for example `0h`) is now rejected instead
+  of being treated as an expiration time of "now", which deleted every snapshot
+  the schedule retained while the reconcile reported success.
 
 ## [3.5.0] - 2025-05-14
 
