@@ -69,6 +69,16 @@ var _ = Describe("Snapshot expiration time is parsed correctly", func() {
 			Expect(err).To(HaveOccurred())
 		})
 	})
+	When("the retention time is zero", func() {
+		It("returns an error", func() {
+			for _, expires := range []string{"0h", "0s", "0h0m0s"} {
+				s := &snapschedulerv1.SnapshotSchedule{}
+				s.Spec.Retention.Expires = expires
+				_, err := getExpirationTime(s, time.Now(), logger)
+				Expect(err).To(HaveOccurred(), expires)
+			}
+		})
+	})
 	When("the retention time is valid", func() {
 		It("calculates the expiration time correctly", func() {
 			s := &snapschedulerv1.SnapshotSchedule{}
@@ -334,6 +344,38 @@ var _ = Describe("Expiring snapshots by time", func() {
 				count += len(snapList.Items)
 				return count
 			}, timeout, interval).Should(Equal(len(data) - 1))
+		})
+	})
+	When("a schedule's expiration time is zero", func() {
+		It("doesn't delete the snapshots it is meant to retain", func() {
+			s := &snapschedulerv1.SnapshotSchedule{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "schedule",
+					Namespace: ns1.Name,
+				},
+				Spec: snapschedulerv1.SnapshotScheduleSpec{
+					Schedule: "@hourly",
+					Retention: snapschedulerv1.SnapshotRetentionSpec{
+						Expires: "0h",
+					},
+				},
+			}
+			// The CRD pattern permits "0h", so a schedule can reach the
+			// controller carrying it.
+			Expect(k8sClient.Create(context.TODO(), s)).To(Succeed())
+
+			snapList, err := snapshotsFromSchedule(context.TODO(), s, logger, k8sClient)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(expireByTime(context.TODO(), s, time.Now(), logger, k8sClient, snapList)).NotTo(Succeed())
+
+			Consistently(func() int {
+				snapList := &snapv1.VolumeSnapshotList{}
+				Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns1.Name))).To(Succeed())
+				count := len(snapList.Items)
+				Expect(k8sClient.List(context.TODO(), snapList, client.InNamespace(ns2.Name))).To(Succeed())
+				count += len(snapList.Items)
+				return count
+			}, "2s", interval).Should(Equal(len(data)))
 		})
 	})
 })

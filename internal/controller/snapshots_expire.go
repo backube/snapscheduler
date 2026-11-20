@@ -111,7 +111,7 @@ func getExpirationTime(schedule *snapschedulerv1.SnapshotSchedule,
 		return nil, err
 	}
 
-	if lifetime < 0 {
+	if lifetime <= 0 {
 		err := errors.New("duration must be greater than 0")
 		logger.Error(err, "invalid value for spec.retention.expires")
 		return nil, err
