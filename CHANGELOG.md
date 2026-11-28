@@ -22,6 +22,8 @@ This project follows [Semantic Versioning](https://semver.org/)
 - The exported `api/v1.SchemeBuilder` now uses `runtime.SchemeBuilder`;
   `AddToScheme` is unchanged. Consumers relying on controller-runtime-specific
   builder methods must migrate to apimachinery scheme registration.
+- The leader election Role no longer grants access to ConfigMaps. Leader
+  election has used a Lease since controller-runtime v0.12.
 
 ### Fixed
 
